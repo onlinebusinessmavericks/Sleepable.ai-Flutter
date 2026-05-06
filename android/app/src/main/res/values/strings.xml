@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Sleepable Ai</string>
+
+    <!-- Facebook -->
+    <string name="facebook_app_id">841241012063166</string>
+    <string name="facebook_client_token">3281f9425c7ac63522fe2fe49640e84e</string>
+    <string name="fb_login_protocol_scheme">fb841241012063166</string>
+</resources>
