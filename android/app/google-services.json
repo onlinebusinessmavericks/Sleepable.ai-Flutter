@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1029720181448",
+    "project_id": "sleepableai-935c8",
+    "storage_bucket": "sleepableai-935c8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029720181448:android:00811a15e4390f5165f3fd",
+        "android_client_info": {
+          "package_name": "com.sleepableai.sleepableai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1029720181448-5apl9kl2gkbfpjrm84ma5d9fep4cpl95.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sleepableai.sleepableai",
+            "certificate_hash": "6856bfd0dfaae02678f60e2362e852fad2ce3c27"
+          }
+        },
+        {
+          "client_id": "1029720181448-78d0gu7kc3cbr5fopglbrci1qg9qr2of.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sleepableai.sleepableai",
+            "certificate_hash": "33d77a952c87c2c7b836f11b9e5d3965e8fda160"
+          }
+        },
+        {
+          "client_id": "1029720181448-a88rd8imms3efv0ei1dbon6rkam78q5j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzpU0lV1bAA6HrXSYxWPk7LMtMu_hvdWo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1029720181448-a88rd8imms3efv0ei1dbon6rkam78q5j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
