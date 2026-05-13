@@ -6,6 +6,8 @@ abstract class Routes {
   static const splash = _Paths.splash;
   static const welcome = _Paths.welcome;
   static const login = _Paths.login;
+  static const otpScreen = _Paths.otpScreen;
+  static const emailLogin = _Paths.emailLogin;
   static const signup = _Paths.signup;
   static const signIn = _Paths.signIn;
   static const forgotPassword = _Paths.forgotPassword;
@@ -56,6 +58,8 @@ abstract class _Paths {
   static const splash = '/splash';
   static const welcome = '/welcome';
   static const login = '/login';
+  static const emailLogin = '/email-login';
+  static const otpScreen = '/otp-screen';
   static const signup = '/sign-up';
   static const signIn = '/sign-in';
   static const forgotPassword = '/forgot-password';

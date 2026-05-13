@@ -93,6 +93,36 @@ class AuthServiceApis {
 
     return CommonResponse.fromJson(response);
   }
+  /// 1. Email Login API
+  static Future<CommonResponse> emailLogin({required Map<String, dynamic> request}) async {
+    final responseMap = await buildHttpResponse(
+      endPoint: 'users/email-login/', // Backend endpoint check karein
+      request: request,
+      method: MethodType.post,
+    );
+    return CommonResponse.fromJson(responseMap);
+  }
+
+  /// 2. Email Verify OTP API
+  static Future<SocialLoginResponse> verifyEmailOtp({required Map<String, dynamic> request}) async {
+    final responseMap = await buildHttpResponse(
+      endPoint: 'users/email-verify-otp/',
+      request: request,
+      method: MethodType.post,
+    );
+    // OTP verify hone ke baad backend SocialLoginResponse (tokens) hi bhejega
+    return SocialLoginResponse.fromJson(responseMap);
+  }
+
+  /// 3. Email Register API (Optional for Review, but good to have)
+  static Future<CommonResponse> emailRegister({required Map<String, dynamic> request}) async {
+    final responseMap = await buildHttpResponse(
+      endPoint: 'users/email-register/',
+      request: request,
+      method: MethodType.post,
+    );
+    return CommonResponse.fromJson(responseMap);
+  }
 }
 
 /// HOME---------------------------------------------------------------------------------------------------------------

@@ -16,6 +16,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/base/base_controller.dart';
 import '../../../core/constants/shared_prefences.dart';
+import '../../../core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../generated/assets.dart';
 import '../../../localization/lang_extension.dart';
@@ -23,6 +24,7 @@ import '../../../routes/app_pages.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../../widgets/timezone.dart';
+import '../../otp_verification/views/otp_verification_view.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/model/user_profile_model.dart';
 
@@ -330,5 +332,110 @@ class LoginController extends BaseController {
 
   void skip() {
     Get.offAllNamed(Routes.dashboard);
+  }
+
+  // ===================== EMAIL LOGIN (FOR REVIEWER) =====================
+
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  Future<void> loginWithEmailApi() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      Get.snackbar("Error", "Please fill all fields");
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+
+      final Map<String, dynamic> request = {
+        "email": emailController.text.trim(),
+        "password": passwordController.text,
+      };
+
+      // Yahan apni AuthServiceApis call karein jo backend ne banayi hai
+      final response = await AuthServiceApis.emailLogin(request: request);
+
+      if (response.success == true) {
+        // OTP Screen par bhejein (Agar static OTP setup hai)
+        Get.toNamed(
+            Routes.otpScreen,
+            arguments: {"email": emailController.text.trim()}
+        );
+      } else {
+        Get.snackbar("Error", response.message);
+      }
+    } catch (e) {
+      print("❌ Email Login Error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  // ===================== OTP VERIFICATION (FOR REVIEWER) =====================
+
+  final otpController = TextEditingController();
+
+  Future<void> verifyOtpApi() async {
+    final String email = Get.arguments["email"] ?? "";
+    final String otp = otpController.text.trim();
+
+    if (otp.length < 6) {
+      Get.snackbar("Error", "Enter 6-digit OTP");
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      final Map<String, dynamic> request = {
+        "email": email,
+        "otp_code": otp,
+      };
+
+      // OTP verify hone ke baad backend tokens (SocialLoginResponse) bhejega
+      final response = await AuthServiceApis.verifyEmailOtp(request: request);
+
+      if (response.success == true) {
+        // ✅ SUCCESS: Wahi logic call karein jo social login ke tokens save karta hai
+        // Humne _handleSocialLogin ko refactor kiya hai niche
+        await _saveTokensAndNavigate(response);
+      } else {
+        Get.snackbar("OTP Error", response.message ?? "Invalid OTP");
+      }
+    } catch (e) {
+      dev.log("❌ OTP Verification Error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+// Common function to save tokens and move to Dashboard
+  Future<void> _saveTokensAndNavigate(SocialLoginResponse response) async {
+    // 1. Tokens & Login Status Save
+    await setValue(AppSharedPreferenceKeys.apiToken, response.data.tokens.access);
+    await setValue(AppSharedPreferenceKeys.refreshToken, response.data.tokens.refresh);
+    await setValue(AppSharedPreferenceKeys.isUserLoggedIn, true);
+
+    // 2. Profile Setup
+    final userData = UserProfileData(
+      name: response.data.name,
+      profileImage: response.data.avatarUrl,
+      phoneNumber: response.data.phone,
+      countryCode: response.data.countryCode,
+    );
+    await setValue(AppSharedPreferenceKeys.currentUserData, jsonEncode(response.data.toJson()));
+    Get.put(ProfileController()).profile.value = userData;
+
+    // 3. Subscription Check & Navigate
+    final subController = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : Get.put(SubscriptionController(), permanent: true);
+
+    await subController.initData();
+
+    if (subController.isPremium.value == true) {
+      Get.offAllNamed(Routes.dashboard);
+    } else {
+      Get.offAllNamed(Routes.dashboard, arguments: {'show_paywall': true});
+    }
   }
 }

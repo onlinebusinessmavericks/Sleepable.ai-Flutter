@@ -27,6 +27,7 @@ import '../modules/breathwork/views/breathwork_view.dart';
 import '../modules/dashboard/views/dashboard_view.dart';
 import '../modules/edit_profile/bindings/edit_profile_binding.dart';
 import '../modules/edit_profile/views/edit_profile_view.dart';
+import '../modules/email_login/views/email_login_view.dart';
 import '../modules/forgot_password/bindings/forgot_password_binding.dart';
 import '../modules/forgot_password/views/forgot_password_view.dart';
 import '../modules/free_trial/bindings/free_trial_binding.dart';
@@ -40,6 +41,7 @@ import '../modules/login/bindings/login_binding.dart';
 import '../modules/login/views/login_view.dart';
 import '../modules/music/bindings/music_binding.dart';
 import '../modules/music/views/music_view.dart';
+import '../modules/otp_verification/views/otp_verification_view.dart';
 import '../modules/patented_sleep_tracker/bindings/patented_sleep_tracker_binding.dart';
 import '../modules/patented_sleep_tracker/views/patented_sleep_tracker_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
@@ -138,6 +140,16 @@ class AppPages {
       }),
     ),
     GetPage(name: _Paths.melodies, page: () => MelodiesScreen(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
+    GetPage(
+      name: Routes.otpScreen,
+      page: () => const OtpVerificationView(),
+      binding: LoginBinding(), // Ye zaroori hai taaki LoginController mil sake
+    ),
+    GetPage(
+        name: Routes.emailLogin,
+        page: () => const EmailLoginView(),
+        binding: LoginBinding()
+    ),
   ];
 }
 

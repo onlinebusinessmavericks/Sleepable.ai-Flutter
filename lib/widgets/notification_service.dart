@@ -21,10 +21,10 @@ class NotificationService {
   static Future<void> init() async {
     dev.log("🔔 NotificationService: Initializing...");
 // 🔥 iOS Debug Bypass: Agar iOS hai toh init hi mat karo
-    if (Platform.isIOS) {
-      dev.log("⚠️ iOS Free Account: Skipping NotificationService init entirely.");
-      return;
-    }
+//     if (Platform.isIOS) {
+//       dev.log("⚠️ iOS Free Account: Skipping NotificationService init entirely.");
+//       return;
+//     }
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       dev.log("🔄 FCM Token Rotated Automatically: $newToken");
 

@@ -1155,7 +1155,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   //   {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context!.lang.dreamBot},
   //   {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context!.lang.breathwork},
   // ];
-  final List<Map<String, dynamic>> allItems = [
+  List<Map<String, dynamic>>get allItems => [
     {'id': 'white_noise', 'icon': Icons.music_note, 'label': Get.context?.lang.whiteNoise ?? "White Noise"},
     {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': Get.context?.lang.sleepAid ?? "Sleep Aid"},
     {'id': 'premium', 'icon': Icons.star, 'label': Get.context?.lang.premium ?? "Premium"},

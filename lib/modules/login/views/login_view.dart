@@ -11,6 +11,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../widgets/custom_loader.dart';
 import '../../../widgets/offer_widget.dart';
+import '../../email_login/views/email_login_view.dart';
 import '../../music/views/music_view.dart';
 import '../controllers/login_controller.dart';
 
@@ -136,6 +137,17 @@ class LoginView extends GetView<LoginController> {
                           await Haptics.vibrate(HapticsType.light,useAndroidHapticConstants: true,);
                           controller.loginWithGoogle();
                           },),
+                        SizedBox(height: 12),
+                        _mainButton(
+                          text: "Sign in with Email",
+                          textColor: Colors.white70,
+                          bgColor: Colors.white10,
+                          image: Image.asset(Assets.homeMail, width: 20, height: 20),
+                          onPressed: () {
+                            // Nayi screen par bhejein jahan Email/Pass fill ho sake
+                            Get.to(() => EmailLoginView());
+                          },
+                        ),
                         SizedBox(height: 12),
                         // ///  Facebook Button
                         //  _mainButton(text: context.lang.continueFacebook, textColor: Colors.white, bgColor: Colors.transparent, image: Image.asset(Assets.homeFacebook, width: 25, height: 25),onPressed:controller.loginWithFaceBook),

@@ -224,6 +224,56 @@ class HomeScreen extends GetView<HomeController> {
                                             //     print("$isTapped ${controller.tappedIndex.value} ${item['label']}");
                                             //   });
                                             // },
+                                            // onTap: () {
+                                            //   controller.tappedIndex.value = index;
+                                            //
+                                            //   Future.delayed(const Duration(milliseconds: 120), () {
+                                            //     if (controller.tappedIndex.value == index) {
+                                            //       controller.tappedIndex.value = -1;
+                                            //     }
+                                            //
+                                            //     // 🔥 THE FIX: Safe Retrieval for your Controllers
+                                            //
+                                            //     if (item['label'] == 'White Noise') {
+                                            //       // 1. Setup State
+                                            //       sleepSoundController.setJumpArguments(jumpTab: "white-noise", jumpFilter: "__all__");
+                                            //       // 2. Switch Tab
+                                            //       dashboardController.changeTab(1);
+                                            //     } else if (item['label'] == 'Sleep Aid') {
+                                            //       // 1. Setup State
+                                            //       sleepSoundController.setJumpArguments(jumpTab: "music", jumpFilter: "__all__");
+                                            //       // 2. Switch Tab
+                                            //       dashboardController.changeTab(1);
+                                            //       // showPremiumOfferSheet4(context);
+                                            //     }
+                                            //     else if (item['id'] == 'story') {
+                                            //       // 🔥 Story click hone par Sleep Sound ke 'story' filter par jump karein
+                                            //
+                                            //       sleepSoundController.setJumpArguments(jumpTab: "story", jumpFilter: "__all__"); // Ya jo bhi aapka filter name ho
+                                            //       dashboardController.changeTab(1);
+                                            //       // } else if (item['label'] == 'Premium' || item['label'] == Get.context!.lang.premium) {
+                                            //       // Shortcut for cleaner code
+                                            //     } else if (item['label'] == 'Premium' || (lang != null && item['label'] == lang.premium)) {
+                                            //       controller.showRotatingPremiumSheet(context);
+                                            //       // else if (item['label'] == 'Premium') {
+                                            //       //   // 🔥 Use the controller to show the next rotating sheet
+                                            //       //   controller.showRotatingPremiumSheet(context);
+                                            //     }
+                                            //     else if (item['label'] == 'Dream Bot') {
+                                            //       Get.toNamed(
+                                            //         Routes.dreamBot,
+                                            //         parameters: {
+                                            //           "fromProgress": "true", // Tells controller to use ChatApis
+                                            //           "dreamId": "0",
+                                            //         },
+                                            //       );
+                                            //     } else if (item['label'] == 'Breathwork') {
+                                            //       Get.toNamed(Routes.breathwork);
+                                            //     }
+                                            //
+                                            //     print("$isTapped ${controller.tappedIndex.value} ${item['label']}");
+                                            //   });
+                                            // },
                                             onTap: () {
                                               controller.tappedIndex.value = index;
 
@@ -232,46 +282,25 @@ class HomeScreen extends GetView<HomeController> {
                                                   controller.tappedIndex.value = -1;
                                                 }
 
-                                                // 🔥 THE FIX: Safe Retrieval for your Controllers
+                                                // ✅ Hamesha ID check karein, Label nahi
+                                                final String itemId = item['id'];
 
-                                                if (item['label'] == 'White Noise') {
-                                                  // 1. Setup State
+                                                if (itemId == 'white_noise') {
                                                   sleepSoundController.setJumpArguments(jumpTab: "white-noise", jumpFilter: "__all__");
-                                                  // 2. Switch Tab
                                                   dashboardController.changeTab(1);
-                                                } else if (item['label'] == 'Sleep Aid') {
-                                                  // 1. Setup State
+                                                } else if (itemId == 'sleep_aid') {
                                                   sleepSoundController.setJumpArguments(jumpTab: "music", jumpFilter: "__all__");
-                                                  // 2. Switch Tab
                                                   dashboardController.changeTab(1);
-                                                  // showPremiumOfferSheet4(context);
-                                                }
-                                                else if (item['id'] == 'story') {
-                                                  // 🔥 Story click hone par Sleep Sound ke 'story' filter par jump karein
-
-                                                  sleepSoundController.setJumpArguments(jumpTab: "story", jumpFilter: "__all__"); // Ya jo bhi aapka filter name ho
+                                                } else if (itemId == 'story') {
+                                                  sleepSoundController.setJumpArguments(jumpTab: "story", jumpFilter: "__all__");
                                                   dashboardController.changeTab(1);
-                                                  // } else if (item['label'] == 'Premium' || item['label'] == Get.context!.lang.premium) {
-                                                  // Shortcut for cleaner code
-                                                } else if (item['label'] == 'Premium' || (lang != null && item['label'] == lang.premium)) {
+                                                } else if (itemId == 'premium') {
                                                   controller.showRotatingPremiumSheet(context);
-                                                  // else if (item['label'] == 'Premium') {
-                                                  //   // 🔥 Use the controller to show the next rotating sheet
-                                                  //   controller.showRotatingPremiumSheet(context);
-                                                }
-                                                else if (item['label'] == 'Dream Bot') {
-                                                  Get.toNamed(
-                                                    Routes.dreamBot,
-                                                    parameters: {
-                                                      "fromProgress": "true", // Tells controller to use ChatApis
-                                                      "dreamId": "0",
-                                                    },
-                                                  );
-                                                } else if (item['label'] == 'Breathwork') {
+                                                } else if (itemId == 'dreambot') {
+                                                  Get.toNamed(Routes.dreamBot, parameters: {"fromProgress": "true", "dreamId": "0"});
+                                                } else if (itemId == 'breathwork') {
                                                   Get.toNamed(Routes.breathwork);
                                                 }
-
-                                                print("$isTapped ${controller.tappedIndex.value} ${item['label']}");
                                               });
                                             },
                                             child: AnimatedContainer(
