@@ -32,7 +32,7 @@ class AppSharedPreferenceKeys {
   static const String deviceVersion = 'device_version';
   static const String appVersion = 'app_version';
   static const String fcmToken = 'fcm_token';
-  static const String platform = 'platform'; // android / ios
+  static const String platform = 'platform'; // android / ios_old
 
   // ===================== ONBOARDING =====================
 

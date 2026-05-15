@@ -63,12 +63,12 @@
 //     }
 //
 //     if (Platform.isIOS) {
-//       final ios = await deviceInfo.iosInfo;
+//       final ios_old = await deviceInfo.iosInfo;
 //
-//       print("📱 Device: ${ios.name}");
-//       print("📱 Model: ${ios.model}");
-//       print("🍎 iOS Version: ${ios.systemVersion}");
-//       print("🆔 Identifier: ${ios.identifierForVendor}");
+//       print("📱 Device: ${ios_old.name}");
+//       print("📱 Model: ${ios_old.model}");
+//       print("🍎 iOS Version: ${ios_old.systemVersion}");
+//       print("🆔 Identifier: ${ios_old.identifierForVendor}");
 //     }
 //   }
 // }
@@ -156,12 +156,12 @@ class WelcomeController extends GetxController {
   //   }
   //
   //   if (Platform.isIOS) {
-  //     final ios = await deviceInfo.iosInfo;
+  //     final ios_old = await deviceInfo.iosInfo;
   //
   //     data = {
-  //       "device_id": ios.identifierForVendor ?? "",
-  //       "device_name": ios.name,
-  //       "device_version": ios.systemVersion,
+  //       "device_id": ios_old.identifierForVendor ?? "",
+  //       "device_name": ios_old.name,
+  //       "device_version": ios_old.systemVersion,
   //       "app_version": package.version,
   //       "fcm_token": getStringAsync(AppSharedPreferenceKeys.fcmToken),
   //     };
