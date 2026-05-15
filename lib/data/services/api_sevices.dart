@@ -17,6 +17,7 @@ import '../../modules/boot_up/model/tracker_status_response.dart';
 import '../../modules/dreambot/model/chat_response_model.dart';
 import '../../modules/home/model/artist_model.dart';
 import '../../modules/home/model/home_page_response.dart';
+import '../../modules/login/model/email_login_resposnse.dart';
 import '../../modules/login/model/google_social_login_model.dart';
 import '../../modules/profile/model/UpdateStreakResponse.dart';
 import '../../modules/profile/model/UserSettings.dart';
@@ -94,13 +95,13 @@ class AuthServiceApis {
     return CommonResponse.fromJson(response);
   }
   /// 1. Email Login API
-  static Future<CommonResponse> emailLogin({required Map<String, dynamic> request}) async {
+  static Future<EmailLoginResponse> emailLogin({required Map<String, dynamic> request}) async {
     final responseMap = await buildHttpResponse(
       endPoint: 'users/email-login/', // Backend endpoint check karein
       request: request,
       method: MethodType.post,
     );
-    return CommonResponse.fromJson(responseMap);
+    return EmailLoginResponse.fromJson(responseMap);
   }
 
   /// 2. Email Verify OTP API
