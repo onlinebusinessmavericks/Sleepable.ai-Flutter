@@ -35,8 +35,17 @@ class NotificationService {
       }
     });
     // 1. Request Permissions (Sirf ek baar)
-    await _messaging.requestPermission(alert: true, badge: true, sound: true);
+    // await _messaging.requestPermission(alert: true, badge: true, sound: true);
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false, // Isse proper permission prompt aayega
+    );
 
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      dev.log("✅ User granted notification permission");
+    }
     // 2. Token Updates
     try {
       await updateTokenToServer();
@@ -124,22 +133,51 @@ class NotificationService {
   //     dev.log("❌ Error fetching token: $e");
   //   }
   // }
+  // static Future<void> updateTokenToServer() async {
+  //   if (Platform.isIOS) {
+  //     dev.log("⚠️ iOS Free Account Bypass: Skipping token fetch.");
+  //     return;
+  //   }
+  //
+  //   try {
+  //     // 1. Force delete current cached token
+  //     await _messaging.deleteToken();
+  //     dev.log("🗑️ Old FCM Token deleted from cache");
+  //
+  //     // 2. Now get a fresh live token
+  //     String? token = await _messaging.getToken();
+  //
+  //     if (token != null) {
+  //       dev.log("🆕 Fresh FCM Token generated: $token");
+  //       await _sendTokenToBackend(token);
+  //     }
+  //   } catch (e) {
+  //     dev.log("❌ Error fetching fresh token: $e");
+  //   }
+  // }
   static Future<void> updateTokenToServer() async {
-    if (Platform.isIOS) {
-      dev.log("⚠️ iOS Free Account Bypass: Skipping token fetch.");
-      return;
-    }
-
     try {
-      // 1. Force delete current cached token
-      await _messaging.deleteToken();
-      dev.log("🗑️ Old FCM Token deleted from cache");
+      if (Platform.isIOS) {
+        dev.log("🌐 iOS Token Verification started...");
 
-      // 2. Now get a fresh live token
+        // Live Device par APNs token check karein
+        String? apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          dev.log("⚠️ APNS Token abhi tak generate nahi hua. Kuch der baad dubara try karein.");
+          // Kabhi-kabhi iOS me APNs generate hone me thoda time lagta hai
+          await Future.delayed(const Duration(seconds: 3));
+          apnsToken = await _messaging.getAPNSToken();
+        }
+
+        dev.log("🚀 APNS Token Found: $apnsToken");
+      }
+
+      // Ab fresh FCM Token generate karein
+      await _messaging.deleteToken();
       String? token = await _messaging.getToken();
 
       if (token != null) {
-        dev.log("🆕 Fresh FCM Token generated: $token");
+        dev.log("🆕 Fresh FCM Token for iOS/Android: $token");
         await _sendTokenToBackend(token);
       }
     } catch (e) {
