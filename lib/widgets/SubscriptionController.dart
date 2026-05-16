@@ -93,23 +93,46 @@ class SubscriptionController extends GetxController {
   //
   //   await Purchases.configure(configuration);
   // }
-  static Future<void> init() async {
-    // Agar iOS hai aur account nahi hai, toh configuration skip karein
-    if (Platform.isIOS) {
-      print("⚠️ Skipping RevenueCat Config: No iOS API Key");
-      return;
-    }
+  // static Future<void> init() async {
+  //   // Agar iOS hai aur account nahi hai, toh configuration skip karein
+  //   if (Platform.isIOS) {
+  //     print("⚠️ Skipping RevenueCat Config: No iOS API Key");
+  //     return;
+  //   }
+  //
+  //   await Purchases.setLogLevel(LogLevel.debug);
+  //
+  //   PurchasesConfiguration configuration;
+  //   if (Platform.isAndroid) {
+  //     configuration = PurchasesConfiguration("goog_luerHREwpCvCyPwXSpTHyubfXpb");
+  //     await Purchases.configure(configuration);
+  //     isConfigured = true;
+  //   }
+  // }
 
+  static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
 
     PurchasesConfiguration configuration;
+
     if (Platform.isAndroid) {
       configuration = PurchasesConfiguration("goog_luerHREwpCvCyPwXSpTHyubfXpb");
+    } else if (Platform.isIOS) {
+      // ✅ Aapki nayi iOS Key yahan add ho gayi hai
+      configuration = PurchasesConfiguration("appl_fDrWUKJQoAoYEradFYKasuTvvPr");
+    } else {
+      return;
+    }
+
+    try {
       await Purchases.configure(configuration);
       isConfigured = true;
+      print("✅ RevenueCat configured successfully for ${Platform.isIOS ? 'iOS' : 'Android'}");
+    } catch (e) {
+      isConfigured = false;
+      print("❌ RevenueCat Configuration Error: $e");
     }
   }
-
   // Future<void> fetchStoreProducts() async {
   //   if (!isConfigured) return;
   //   try {
