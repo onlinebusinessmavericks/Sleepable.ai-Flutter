@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -34,7 +35,8 @@ class SubscriptionController extends GetxController {
   void onInit() {
     super.onInit();
     // 1. Pehle cache se value load karein (Instant)
-    isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
+    // isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
+    isPremium.value = false;
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -44,28 +46,54 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  // Future<void> initData() async {
+  //   try {
+  //     isLoading.value = true;
+  //     // Parallel APIs check with timeout taaki app stuck na ho
+  //     await Future.wait([
+  //       checkPremiumStatus(),
+  //       getBackendSubscriptionStatus(),
+  //     ]).timeout(const Duration(seconds: 8));
+  //
+  //     await fetchStoreProducts();
+  //     await checkSpinStatus();
+  //   } catch (e) {
+  //     print("❌ Sync Error: $e");
+  //   } finally {
+  //     isLoading.value = false;
+  //     isInitialSyncDone.value = true; // 🔥 CRITICAL: Har haal mein true hoga
+  //   }
+  // }
   Future<void> initData() async {
     try {
+      await Purchases.invalidateCustomerInfoCache();
       isLoading.value = true;
-      // Parallel APIs check with timeout taaki app stuck na ho
-      await Future.wait([
-        checkPremiumStatus(),
-        getBackendSubscriptionStatus(),
-      ]).timeout(const Duration(seconds: 8));
+      print("🔄 [DEBUG] initData started...");
 
+      // ✅ STEP 1: Pehle Store Products load karein (Ye zaroori hai)
+      print("📦 [DEBUG] Fetching Store Products...");
       await fetchStoreProducts();
+
+      // ✅ STEP 2: Ab status check karein
+      print("📡 [DEBUG] Checking Premium Status...");
+      await checkPremiumStatus();
+      await getBackendSubscriptionStatus();
+
       await checkSpinStatus();
+
     } catch (e) {
-      print("❌ Sync Error: $e");
+      print("❌ [DEBUG] Sync Error: $e");
     } finally {
+      print("🏁 [DEBUG] initData finished.");
       isLoading.value = false;
-      isInitialSyncDone.value = true; // 🔥 CRITICAL: Har haal mein true hoga
+      isInitialSyncDone.value = true;
     }
   }
 
 // SubscriptionController.dart mein isse update karein
   Future<void> updatePremiumStatus(bool status, {bool isFromBackend = false}) async {
     // Blocking accidental downgrade
+    status= false;
     if (isPremium.value == true && status == false && !isFromBackend) {
       print("🛡️ Blocking accidental downgrade");
       return;
@@ -413,16 +441,44 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  // Future<void> checkPremiumStatus() async {
+  //   if (!isConfigured) return;
+  //   try {
+  //     CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+  //     bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
+  //
+  //     // 🔥 PASS 'false' for isFromBackend taaki downgrade na ho
+  //     updatePremiumStatus(isActive, isFromBackend: false);
+  //   } catch (e) {
+  //     log("RC Error: $e");
+  //   }
+  // }
   Future<void> checkPremiumStatus() async {
-    if (!isConfigured) return;
+    if (!isConfigured) {
+      print("⚠️ [RC] Skipping status check: Not configured");
+      return;
+    }
+
     try {
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo();
+      print("⏳ [RC] Fetching CustomerInfo...");
+
+      // 1. Simulator ke liye timeout lagana bahut zaroori hai
+      // Agar 5 second mein response nahi aaya toh code aage badh jayega
+      CustomerInfo customerInfo = await Purchases.getCustomerInfo().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print("⏰ [RC] CustomerInfo Timeout - Moving on");
+          throw TimeoutException("RC Timeout");
+        },
+      );
+
+      print("✅ [RC] CustomerInfo received");
       bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
 
-      // 🔥 PASS 'false' for isFromBackend taaki downgrade na ho
       updatePremiumStatus(isActive, isFromBackend: false);
     } catch (e) {
-      log("RC Error: $e");
+      print("❌ [RC] Error in checkPremiumStatus: $e");
+      // Error aane par hum premium status ko change nahi karenge (Cache rehne denge)
     }
   }
   void checkAndShowPremiumSheet(BuildContext context) {
