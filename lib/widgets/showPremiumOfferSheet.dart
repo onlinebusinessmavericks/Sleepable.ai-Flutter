@@ -110,34 +110,73 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
                       if (package == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
-
+// 1. Dynamic Currency Symbol Configuration
                       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+
+                      // 🔥 INSTANT TRIPLE-CHECK JUGAD (Tumhara Idea):
+                      // Agar Google/Apple store se currency INR bataye, toh strictly sign block karo
+                      if (package.storeProduct.currencyCode == "INR") {
+                        currencySymbol = "₹";
+                      }
+
                       double storePrice = package.storeProduct.price;
 
-                      // 🔥 Priority Backend String
-                      // String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+                      // 2. Priority Backend Display Strings
                       String pricePerYear = showOffer
                           ? (spinData?.discountedPrice ?? package.storeProduct.priceString)
                           : package.storeProduct.priceString;
+
                       print("💰 [Sheet 1] FINAL DISPLAY PRICE: $pricePerYear");
 
+                      // Strike Price Logic (Bina Double Symbol Glitch Ke)
                       String strikePrice = showOffer
                           ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
                           : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+
+                      // 3. 🎯 FOOLPROOF MATH EXTRACTION (Comma mapping fix)
                       double rawPriceForMath = storePrice;
-                      // double rawPriceForMath = showOffer && spinData?.discountedPrice != null
-                      //     ? (double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice)
-                      //     : storePrice;
                       if (showOffer) {
                         if (spinData?.discountedPrice != null) {
-                          // String se alphabets aur symbols uda kar pure number nikalega
-                          String cleanPrice = spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '');
+                          // 🔥 CRITICAL FIX: Pehle string se comma (,) saaf karo, fir baki symbols udao
+                          String cleanPrice = spinData!.discountedPrice!
+                              .replaceAll(',', '') // 👈 Yeh sabse zaroori hai "2,800" ko "2800" karne ke liye
+                              .replaceAll(RegExp(r'[^0-9.]'), '');
+
                           rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
                         } else if (spinPackage != null) {
                           rawPriceForMath = spinPackage.storeProduct.price;
                         }
                       }
+
+                      // Ab calculation 100% sahi numeric aayega
                       String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
+                      // String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+                      // double storePrice = package.storeProduct.price;
+                      //
+                      // // 🔥 Priority Backend String
+                      // // String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+                      // String pricePerYear = showOffer
+                      //     ? (spinData?.discountedPrice ?? package.storeProduct.priceString)
+                      //     : package.storeProduct.priceString;
+                      // print("💰 [Sheet 1] FINAL DISPLAY PRICE: $pricePerYear");
+                      //
+                      // String strikePrice = showOffer
+                      //     ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
+                      //     : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+                      // double rawPriceForMath = storePrice;
+                      // // double rawPriceForMath = showOffer && spinData?.discountedPrice != null
+                      // //     ? (double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice)
+                      // //     : storePrice;
+                      // if (showOffer) {
+                      //   if (spinData?.discountedPrice != null) {
+                      //     // String se alphabets aur symbols uda kar pure number nikalega
+                      //     String cleanPrice = spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '');
+                      //     rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
+                      //   } else if (spinPackage != null) {
+                      //     rawPriceForMath = spinPackage.storeProduct.price;
+                      //   }
+                      // }
+                      // String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
                       return Column(
                         children: [
                           Flexible(flex: 12, child: slideFade(fadeBanner, Image.asset(Assets.homeGiftYourSelf1))),
@@ -308,8 +347,40 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: pad(20)),
           child: Obx(() {
+            // final spinData = subController.spinInfo.value;
+            // // Ensure this condition is same in all sheets:
+            // bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+            // final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+            // final spinPackage = subController.spinYearlyPackage.value;
+            //
+            // // 1. Identify Package Priority
+            // final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
+            //
+            // if (package == null) {
+            //   return const Center(child: CircularProgressIndicator(color: Colors.white));
+            // }
+            //
+            // // Dynamic Store Data
+            // String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+            // double storePrice = package.storeProduct.price;
+            //
+            // // 2. Yearly Price Logic (Safe Dynamic Fallback)
+            // String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+            //
+            // // Strike price mapping (Calculated based on Store Price if backend missing)
+            // String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+            //
+            // // 3. Weekly Math (Symbol-agnostic calculation)
+            // double rawPriceForMath;
+            // if (showOffer && spinData?.discountedPrice != null) {
+            //   // Regex symbol hatakar safely math karega chahe $ ho ya ₹
+            //   rawPriceForMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
+            // } else {
+            //   rawPriceForMath = storePrice;
+            // }
+            //
+            // String weeklyPrice = (rawPriceForMath / 52).toStringAsFixed(2);
             final spinData = subController.spinInfo.value;
-            // Ensure this condition is same in all sheets:
             bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
             final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
             final spinPackage = subController.spinYearlyPackage.value;
@@ -321,23 +392,37 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
               return const Center(child: CircularProgressIndicator(color: Colors.white));
             }
 
-            // Dynamic Store Data
+            // 2. Dynamic Store Data & Strict Currency Identifier Fix (Tumhara Idea)
             String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+
+            // 🔥 INR STRICT HARD-LOCK (Cross-connection bypass karne ke liye)
+            if (package.storeProduct.currencyCode == "INR") {
+              currencySymbol = "₹";
+            }
+
             double storePrice = package.storeProduct.price;
 
-            // 2. Yearly Price Logic (Safe Dynamic Fallback)
+            // 3. Yearly Price Logic (Safe Dynamic Fallback)
             String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
 
             // Strike price mapping (Calculated based on Store Price if backend missing)
-            String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+            String strikePrice = showOffer
+                ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
+                : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-            // 3. Weekly Math (Symbol-agnostic calculation)
-            double rawPriceForMath;
-            if (showOffer && spinData?.discountedPrice != null) {
-              // Regex symbol hatakar safely math karega chahe $ ho ya ₹
-              rawPriceForMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
-            } else {
-              rawPriceForMath = storePrice;
+            // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner ke sath)
+            double rawPriceForMath = storePrice;
+            if (showOffer) {
+              if (spinData?.discountedPrice != null) {
+                // 🔥 CRITICAL: "2,800" mein se comma hatana mandatory hai, varna parse nahi hoga
+                String cleanPrice = spinData!.discountedPrice!
+                    .replaceAll(',', '')
+                    .replaceAll(RegExp(r'[^0-9.]'), '');
+
+                rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
+              } else if (spinPackage != null) {
+                rawPriceForMath = spinPackage.storeProduct.price;
+              }
             }
 
             String weeklyPrice = (rawPriceForMath / 52).toStringAsFixed(2);
@@ -593,43 +678,91 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
     return Obx(() {
-      final spinData = subController.spinInfo.value;
-      bool showOffer = spinData != null && spinData.alreadySpun == true;
+    //   final spinData = subController.spinInfo.value;
+    //   bool showOffer = spinData != null && spinData.alreadySpun == true;
+    //
+    //   final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+    //   final spinPackage = subController.spinYearlyPackage.value;
+    //
+    //   // 1. Sahi Package Select Karein
+    //   final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
+    //
+    //   if (package == null) {
+    //     return const Center(child: CircularProgressIndicator(color: Colors.white));
+    //   }
+    //
+    //   // 2. Real-time Store Data (No hardcoding)
+    //   double storePrice = package.storeProduct.price; // America ke liye $59.99, India ke liye ₹5400 apne aap aayega
+    //   // String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+    //   String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+    //   // 3. Yearly Price Logic
+    //   // Agar offer hai toh backend ki discounted string uthao, warna Store ki formatted string
+    //   String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+    //
+    //   // 4. Strike Price Logic
+    //   // Agar offer hai toh backend ki original string, warna Store price ko 1.5x karke symbol jodein
+    //   String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+    //
+    //   // 5. Weekly Math (Safe Extraction)
+    //   double rawPriceForMath;
+    //   if (showOffer && spinData?.discountedPrice != null) {
+    //     // Backend string se sirf digits nikalne ke liye (Example: "$29.99" -> 29.99)
+    //     rawPriceForMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
+    //   } else {
+    //     // Direct store price use karein
+    //     rawPriceForMath = storePrice;
+    //   }
+    //
+    //   String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
+    final spinData = subController.spinInfo.value;
+    // Ensure this condition is same in all sheets:
+    bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
 
-      final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
-      final spinPackage = subController.spinYearlyPackage.value;
+    final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+    final spinPackage = subController.spinYearlyPackage.value;
 
-      // 1. Sahi Package Select Karein
-      final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
+    // 1. Sahi Package Select Karein
+    final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
-      if (package == null) {
-        return const Center(child: CircularProgressIndicator(color: Colors.white));
+    if (package == null) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+
+    // 2. Real-time Store Data (Strict Dynamic Symbol & INR Overwrite - Tumhara Idea)
+    String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+
+    // 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
+    if (package.storeProduct.currencyCode == "INR") {
+      currencySymbol = "₹";
+    }
+
+    double storePrice = package.storeProduct.price;
+
+    // 3. Yearly Price Logic
+    String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+
+    // 4. Strike Price Logic (Calculated based on Store Price if backend missing)
+    String strikePrice = showOffer
+        ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
+        : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+
+    // 5. Weekly Math (Safe Extraction with Comma Cleaner)
+    double rawPriceForMath = storePrice;
+    if (showOffer) {
+      if (spinData?.discountedPrice != null) {
+        // 🔥 CRITICAL: Backend ki string "₹2,800" me se comma hatana zaroori hai parsing ke liye
+        String cleanPrice = spinData!.discountedPrice!
+            .replaceAll(',', '')
+            .replaceAll(RegExp(r'[^0-9.]'), '');
+
+        rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
+      } else if (spinPackage != null) {
+        rawPriceForMath = spinPackage.storeProduct.price;
       }
+    }
 
-      // 2. Real-time Store Data (No hardcoding)
-      double storePrice = package.storeProduct.price; // America ke liye $59.99, India ke liye ₹5400 apne aap aayega
-      // String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-      String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-      // 3. Yearly Price Logic
-      // Agar offer hai toh backend ki discounted string uthao, warna Store ki formatted string
-      String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
-      // 4. Strike Price Logic
-      // Agar offer hai toh backend ki original string, warna Store price ko 1.5x karke symbol jodein
-      String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
-
-      // 5. Weekly Math (Safe Extraction)
-      double rawPriceForMath;
-      if (showOffer && spinData?.discountedPrice != null) {
-        // Backend string se sirf digits nikalne ke liye (Example: "$29.99" -> 29.99)
-        rawPriceForMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
-      } else {
-        // Direct store price use karein
-        rawPriceForMath = storePrice;
-      }
-
-      String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
-      return Scaffold(
+    String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
+    return Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
@@ -856,48 +989,52 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
     final textTheme = Theme.of(context).textTheme;
 
     return Obx(() {
-      //       // 1. Pehle backend data fetch karein status check karne ke liye
-      //       final spinData = subController.spinInfo.value;
       //
-      //       // 2. ✅ MASTER LOGIC: Check karein ki user ne spin kiya hai ya nahi
-      //       // Backend se 'already_spun' true hona chahiye tabhi discount dikhayenge
-      //       bool showOffer = spinData != null && spinData.alreadySpun == true;
+      // final spinData = subController.spinInfo.value;
+      // // Master Logic: Priority to Backend 'alreadySpun' status
+      // // Ensure this condition is same in all sheets:
+      // bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      // // 1. Identify Package
+      // final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+      // final spinPackage = subController.spinYearlyPackage.value;
       //
-      //       // 3. Sahi Package Pick Karein
-      //       // Agar showOffer true hai toh spin package (2800) uthao, warna standard package (5400)
-      //       // final package = showOffer
-      //       //     ? (subController.spinYearlyPackage.value ?? subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual))
-      //       //     : subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
-      //       // String currency = subController.getCurrencySymbol(package!.storeProduct.currencyCode);
-      // // 1. Package determine karein (Bina '!' operator ke)
-      //       final package = showOffer
-      //           ? (subController.spinYearlyPackage.value ?? subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual))
-      //           : subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+      // // Choose package based on offer status
+      // final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
       //
-      // // 2. Agar package abhi tak load nahi hua (null hai), toh loader dikhao
-      //       if (package == null) {
-      //         return const Center(
-      //           child: CircularProgressIndicator(color: Colors.white),
-      //         );
-      //       }
+      // if (package == null) {
+      //   return const Center(child: CircularProgressIndicator(color: Colors.white));
+      // }
       //
-      // // 3. ✅ AB SAFE HAI: Kyunki humne upar null check kar liya hai
-      //       String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-      //       // 4. Prices Set Karein (Backend data priority + Store Fallback)
-      //       String yearlyPrice = showOffer ? (spinData.discountedPrice ?? (package?.storeProduct.priceString ?? "$currency 2,800.00")) : (package?.storeProduct.priceString ?? "$currency 5,400.00");
+      // // Dynamic Store Data components
+      // String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+      // double storePrice = package.storeProduct.price;
       //
-      //       // Calculation ke liye raw price
-      //       double rawPrice = showOffer ? 2800.0 : (package?.storeProduct.price ?? 5400.0);
-      //       String weeklyAvg = (rawPrice / 52).toStringAsFixed(2);
-      //       // String currency = package?.storeProduct.currencyCode ?? "₹";
+      // // 2. Yearly Price Logic (Force dynamic fallback to Store priceString)
+      // String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
       //
-      //       final currentTextIndex = _currentPage % buttonTexts.length;
-      //       String currentButtonText = buttonTexts[currentTextIndex];
-
+      // // 3. Weekly Average Calculation (No Hardcoding, Symbol-agnostic)
+      // double rawPrice;
+      // if (showOffer && spinData?.discountedPrice != null) {
+      //   // Regex use karke string se symbol ($ ya ₹) hatayenge taaki calculation crash na ho
+      //   rawPrice = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
+      // } else {
+      //   rawPrice = storePrice;
+      // }
+      // final List<String> buttonTexts = [
+      //   lang.btnTryFree,
+      //   lang.btnGetForZero.replaceAll('{symbol}', currency), // currency symbol dynamic
+      //   lang.btnStartTrial,
+      //   lang.btnUnlockAccess
+      // ];
+      // String weeklyAvg = (rawPrice / 52).toStringAsFixed(2);
+      //
+      // final currentTextIndex = _currentPage % buttonTexts.length;
+      // String currentButtonText = buttonTexts[currentTextIndex];
       final spinData = subController.spinInfo.value;
       // Master Logic: Priority to Backend 'alreadySpun' status
       // Ensure this condition is same in all sheets:
       bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+
       // 1. Identify Package
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -909,27 +1046,42 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
         return const Center(child: CircularProgressIndicator(color: Colors.white));
       }
 
-      // Dynamic Store Data components
-      String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+      // 2. Real-time Store Data & Strict Currency Identifier Fix (Tumhara Idea)
+      String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+
+      // 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
+      if (package.storeProduct.currencyCode == "INR") {
+        currencySymbol = "₹";
+      }
+
       double storePrice = package.storeProduct.price;
 
-      // 2. Yearly Price Logic (Force dynamic fallback to Store priceString)
+      // 3. Yearly Price Logic (Force dynamic fallback to Store priceString)
       String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
 
-      // 3. Weekly Average Calculation (No Hardcoding, Symbol-agnostic)
-      double rawPrice;
-      if (showOffer && spinData?.discountedPrice != null) {
-        // Regex use karke string se symbol ($ ya ₹) hatayenge taaki calculation crash na ho
-        rawPrice = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
-      } else {
-        rawPrice = storePrice;
+      // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner aur symbol filter ke sath)
+      double rawPrice = storePrice;
+      if (showOffer) {
+        if (spinData?.discountedPrice != null) {
+          // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hataya, fir baki symbols udaye
+          String cleanPrice = spinData!.discountedPrice!
+              .replaceAll(',', '')
+              .replaceAll(RegExp(r'[^0-9.]'), '');
+
+          rawPrice = double.tryParse(cleanPrice) ?? storePrice;
+        } else if (spinPackage != null) {
+          rawPrice = spinPackage.storeProduct.price;
+        }
       }
+
+      // 5. Button Texts Configurations (Using locked currencySymbol)
       final List<String> buttonTexts = [
         lang.btnTryFree,
-        lang.btnGetForZero.replaceAll('{symbol}', currency), // currency symbol dynamic
+        lang.btnGetForZero.replaceAll('{symbol}', currencySymbol), // ✅ Updated: dynamic hard-locked symbol map kiya
         lang.btnStartTrial,
         lang.btnUnlockAccess
       ];
+
       String weeklyAvg = (rawPrice / 52).toStringAsFixed(2);
 
       final currentTextIndex = _currentPage % buttonTexts.length;
@@ -1098,195 +1250,6 @@ class LuckySpinScreen extends StatefulWidget {
   State<LuckySpinScreen> createState() => _LuckySpinScreenState();
 }
 
-// class _LuckySpinScreenState extends State<LuckySpinScreen> {
-//   SpinnerController controller = SpinnerController();
-//   bool _isSpinning = false;
-//   String _statusText = "Spin to unlock an\nexclusive discount";
-//   bool _hasWon = false;
-//
-//   final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
-//
-//   final List<WheelSegment> _segments = [
-//     WheelSegment('80%', 80, color: Colors.black, probability: 0.5),
-//     WheelSegment('70%', 70, color: Colors.white, probability: 0.0),
-//     WheelSegment('Gift', 1, color: Colors.black, probability: 0.5),
-//     WheelSegment('60%', 60, color: Colors.white, probability: 0.0),
-//     WheelSegment('30%', 30, color: Colors.black, probability: 0.0),
-//     WheelSegment('No Luck', 0, color: Colors.white, probability: 0.0),
-//   ];
-//
-//   void _spinWheel() async {
-//     if (_isSpinning) return;
-//
-//     setState(() {
-//       _isSpinning = true;
-//       _statusText = "Good Luck!";
-//     });
-//
-//     // 1. Backend API Call karein (Humein pehle pata chal jayega kya jeetne wala hai)
-//     await subController.performSpin();
-//
-//     if (subController.spinInfo.value != null) {
-//       // 2. Wheel ko specific index par rokein (Logic: Agar 80% jeeta toh index 0)
-//       // Note: Aapka spinner controller target index support karta ho toh wahan index set karein
-//       controller.startSpin();
-//     } else {
-//       setState(() {
-//         _isSpinning = false;
-//         _statusText = "Something went wrong.\nTry again later.";
-//       });
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     SizeConfigs.init(context);
-//     final size = MediaQuery.of(context).size;
-//     final textTheme = Theme.of(context).textTheme;
-//     final double wheelSize = (size.width * 0.85).clamp(250.0, 400.0);
-//
-//     return
-//       PopScope(
-//         canPop: false,
-//         onPopInvokedWithResult: (didPop, result) async {
-//           if (didPop) return;
-//         },
-//         child:
-//         Scaffold(
-//       backgroundColor: AppColors.background,
-//       body: SafeArea(
-//         child: Column(
-//           children: [
-//             // SizedBox(height: sh(36)),
-//             // Align(
-//             //   alignment: Alignment.topRight,
-//             //   child: Padding(
-//             //     padding: EdgeInsets.only(top: sh(8), right: pad(16)),
-//             //     child: IconButton(
-//             //       onPressed: () => Get.offAllNamed(Routes.dashboard),
-//             //       icon: const Icon(Icons.close, color: Colors.white, size: 28),
-//             //     ),
-//             //   ),
-//             // ),
-//
-//             const Spacer(flex: 1),
-//
-//             AnimatedSwitcher(
-//               duration: const Duration(milliseconds: 300),
-//               child: Text(
-//                 _statusText,
-//                 key: ValueKey(_statusText),
-//                 textAlign: TextAlign.center,
-//                 style: textTheme.headlineMedium?.copyWith(fontSize: 28 * SizeConfigs.textScale, fontWeight: FontWeight.w900, color: Colors.white, height: 1.2),
-//               ),
-//             ),
-//
-//             const Spacer(flex: 1),
-//
-//             // SPINNING WHEEL
-//             SizedBox(
-//               height: wheelSize,
-//               width: wheelSize,
-//               child: SpinnerWheel(
-//                 controller: controller,
-//                 segments: _segments,
-//                 labelStyle: WheelLabelStyle(
-//                   labelStyle: textTheme.titleMedium!.copyWith(
-//                     color: Colors.red, // Color fix for dark theme
-//                     fontWeight: FontWeight.bold,
-//                     fontSize: 18 * SizeConfigs.textScale,
-//                   ),
-//                 ),
-//                 // onComplete: (win, index) {
-//                 //   setState(() {
-//                 //     _isSpinning = false;
-//                 //     _hasWon = true;
-//                 //
-//                 //     // Backend se jo real data aaya hai wo dikhayein
-//                 //     final discount = subController.spinInfo.value?.discountPct ?? 80;
-//                 //     _statusText = "CONGRATS!\nYou unlocked $discount% OFF";
-//                 //   });
-//                 // },
-//                 // LuckySpinScreen State ke andar
-//                 onComplete: (win, index) {
-//                   setState(() {
-//                     _isSpinning = false;
-//                     _hasWon = true;
-//
-//                     final spinData = subController.spinInfo.value;
-//                     final discount = spinData?.discountPct ?? 80;
-//
-//                     _statusText = "CONGRATS!\nYou unlocked $discount% OFF";
-//
-//                     // ✅ TRIPLE FALLBACK LOGIC
-//                     String toastMsg = "";
-//
-//                     if (spinData?.message != null && spinData!.message!.isNotEmpty) {
-//                       // 1. Agar backend se msg aaya hai toh wahi dikhao
-//                       toastMsg = spinData.message!;
-//                     // } else if (spinData?.discountedPrice != null) {
-//                     //   // 2. Agar msg nahi hai par price hai, toh price ke saath msg banao
-//                     //   toastMsg = "Success! Price dropped to ${spinData!.discountedPrice}";
-//                     } else {
-//                       // 3. Agar kuch bhi nahi hai, toh ek standard generic message
-//                       toastMsg = "CONGRATS!\nYou unlocked $discount% OFF";
-//                     }
-//
-//                     toast(toastMsg);
-//                   });
-//                 },
-//               ),
-//             ),
-//
-//             const Spacer(flex: 2),
-//
-//             // BUTTON
-//             Padding(
-//               padding: EdgeInsets.symmetric(horizontal: pad(24), vertical: sh(16)),
-//               child: Obx(
-//                 () => SizedBox(
-//                   width: double.infinity,
-//                   height: sh(60),
-//                   child: ElevatedButton(
-//                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: AppColors.white,
-//                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-//                     ),
-//                     // onPressed: () {
-//                     //   if (!_isSpinning && !_hasWon) {
-//                     //     _spinWheel();
-//                     //   } else if (_hasWon) {
-//                     //     Get.back();
-//                     //     // Next screen par bhejye jahan discounted price dikhega (Sheet 6)
-//                     //     showPremiumOfferSheet6(context);
-//                     //   }
-//                     // },
-//                     onPressed: () {
-//                       if (!_isSpinning && !_hasWon) {
-//                         _spinWheel();
-//                       } else if (_hasWon) {
-//                         Get.back();
-//                         showPremiumOfferSheet6(context); // Discounted price wali sheet
-//                       }
-//                     },
-//                     child: subController.isLoading.value
-//                         ? const CircularProgressIndicator(color: Colors.black)
-//                         : Text(
-//                             _isSpinning ? "SPINNING..." : (_hasWon ? "CLAIM DISCOUNT" : "Spin Now"),
-//                             style: textTheme.titleLarge?.copyWith(color: Colors.black, fontSize: 18 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
-//                           ),
-//                   ),
-//                 ),
-//               ),
-//             ),
-//             SizedBox(height: sh(16)),
-//           ],
-//         ),
-//       ),
-//     )
-//     );
-//   }
-// }
 class _LuckySpinScreenState extends State<LuckySpinScreen> {
   SpinnerController controller = SpinnerController();
   bool _isSpinning = false;
@@ -1458,39 +1421,106 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
     return Obx(() {
 
+      // final weeklyPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.weekly);
+      //
+      // final spinData = subController.spinInfo.value;
+      // // ✅ Check karein ki spinData null toh nahi hai aur spin ho chuka hai
+      // // Ensure this condition is same in all sheets:
+      // bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      // final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+      // final spinPackage = subController.spinYearlyPackage.value;
+      //
+      // // Package select karein
+      // final yearlyPackage = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
+      //
+      // if (yearlyPackage == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
+      //
+      // // Dynamic Store Info
+      // // String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // double storePrice = yearlyPackage.storeProduct.price;
+      //
+      // // 🔥 DYNAMIC PRICE LOGIC (No Hardcoding)
+      // // Agar backend formatted price bhej raha hai toh wo, warna Store ki original priceString
+      // String yearlyDisplayPrice = showOffer ? (spinData.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
+      //
+      // // Strike price: Backend string ya fir Store price ka 1.5x calculate karein
+      // String strikePrice = showOffer ? (spinData.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+      //
+      // // Daily calculation ke liye raw price extraction
+      // double discountedYearlyRaw;
+      // if (showOffer && spinData.discountedPrice != null) {
+      //   // Regex se symbol hatayenge ($29.99 -> 29.99)
+      //   discountedYearlyRaw = double.tryParse(spinData.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
+      // } else {
+      //   discountedYearlyRaw = storePrice;
+      // }
+      //
+      // double actualDaily = discountedYearlyRaw / 365;
+      // String finalDailyPriceDisplay;
+      //
+      // if (yearlyPackage.storeProduct.currencyCode == "INR") {
+      //   // ₹7.77 Lucky number formatting (Sirf India ke liye)
+      //   if (actualDaily >= 7.0 && actualDaily <= 8.5) {
+      //     finalDailyPriceDisplay = "7.77";
+      //   } else {
+      //     finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
+      //   }
+      // } else {
+      //   // America ya Global ke liye actual localized digits
+      //   finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
+      // }
+      //
+      // // Weekly Average for sub-card
+      // String weeklyAvgFromYearly = (discountedYearlyRaw / 52).toStringAsFixed(2);
+      //
+      // final bool isYearly = selectedPlanIndex == 1;
+      // final String buttonText = isYearly ? (isFreeTrialEnabled ? "Start Free Trial" : "Continue with Yearly") : "Continue with Weekly";
+      // final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
       final weeklyPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.weekly);
 
       final spinData = subController.spinInfo.value;
-      // ✅ Check karein ki spinData null toh nahi hai aur spin ho chuka hai
-      // Ensure this condition is same in all sheets:
+// ✅ Check karein ki spinData null toh nahi hai aur spin ho chuka hai
+// Ensure this condition is same in all sheets:
       bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
 
-      // Package select karein
+// Package select karein
       final yearlyPackage = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
       if (yearlyPackage == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
 
-      // Dynamic Store Info
-      // String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+// Dynamic Store Info & Strict Currency Identifier Fix (Tumhara Idea)
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+
+// 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
+      if (yearlyPackage.storeProduct.currencyCode == "INR") {
+        currencySymbol = "₹";
+      }
+
       double storePrice = yearlyPackage.storeProduct.price;
 
-      // 🔥 DYNAMIC PRICE LOGIC (No Hardcoding)
-      // Agar backend formatted price bhej raha hai toh wo, warna Store ki original priceString
+// 🔥 DYNAMIC PRICE LOGIC (No Hardcoding)
+// Agar backend formatted price bhej raha hai toh wo, warna Store ki original priceString
       String yearlyDisplayPrice = showOffer ? (spinData.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
 
-      // Strike price: Backend string ya fir Store price ka 1.5x calculate karein
+// Strike price: Backend string ya fir Store price ka 1.5x calculate karein
       String strikePrice = showOffer ? (spinData.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-      // Daily calculation ke liye raw price extraction
-      double discountedYearlyRaw;
-      if (showOffer && spinData.discountedPrice != null) {
-        // Regex se symbol hatayenge ($29.99 -> 29.99)
-        discountedYearlyRaw = double.tryParse(spinData.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
-      } else {
-        discountedYearlyRaw = storePrice;
+// Daily calculation ke liye raw price extraction (With Comma Cleaner)
+      double discountedYearlyRaw = storePrice;
+      if (showOffer) {
+        if (spinData?.discountedPrice != null) {
+          // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
+          String cleanPrice = spinData!.discountedPrice!
+              .replaceAll(',', '')
+              .replaceAll(RegExp(r'[^0-9.]'), '');
+
+          discountedYearlyRaw = double.tryParse(cleanPrice) ?? storePrice;
+        } else if (spinPackage != null) {
+          discountedYearlyRaw = spinPackage.storeProduct.price;
+        }
       }
 
       double actualDaily = discountedYearlyRaw / 365;
@@ -1508,7 +1538,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
         finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
       }
 
-      // Weekly Average for sub-card
+// Weekly Average for sub-card
       String weeklyAvgFromYearly = (discountedYearlyRaw / 52).toStringAsFixed(2);
 
       final bool isYearly = selectedPlanIndex == 1;
@@ -1800,35 +1830,40 @@ class FreeTrialReminderScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Obx(() {
-          //           final spinData = subController.spinInfo.value;
-          //           bool showOffer = spinData != null && spinData.alreadySpun;
+          //  final spinData = subController.spinInfo.value;
+          // // Ensure this condition is same in all sheets:
+          // bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+          // // 1. Determine Package
+          // final package = showOffer
+          //     ? (subController.spinYearlyPackage.value ?? subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual))
+          //     : subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
           //
-          // // 2. Determine Package
-          //           final package = showOffer
-          //               ? (subController.spinYearlyPackage.value ?? subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual))
-          //               : subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+          // if (package == null) {
+          //   return const Center(child: CircularProgressIndicator(color: Colors.white));
+          // }
           //
-          // // 3. ✅ CRITICAL: Null Check pehle karein
-          //           if (package == null) {
-          //             return const Center(
-          //               child: CircularProgressIndicator(color: Colors.white),
-          //             );
-          //           }
+          // // Dynamic Store Info
+          // String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+          // double storePrice = package.storeProduct.price;
           //
-          // // 4. ✅ AB CALCULATION KAREIN (Ab hum sure hain ki package null nahi hai)
-          //           String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+          // // 2. Yearly Price Logic (Safe Dynamic Fallback)
+          // String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
           //
-          // // Yearly Price Logic
-          //           String yearlyPrice = showOffer
-          //               ? (spinData?.discountedPrice ?? "$currencySymbol 2,800.00")
-          //               : package.storeProduct.priceString;
+          // // 3. Weekly Calculation (100% Dynamic - No Hardcoding)
+          // double rawPriceMath;
+          // if (showOffer && spinData?.discountedPrice != null) {
+          //   // Regex symbols hatakar numeric calculation karega ($29.99 -> 29.99)
+          //   rawPriceMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
+          // } else {
+          //   rawPriceMath = storePrice;
+          // }
           //
-          // // Weekly Calculation
-          //           double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-          //           String weeklyPrice = (rawPrice / 52).toStringAsFixed(2);
+          // String weeklyPrice = (rawPriceMath / 52).toStringAsFixed(2);
           final spinData = subController.spinInfo.value;
           // Ensure this condition is same in all sheets:
           bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+          final spinPackage = subController.spinYearlyPackage.value;
+
           // 1. Determine Package
           final package = showOffer
               ? (subController.spinYearlyPackage.value ?? subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual))
@@ -1838,20 +1873,32 @@ class FreeTrialReminderScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator(color: Colors.white));
           }
 
-          // Dynamic Store Info
+          // 2. Real-time Store Data & Strict Currency Identifier Fix (Tumhara Idea)
           String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+
+          // 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
+          if (package.storeProduct.currencyCode == "INR") {
+            currencySymbol = "₹";
+          }
+
           double storePrice = package.storeProduct.price;
 
-          // 2. Yearly Price Logic (Safe Dynamic Fallback)
+          // 3. Yearly Price Logic (Safe Dynamic Fallback)
           String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
 
-          // 3. Weekly Calculation (100% Dynamic - No Hardcoding)
-          double rawPriceMath;
-          if (showOffer && spinData?.discountedPrice != null) {
-            // Regex symbols hatakar numeric calculation karega ($29.99 -> 29.99)
-            rawPriceMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice;
-          } else {
-            rawPriceMath = storePrice;
+          // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner aur symbol filter ke sath)
+          double rawPriceMath = storePrice;
+          if (showOffer) {
+            if (spinData?.discountedPrice != null) {
+              // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
+              String cleanPrice = spinData!.discountedPrice!
+                  .replaceAll(',', '')
+                  .replaceAll(RegExp(r'[^0-9.]'), '');
+
+              rawPriceMath = double.tryParse(cleanPrice) ?? storePrice;
+            } else if (spinPackage != null) {
+              rawPriceMath = spinPackage.storeProduct.price;
+            }
           }
 
           String weeklyPrice = (rawPriceMath / 52).toStringAsFixed(2);
@@ -1999,6 +2046,55 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
     return Obx(() {
+      // final spinData = subController.spinInfo.value;
+      // // Ensure this condition is same in all sheets:
+      // bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      //
+      // final standardAnnual = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+      // final spinPackage = subController.spinYearlyPackage.value;
+      // final weeklyPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.weekly);
+      //
+      // // 1. Offer priority
+      // final yearlyPackage = showOffer ? (spinPackage ?? standardAnnual) : standardAnnual;
+      //
+      // if (yearlyPackage == null) return const Center(child: CircularProgressIndicator());
+      //
+      // // Dynamic Store Info
+      // String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // double storeYearlyPrice = yearlyPackage.storeProduct.price;
+      //
+      // // 2. Pricing Logic (100% Dynamic)
+      // String yearlyPriceText = showOffer ? (spinData?.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
+      //
+      // // Weekly card price (Fallback to Store's weekly price string)
+      // String weeklyPriceText = weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString;
+      //
+      // // 3. Math for Sub-text (No Hardcoding)
+      // double rawYearlyMath;
+      // if (showOffer && spinData?.discountedPrice != null) {
+      //   // Regex symbols hatakar numeric calculation karega ($29.99 -> 29.99)
+      //   rawYearlyMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storeYearlyPrice;
+      // } else {
+      //   rawYearlyMath = storeYearlyPrice;
+      // }
+      //
+      // String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
+      //
+      // final bool isYearly = selectedPlanIndex == 1;
+      //
+      // // Dynamic UI Strings
+      // // final String mainTitle = isYearly ? "Start your 3-day FREE trial to continue." : "Unlock Sleepable to reach your goals faster.";
+      // // final String buttonText = isYearly ? "Start My 3-Day Free Trial" : "Start My Journey";
+      // final lang = context.lang;
+      //
+      // final String mainTitle = isYearly ? lang.startTrialToContinue : lang.unlockSleepableTitle;
+      // final String buttonText = isYearly ? lang.startFreeTrial : lang.startJourney;
+      // // 🔥 Final sub-text calculation (Fully dynamic currency and pricing)
+      // // final String bottomSubText = isYearly ? "3 days free, then $yearlyPriceText ($currency$weeklyAvgFromYearly/Wk)" : "Just $weeklyPriceText / week";
+      // final String bottomSubText = isYearly
+      //     ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currency$weeklyAvgFromYearly${lang.perWeek})"
+      //     : "${lang.just} $weeklyPriceText ${lang.perWeek}";
+
       final spinData = subController.spinInfo.value;
       // Ensure this condition is same in all sheets:
       bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
@@ -2012,23 +2108,35 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
       if (yearlyPackage == null) return const Center(child: CircularProgressIndicator());
 
-      // Dynamic Store Info
-      String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // 2. Real-time Store Data & Strict Currency Identifier Fix (Tumhara Idea)
+      String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+
+      // 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
+      if (yearlyPackage.storeProduct.currencyCode == "INR") {
+        currencySymbol = "₹";
+      }
+
       double storeYearlyPrice = yearlyPackage.storeProduct.price;
 
-      // 2. Pricing Logic (100% Dynamic)
+      // 3. Pricing Logic (100% Dynamic)
       String yearlyPriceText = showOffer ? (spinData?.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
 
       // Weekly card price (Fallback to Store's weekly price string)
       String weeklyPriceText = weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString;
 
-      // 3. Math for Sub-text (No Hardcoding)
-      double rawYearlyMath;
-      if (showOffer && spinData?.discountedPrice != null) {
-        // Regex symbols hatakar numeric calculation karega ($29.99 -> 29.99)
-        rawYearlyMath = double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storeYearlyPrice;
-      } else {
-        rawYearlyMath = storeYearlyPrice;
+      // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner aur symbol filter ke sath)
+      double rawYearlyMath = storeYearlyPrice;
+      if (showOffer) {
+        if (spinData?.discountedPrice != null) {
+          // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
+          String cleanPrice = spinData!.discountedPrice!
+              .replaceAll(',', '')
+              .replaceAll(RegExp(r'[^0-9.]'), '');
+
+          rawYearlyMath = double.tryParse(cleanPrice) ?? storeYearlyPrice;
+        } else if (spinPackage != null) {
+          rawYearlyMath = spinPackage.storeProduct.price;
+        }
       }
 
       String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
@@ -2036,16 +2144,14 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       final bool isYearly = selectedPlanIndex == 1;
 
       // Dynamic UI Strings
-      // final String mainTitle = isYearly ? "Start your 3-day FREE trial to continue." : "Unlock Sleepable to reach your goals faster.";
-      // final String buttonText = isYearly ? "Start My 3-Day Free Trial" : "Start My Journey";
       final lang = context.lang;
 
       final String mainTitle = isYearly ? lang.startTrialToContinue : lang.unlockSleepableTitle;
       final String buttonText = isYearly ? lang.startFreeTrial : lang.startJourney;
-      // 🔥 Final sub-text calculation (Fully dynamic currency and pricing)
-      // final String bottomSubText = isYearly ? "3 days free, then $yearlyPriceText ($currency$weeklyAvgFromYearly/Wk)" : "Just $weeklyPriceText / week";
+
+      // 🔥 Final sub-text calculation (Using dynamic hard-locked currencySymbol)
       final String bottomSubText = isYearly
-          ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currency$weeklyAvgFromYearly${lang.perWeek})"
+          ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly${lang.perWeek})"
           : "${lang.just} $weeklyPriceText ${lang.perWeek}";
       return PopScope(
         canPop: false, // 👈 Physical back button ko block karein

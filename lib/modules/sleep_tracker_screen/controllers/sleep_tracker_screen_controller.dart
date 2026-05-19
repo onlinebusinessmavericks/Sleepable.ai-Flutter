@@ -135,6 +135,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
 
     // 🚀 CALL IT HERE
     _initService();
+    await _startNoiseMeter();
     _initBatteryListener();
     WidgetsBinding.instance.addObserver(this);
     WakelockPlus.enable();
@@ -640,7 +641,10 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
         // 🟢 CRITICAL: Ise FALSE rakhein taaki Home dabane par service na mare
         stopWithTask: false,
       ),
-      iosNotificationOptions: const IOSNotificationOptions(showNotification: true),
+      iosNotificationOptions: IOSNotificationOptions(
+        showNotification: true,
+        playSound: false,
+      ),
     );
   }
   Future<void> _startNoiseMeter() async {
@@ -676,7 +680,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
             notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
             notificationText: lang.serviceText ?? 'Monitoring your sleep...',
           );
-          debugPrint("🍏 [iOS] Local background notification sent successfully.");
+          debugPrint("🍏 [iOS] Native background notification thread initialized successfully.");
         }
       } catch (e) {
         debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
@@ -758,6 +762,10 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       if (notificationPermission != NotificationPermission.granted) {
         await FlutterForegroundTask.requestNotificationPermission();
       }
+    }else if (Platform.isIOS) {
+      // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
+      final notificationStatus = await Permission.notification.request();
+      print("🔔 [iOS] Notification Request Status: $notificationStatus");
     }
 
     return micStatus.isGranted;

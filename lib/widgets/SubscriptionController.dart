@@ -272,81 +272,6 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  // 3. Perform Spin Action
-  // Future<void> performSpin() async {
-  //   try {
-  //     isLoading.value = true;
-  //     final response = await buildHttpResponse(
-  //         endPoint: APIEndPoints.spinWheel,
-  //         method: MethodType.post
-  //     );
-  //
-  //     // Case 1: Naya spin successful raha
-  //     if (response['success'] == true) {
-  //       spinInfo.value = SpinData.fromJson(response['data']);
-  //       toast(response['message'] ?? "Spin Successful!");
-  //     }
-  //     // Case 2: Pehle hi spin kar chuke ho (Success false hai lekin data kaam ka hai)
-  //     else if (response['message'].toString().contains("already")) {
-  //       spinInfo.refresh();
-  //       spinInfo.value = SpinData.fromJson(response['data']);
-  //       // Yahan toast dikhane ki zaroorat nahi, seedha data set kar do
-  //     }
-  //   } catch (e) {
-  //     print("$e");
-  //     // toast("$e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-  // Future<void> performSpin() async {
-  //   try {
-  //     isLoading.value = true;
-  //     final response = await buildHttpResponse(
-  //         endPoint: APIEndPoints.spinWheel,
-  //         method: MethodType.post
-  //     );
-  //
-  //     if (response['success'] == true || response['message'].toString().contains("already")) {
-  //       spinInfo.value = SpinData.fromJson(response['data']);
-  //
-  //       // 🔥 CRITICAL: Spin ke baad status refresh karein taaki 2800 load ho jaye
-  //       await fetchStoreProducts();
-  //       spinInfo.refresh(); // UI update trigger
-  //       toast(response['message'] ?? "Discount Unlocked!");
-  //     }
-  //   } catch (e) {
-  //     print("Spin Error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
-  // Future<void> performSpin() async {
-  //   try {
-  //     isLoading.value = true;
-  //     final response = await buildHttpResponse(
-  //         endPoint: APIEndPoints.spinWheel,
-  //         method: MethodType.post
-  //     );
-  //
-  //     if (response['success'] == true || response['message'].toString().contains("already")) {
-  //       // 1. Pehle data set karein
-  //       spinInfo.value = SpinData.fromJson(response['data']);
-  //       await Purchases.invalidateCustomerInfoCache();
-  //       // 3. 🔥 Sabse important: RevenueCat se discounted packages reload karein
-  //       await fetchStoreProducts();
-  //       spinInfo.refresh();
-  //       update();
-  //       // toast(response['message'] ?? "Discount Unlocked!");
-  //     }
-  //   } catch (e) {
-  //     print("Spin Error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //     update(); // Pure controller ka state refresh
-  //   }
-  // }
   Future<void> performSpin() async {
     try {
       isLoading.value = true;
@@ -387,23 +312,6 @@ class SubscriptionController extends GetxController {
     }
   }
 
-// Refresh logic ko alag function mein rakhein
-  Future<void> _refreshPricing() async {
-    if (isConfigured) {
-      await Purchases.invalidateCustomerInfoCache();
-      await fetchStoreProducts();
-    }
-    spinInfo.refresh();
-  }
-
-// Helper function taaki code repeat na ho
-  Future<void> _refreshRevenueCatAndUI() async {
-    if (SubscriptionController.isConfigured) {
-      await Purchases.invalidateCustomerInfoCache();
-      await fetchStoreProducts();
-    }
-    spinInfo.refresh();
-  }
   // 5. Backend Verification API
   Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon) async {
     try {
@@ -441,18 +349,6 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  // Future<void> checkPremiumStatus() async {
-  //   if (!isConfigured) return;
-  //   try {
-  //     CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-  //     bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
-  //
-  //     // 🔥 PASS 'false' for isFromBackend taaki downgrade na ho
-  //     updatePremiumStatus(isActive, isFromBackend: false);
-  //   } catch (e) {
-  //     log("RC Error: $e");
-  //   }
-  // }
   Future<void> checkPremiumStatus() async {
     if (!isConfigured) {
       print("⚠️ [RC] Skipping status check: Not configured");
@@ -497,32 +393,39 @@ class SubscriptionController extends GetxController {
       showPremiumOfferSheet5(context);
     }
   }
+  // String getCurrencySymbol(String currencyCode) {
+  //   try {
+  //     var format = NumberFormat.simpleCurrency(name: currencyCode);
+  //     return format.currencySymbol;
+  //   } catch (e) {
+  //     return currencyCode; // Fallback to INR/USD if symbol not found
+  //   }
+  // }
   String getCurrencySymbol(String currencyCode) {
+    // ✅ 1. India ke liye direct solid formatting lock karo
+    if (currencyCode == "INR") {
+      return "₹";
+    }
+
+    // ✅ 2. Global countries ke liye dynamic parsing
     try {
       var format = NumberFormat.simpleCurrency(name: currencyCode);
       return format.currencySymbol;
     } catch (e) {
-      return currencyCode; // Fallback to INR/USD if symbol not found
+      // ✅ 3. Ultimate Fallback (Agar kuch bhi na mile toh manual matching)
+      final Map<String, String> currencyMap = {
+        'USD': '\$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CAD': 'CA\$',
+        'AUD': 'A\$',
+      };
+      return currencyMap[currencyCode] ?? currencyCode;
     }
   }
   // SubscriptionController.dart ke andar
 
-  // void checkAndShowRatingAfterPostDelay() {
-  //   // 1. Pehle check karein ki user ne already rate toh nahi kar diya
-  //   bool hasRated = getBoolAsync("user_has_rated", defaultValue: false);
-  //   if (hasRated) return;
-  //
-  //   // 2. 1.5 second ka delay taaki user ko lage ki app natural behave kar rahi hai
-  //   Future.delayed(const Duration(milliseconds: 1500), () {
-  //     // Check if any other dialog is already open to avoid overlapping
-  //     if (!Get.isDialogOpen!) {
-  //       Get.dialog(
-  //         const RatingDialog(),
-  //         barrierDismissible: false,
-  //       );
-  //     }
-  //   });
-  // }
   void checkAndShowRatingAfterPostDelay() {
     // 1. Agar user ne already rate kar diya hai, toh popup mat dikhao
     bool hasRated = getBoolAsync("user_has_rated", defaultValue: false);
