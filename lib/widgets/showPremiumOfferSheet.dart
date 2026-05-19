@@ -97,31 +97,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
 
                   Expanded(
                     child: Obx(() {
-                      // final spinData = subController.spinInfo.value;
-                      //  bool showOffer = spinData != null && spinData.alreadySpun == true;
-                      //
-                      //  // 1. Identify Package properly
-                      //  final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
-                      //  final spinPackage = subController.spinYearlyPackage.value;
-                      //
-                      //  // PRIORITY: Agar spin hua hai toh spinPackage, warna standard
-                      //  final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
-                      //
-                      //  if (package == null) {
-                      //    return const Center(
-                      //      child: Text("No Plans Available", style: TextStyle(color: Colors.white)),
-                      //    );
-                      //  }
-                      //  String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-                      //
-                      //  // 2. Pricing set karein
-                      //  String? pricePerYear = showOffer ? (spinData?.discountedPrice ?? "$currencySymbol 2,800") : package.storeProduct.priceString;
-                      //
-                      //  String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol 5,400") : (package.storeProduct.price * 1.5).toStringAsFixed(2);
-                      //  // Weekly calculation (Agar backend se price_per_week aa raha hai toh wo use karein, warna calculate karein)
-                      //  double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-                      //  String pricePerWeek = (rawPrice / 52).toStringAsFixed(2);
-                      //  // String currency = package.storeProduct.currencyCode;
+
                       final spinData = subController.spinInfo.value;
                       // bool showOffer = spinData != null && spinData.alreadySpun == true;
                       bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
@@ -139,18 +115,28 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       double storePrice = package.storeProduct.price;
 
                       // 🔥 Priority Backend String
-                      String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
+                      // String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+                      String pricePerYear = showOffer
+                          ? (spinData?.discountedPrice ?? package.storeProduct.priceString)
+                          : package.storeProduct.priceString;
                       print("💰 [Sheet 1] FINAL DISPLAY PRICE: $pricePerYear");
 
                       String strikePrice = showOffer
                           ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
                           : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
-
-                      double rawPriceForMath = showOffer && spinData?.discountedPrice != null
-                          ? (double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice)
-                          : storePrice;
-
+                      double rawPriceForMath = storePrice;
+                      // double rawPriceForMath = showOffer && spinData?.discountedPrice != null
+                      //     ? (double.tryParse(spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '')) ?? storePrice)
+                      //     : storePrice;
+                      if (showOffer) {
+                        if (spinData?.discountedPrice != null) {
+                          // String se alphabets aur symbols uda kar pure number nikalega
+                          String cleanPrice = spinData!.discountedPrice!.replaceAll(RegExp(r'[^0-9.]'), '');
+                          rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
+                        } else if (spinPackage != null) {
+                          rawPriceForMath = spinPackage.storeProduct.price;
+                        }
+                      }
                       String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
                       return Column(
                         children: [
@@ -160,16 +146,6 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                             fadePlans,
                             Column(
                               children: [
-                                // ✅ AGAR SPIN OFFER HAI TOH TAG DIKHAO (Optional)
-                                // if (subController.spinYearlyPackage.value != null)
-                                //   Container(
-                                //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                //     decoration: BoxDecoration(color: AppColors.starFillColor, borderRadius: BorderRadius.circular(20)),
-                                //     child: const Text(
-                                //       "LUCKY SPIN OFFER APPLIED",
-                                //       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10),
-                                //     ),
-                                //   ).paddingOnly(bottom: 10),
                                 if (showOffer)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -332,32 +308,6 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: pad(20)),
           child: Obx(() {
-            // final spinData = subController.spinInfo.value;
-            // bool showOffer = spinData != null && spinData.alreadySpun == true;
-            //
-            // final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
-            // final spinPackage = subController.spinYearlyPackage.value;
-            //
-            // // Choose package based on spin status
-            // final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
-            //
-            // if (package == null) {
-            //   return const Center(child: CircularProgressIndicator(color: Colors.white));
-            // }
-            //
-            // String yearlyPriceFormatted = showOffer ? (spinData?.discountedPrice ?? "₹2,800") : package.storeProduct.priceString;
-            //
-            // String strikePriceFormatted = showOffer ? (spinData?.originalPrice ?? "₹5,400") : (package.storeProduct.price * 1.5).toStringAsFixed(2);
-            //
-            // double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-            // String weeklyPriceFormatted = (rawPrice / 52).toStringAsFixed(2);
-            // // double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-            // // String currencySymbol = package.storeProduct.currencyCode;
-            // String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-            //
-            // // 🔥 Weekly calculation
-            // // String weeklyPriceFormatted = (rawPrice / 52).toStringAsFixed(0);
-
             final spinData = subController.spinInfo.value;
             // Ensure this condition is same in all sheets:
             bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
@@ -643,31 +593,6 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
     return Obx(() {
-      //
-      // final spinData = subController.spinInfo.value;
-      // bool showOffer = spinData != null && spinData.alreadySpun == true;
-      //
-      // final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
-      // final spinPackage = subController.spinYearlyPackage.value;
-      //
-      // // Logic switch
-      // final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
-      //
-      // if (package == null) {
-      //   return const Center(child: CircularProgressIndicator(color: Colors.white));
-      // }
-      //
-      // String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? "₹2,800") : package.storeProduct.priceString;
-      //
-      // String strikePrice = showOffer ? (spinData?.originalPrice ?? "₹5,400") : (package.storeProduct.price * 1.8).toStringAsFixed(2);
-      //
-      // double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-      // String pricePerWeek = (rawPrice / 52).toStringAsFixed(2);
-      // // Weekly calculation (Always psychologically better than monthly)
-      // // double rawPrice = showOffer ? 2800.0 : package.storeProduct.price;
-      // // String pricePerWeek = (rawPrice / 52).toStringAsFixed(0);
-      // // String currency = package.storeProduct.currencyCode;
-      // String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
       final spinData = subController.spinInfo.value;
       bool showOffer = spinData != null && spinData.alreadySpun == true;
 
@@ -683,15 +608,15 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
       // 2. Real-time Store Data (No hardcoding)
       double storePrice = package.storeProduct.price; // America ke liye $59.99, India ke liye ₹5400 apne aap aayega
-      String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-
+      // String currency = subController.getCurrencySymbol(package.storeProduct.currencyCode);
+      String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
       // 3. Yearly Price Logic
       // Agar offer hai toh backend ki discounted string uthao, warna Store ki formatted string
       String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
 
       // 4. Strike Price Logic
       // Agar offer hai toh backend ki original string, warna Store price ko 1.5x karke symbol jodein
-      String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currency${(storePrice * 1.5).toStringAsFixed(2)}") : "$currency${(storePrice * 1.5).toStringAsFixed(2)}";
+      String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
       // 5. Weekly Math (Safe Extraction)
       double rawPriceForMath;
@@ -749,7 +674,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                         style: TextStyle(color: Colors.white, fontSize: sp(18), fontWeight: FontWeight.w200),
                                       ),
                                       TextSpan(
-                                        text: "$currency$pricePerWeek",
+                                        text: "$currencySymbol$pricePerWeek",
                                         style: TextStyle(color: AppColors.starFillColor, fontSize: sp(24), fontWeight: FontWeight.bold),
                                       ),
                                       TextSpan(
@@ -769,7 +694,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                       ),
                                       TextSpan(
                                         // text: "$currency$strikePrice/year",
-                                        text: showOffer ? "$strikePrice/${context.lang.year}" : "$currency$strikePrice/${context.lang.year}",
+                                        text: showOffer ? "$strikePrice/${context.lang.year}" : "$currencySymbol$strikePrice/${context.lang.year}",
                                         style: TextStyle(
                                           color: Colors.white70,
                                           // Thoda fade colour strike ke liye accha lagta hai
@@ -1548,7 +1473,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       if (yearlyPackage == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
 
       // Dynamic Store Info
-      String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // String currency = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
       double storePrice = yearlyPackage.storeProduct.price;
 
       // 🔥 DYNAMIC PRICE LOGIC (No Hardcoding)
@@ -1556,7 +1482,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       String yearlyDisplayPrice = showOffer ? (spinData.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
 
       // Strike price: Backend string ya fir Store price ka 1.5x calculate karein
-      String strikePrice = showOffer ? (spinData.originalPrice ?? "$currency${(storePrice * 1.5).toStringAsFixed(2)}") : "$currency${(storePrice * 1.5).toStringAsFixed(2)}";
+      String strikePrice = showOffer ? (spinData.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
       // Daily calculation ke liye raw price extraction
       double discountedYearlyRaw;
@@ -1623,49 +1549,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         _buildFeatureRow("💤", context.lang.featureSleep, textTheme),
                         _buildFeatureRow("🎶", context.lang.featureSounds, textTheme),
                         _buildFeatureRow("📈", context.lang.featureAnalytics, textTheme),
-                        // _buildFeatureRow("💤", "Unlock deep, restful sleep tonight.", textTheme),
-                        // _buildFeatureRow("🎶", "Unlimited access to all sleep sounds.", textTheme),
-                        // _buildFeatureRow("📈", "Personalized sleep insights & analytics.", textTheme),
                         SizedBox(height: sh(24)),
 
-                        // 4. PLAN SELECTION CARDS
-                        // _buildPlanCard(index: 0, title: "Weekly Access", price: weeklyDisplayPrice, subTitle: "Billed weekly", textTheme: textTheme),
-
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.center,
-                        //   children: [
-                        //     // Purani Price (Strike-through)
-                        //     Text(
-                        //       strikePrice,
-                        //       style: const TextStyle(
-                        //         fontSize: 24,
-                        //         color: Colors.white38,
-                        //         decoration: TextDecoration.lineThrough,
-                        //         decorationColor: Colors.red,
-                        //         fontWeight: FontWeight.bold,
-                        //         decorationThickness: 2,
-                        //       ),
-                        //     ),
-                        //     const SizedBox(width: 16),
-                        //
-                        //     // Nayi Smart Price
-                        //     RichText(
-                        //       text: TextSpan(
-                        //         children: [
-                        //           TextSpan(
-                        //             text: "$currency$finalDailyPriceDisplay/day", // INR mein 7.77, USD mein $0.08
-                        //             style: const TextStyle(
-                        //               fontSize: 44,
-                        //               color: Colors.red,
-                        //               fontWeight: FontWeight.bold,
-                        //             ),
-                        //           ),
-                        //
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
                         SizedBox(
                           width: double.infinity, // ✅ Poori width cover karega
                           child: Padding(
@@ -1677,18 +1562,6 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Text(
-                                  //   strikePrice,
-                                  //   style: const TextStyle(
-                                  //     fontSize: 24,
-                                  //     color: Colors.white38,
-                                  //     decoration: TextDecoration.lineThrough,
-                                  //     decorationColor: Colors.red,
-                                  //     fontWeight: FontWeight.w900,
-                                  //     decorationThickness: 2,
-                                  //     letterSpacing: 3.0,
-                                  //   ),
-                                  // ),
                                   Text(
                                     strikePrice,
                                     style: TextStyle(
@@ -1706,15 +1579,16 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                                   ),
 
                                   const SizedBox(width: 30), // Space between prices
-                                  // 2. Nayi Smart Price
+
                                   RichText(
                                     textAlign: TextAlign.center,
                                     text: TextSpan(
                                       children: [
                                         TextSpan(
-                                          text: "$currency$finalDailyPriceDisplay/${context.lang.day}",
+                                          // text: "$currency$finalDailyPriceDisplay/${context.lang.day}",
+                                          text: "$currencySymbol$finalDailyPriceDisplay/${context.lang.day}",
                                           style: const TextStyle(
-                                            fontSize: 50, // ✅ Bada font jaisa aapne manga tha
+                                            fontSize: 50,
                                             color: Colors.red,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 2.0,
@@ -1729,7 +1603,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                           ),
                         ),
                         SizedBox(height: sh(16)),
-                        _buildPlanCard(index: 1, title: context.lang.yearlyPremium, price: "$currency$weeklyAvgFromYearly/wk", subTitle: "12mo • $yearlyDisplayPrice", isPopular: true, textTheme: textTheme),
+                        _buildPlanCard(index: 1, title: context.lang.yearlyPremium, price:"$currencySymbol$weeklyAvgFromYearly/${context.lang.week ?? 'wk'}", subTitle: "12mo • $yearlyDisplayPrice", isPopular: true, textTheme: textTheme),
 
                         SizedBox(height: sh(30)),
 
@@ -1742,22 +1616,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            // onPressed: () async {
-                            //   final packageToBuy = isYearly ? yearlySpinPackage : weeklyPackage;
-                            //   if (packageToBuy != null) {
-                            //     await subController.buyProduct(packageToBuy);
-                            //     Get.offAllNamed(Routes.dashboard); // Premium liya toh bhi home
-                            //   }
-                            // },
-                            // onPressed: () async {
-                            //   // FIXED: Sahi package pick karein purchase ke liye
-                            //   final packageToBuy = isYearly ? yearlyPackage : weeklyPackage;
-                            //
-                            //   if (packageToBuy != null) {
-                            //     await subController.buyProduct(packageToBuy);
-                            //     Get.offAllNamed(Routes.dashboard);
-                            //   }
-                            // },
+
                             onPressed: () async {
                               final packageToBuy = isYearly ? yearlyPackage : weeklyPackage;
                               if (packageToBuy != null) {
@@ -1829,7 +1688,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
           child: Column(
             children: [
               Text(
-                "80% ${context.lang.off}",
+                "50% ${context.lang.off}",
                 style: textTheme.displaySmall?.copyWith(fontSize: sp(48), fontWeight: FontWeight.w900, color: Colors.white),
               ),
               Text(
