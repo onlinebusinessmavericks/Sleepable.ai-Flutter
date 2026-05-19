@@ -671,6 +671,13 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
           ),
         );
         debugPrint("📊 [Step 5] Service Start Success: $success");
+        if (Platform.isIOS) {
+          await FlutterForegroundTask.updateService(
+            notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
+            notificationText: lang.serviceText ?? 'Monitoring your sleep...',
+          );
+          debugPrint("🍏 [iOS] Local background notification sent successfully.");
+        }
       } catch (e) {
         debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
       }

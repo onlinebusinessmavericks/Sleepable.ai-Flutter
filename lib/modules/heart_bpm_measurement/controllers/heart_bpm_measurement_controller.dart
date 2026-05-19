@@ -55,12 +55,6 @@ class HeartBpmMeasurementController extends GetxController {
       final String savedDescription =
           prefs.getString('sleep_description') ?? '';
 
-      // final String savedWakeUpTime =
-      //     prefs.getString('wake_up_time') ?? '';
-      //
-      // final String savedWakeUpTimeam =
-      //     prefs.getString('wake_up_time_display') ?? '';
-
       final String savedWakeUpTime =
           prefs.getString('wake_up_time') ?? '08:30';
 
@@ -85,15 +79,6 @@ class HeartBpmMeasurementController extends GetxController {
         heartRate: savedHeartRate,
       );
 
-      // if (response.success == true) {
-      //   await prefs.setInt(
-      //     'sleep_tracker_id',
-      //     response.data!.sleepTrackerId,
-      //   );
-      //   await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
-      //
-      //   Get.offNamed(Routes.sleepTracker);
-      // }
       if (response.success == true) {
         await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
