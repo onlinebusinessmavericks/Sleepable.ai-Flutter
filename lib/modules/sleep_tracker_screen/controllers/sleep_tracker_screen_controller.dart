@@ -680,6 +680,8 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
             notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
             notificationText: lang.serviceText ?? 'Monitoring your sleep...',
           );
+          // 🔥 TESTFLIGHT TOAST: iOS framework trigger hote hi bta dega
+          toast("🍏 iOS Background Notification Pushed!");
           debugPrint("🍏 [iOS] Native background notification thread initialized successfully.");
         }
       } catch (e) {

@@ -402,17 +402,21 @@ class SubscriptionController extends GetxController {
   //   }
   // }
   String getCurrencySymbol(String currencyCode) {
-    // ✅ 1. India ke liye direct solid formatting lock karo
-    if (currencyCode == "INR") {
+    print("💰 [Debug] RevenueCat Currency Code Received: $currencyCode");
+
+    // 🔥 TESTFLIGHT TOAST: Yeh batayega ki store se USD aa raha hai ya INR
+    toast("RC Store Currency: $currencyCode");
+
+    if (currencyCode == "INR" || currencyCode.toUpperCase() == "INR") {
+      // 🔥 TESTFLIGHT TOAST: Confirm karega ki Rupee lock hua ya nahi
+      toast("🎯 Success: Hardlocking Rupee Symbol (₹)");
       return "₹";
     }
 
-    // ✅ 2. Global countries ke liye dynamic parsing
     try {
       var format = NumberFormat.simpleCurrency(name: currencyCode);
       return format.currencySymbol;
     } catch (e) {
-      // ✅ 3. Ultimate Fallback (Agar kuch bhi na mile toh manual matching)
       final Map<String, String> currencyMap = {
         'USD': '\$',
         'EUR': '€',
@@ -421,7 +425,7 @@ class SubscriptionController extends GetxController {
         'CAD': 'CA\$',
         'AUD': 'A\$',
       };
-      return currencyMap[currencyCode] ?? currencyCode;
+      return currencyMap[currencyCode.toUpperCase()] ?? currencyCode;
     }
   }
   // SubscriptionController.dart ke andar
