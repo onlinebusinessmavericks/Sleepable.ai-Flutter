@@ -8,6 +8,7 @@ import '../../../routes/app_pages.dart';
 import '../../alarm/controllers/alarm_controller.dart';
 import '../../music/views/music_view.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
+import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
 
 class HeartBpmMeasurementController extends GetxController {
   Timer? _timer;
@@ -38,13 +39,81 @@ class HeartBpmMeasurementController extends GetxController {
     Get.toNamed(Routes.heartBPM);
   }
   /// Start sleep without heart measurement
+  // Future<void> startWithoutMeasuring() async {
+  //   if (!Get.isRegistered<AlarmController>()) {
+  //     Get.put(AlarmController(), permanent: true);
+  //   }
+  //
+  //   final AlarmController alarmController = Get.find<AlarmController>();
+  //   // final alarmController = Get.find<AlarmController>();
+  //   try {
+  //     isLoading.value = true;
+  //     final prefs = await SharedPreferences.getInstance();
+  //
+  //     final List<int> savedNoteIds =
+  //         prefs.getStringList('sleep_note_ids')?.map(int.parse).toList() ?? [];
+  //
+  //     final String savedDescription =
+  //         prefs.getString('sleep_description') ?? '';
+  //
+  //     final String savedWakeUpTime =
+  //         prefs.getString('wake_up_time') ?? '08:30';
+  //
+  //     final String savedWakeUpTimeam =
+  //         prefs.getString('wake_up_time_display') ??
+  //             '${alarmController.hour.value.toString().padLeft(2, '0')}:'
+  //                 '${alarmController.minute.value.toString().padLeft(2, '0')} '
+  //                 '${alarmController.isAm.value ? 'AM' : 'PM'}';
+  //     // toast("⏰ ----- Wake up time: $savedWakeUpTimeam");
+  //     final int savedHeartRate =
+  //         prefs.getInt('heart_rate') ?? 0;
+  //     /// 🔍 DEBUG PRINTS
+  //    print("🧠 savedNoteIds: $savedNoteIds");
+  //     print("📝 savedDescription: $savedDescription");
+  //     print("⏰ savedWakeUpTime: $savedWakeUpTime");
+  //     print("⏰ savedWakeUpTimeam: $savedWakeUpTimeam");
+  //     print("⏰ savedHeartRate: $savedHeartRate");
+  //     final response = await TrackerApis.startSleepTracker(
+  //       wakeUpTime: savedWakeUpTimeam,
+  //       noteIds: savedNoteIds,
+  //       description: savedDescription,
+  //       heartRate: savedHeartRate,
+  //     );
+  //
+  //     if (response.success == true) {
+  //       await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
+  //       await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
+  //
+  //       // 2. 🔥 THE FIX: Update the reactive variable in SleepSoundController
+  //       // This makes the "Start Sleep" button disappear instantly in the UI
+  //       if (Get.isRegistered<SleepSoundController>()) {
+  //         final soundCtrl = Get.find<SleepSoundController>();
+  //         soundCtrl.isTrackingActive.value = true;
+  //         print("📢 SleepSoundController notified: isTrackingActive = true");
+  //       }
+  //       // ✅ IMPORTANT: Clear the temporary pre-sleep notes/description
+  //       // so they don't leak into the next night's session.
+  //       await prefs.remove('sleep_note_ids');
+  //       await prefs.remove('sleep_description');
+  //
+  //       Get.offNamed(Routes.sleepTracker);
+  //     }
+  //     else {
+  //       Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
+  //     }
+  //
+  //   } catch (e) {
+  //     Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
   Future<void> startWithoutMeasuring() async {
     if (!Get.isRegistered<AlarmController>()) {
       Get.put(AlarmController(), permanent: true);
     }
 
     final AlarmController alarmController = Get.find<AlarmController>();
-    // final alarmController = Get.find<AlarmController>();
     try {
       isLoading.value = true;
       final prefs = await SharedPreferences.getInstance();
@@ -60,18 +129,21 @@ class HeartBpmMeasurementController extends GetxController {
 
       final String savedWakeUpTimeam =
           prefs.getString('wake_up_time_display') ??
-              '${alarmController.hour.value.toString().padLeft(2, '0')}:'
-                  '${alarmController.minute.value.toString().padLeft(2, '0')} '
-                  '${alarmController.isAm.value ? 'AM' : 'PM'}';
-      // toast("⏰ ----- Wake up time: $savedWakeUpTimeam");
+              '${alarmController.hour.value.toString().padLeft(2, '0')}:${alarmController.minute.value.toString().padLeft(2, '0')} ${alarmController.isAm.value ? 'AM' : 'PM'}';
+
       final int savedHeartRate =
           prefs.getInt('heart_rate') ?? 0;
+
       /// 🔍 DEBUG PRINTS
-     print("🧠 savedNoteIds: $savedNoteIds");
+      print("🧠 savedNoteIds: $savedNoteIds");
       print("📝 savedDescription: $savedDescription");
       print("⏰ savedWakeUpTime: $savedWakeUpTime");
       print("⏰ savedWakeUpTimeam: $savedWakeUpTimeam");
       print("⏰ savedHeartRate: $savedHeartRate");
+
+      // 🔥 TOAST 1: Prefs data pull checking
+      toast("📡 Tracker API Hit Time: $savedWakeUpTimeam");
+
       final response = await TrackerApis.startSleepTracker(
         wakeUpTime: savedWakeUpTimeam,
         noteIds: savedNoteIds,
@@ -83,31 +155,50 @@ class HeartBpmMeasurementController extends GetxController {
         await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
 
-        // 2. 🔥 THE FIX: Update the reactive variable in SleepSoundController
-        // This makes the "Start Sleep" button disappear instantly in the UI
+        // 🔥 TOAST 2: Server response sync alert
+        toast("✅ Session Active! ID: ${response.data!.sleepTrackerId}");
+
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
           soundCtrl.isTrackingActive.value = true;
           print("📢 SleepSoundController notified: isTrackingActive = true");
         }
-        // ✅ IMPORTANT: Clear the temporary pre-sleep notes/description
-        // so they don't leak into the next night's session.
+
+        // 🔥 TOAST 3: Bridge mapping setup confirmation
+        toast("🧠 Initializing SleepTrackerController Memory...");
+
+        // Screen badalne se PEHLE controller ko find/put karo taaki memory bridge ban sake.
+        final sleepTrackerCtrl = Get.isRegistered<SleepTrackerController>()
+            ? Get.find<SleepTrackerController>()
+            : Get.put(SleepTrackerController());
+
+        // 🔥 TOAST 4: Live invocation point check for Apple threads
+        toast("🚀 Force Triggering iOS Foreground Notification System...");
+
+        // Bina kisi front-end ui delay ke local dynamic initialization hit karo
+        await sleepTrackerCtrl.triggerInstantBackgroundService();
+
         await prefs.remove('sleep_note_ids');
         await prefs.remove('sleep_description');
 
+        // 🔥 TOAST 5: Safe route transition check
+        toast("📱 Switching UI to Tracker View...");
         Get.offNamed(Routes.sleepTracker);
       }
       else {
+        // 🔥 TOAST 6: Server status reject logging
+        toast("❌ Backend Rejected Session: ${response.message}");
         Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
       }
 
     } catch (e) {
+      // 🔥 TOAST 7: Dynamic runtime check
+      toast("💥 Code Exception Triggered: ${e.toString()}");
       Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
       isLoading.value = false;
     }
   }
-
   // Future<void> startWithoutMeasuring() async {
   //   try {
   //     isLoading.value = true;

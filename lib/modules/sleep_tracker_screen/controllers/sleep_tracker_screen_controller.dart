@@ -127,7 +127,13 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       }
     });
   }
-
+  Future<void> triggerInstantBackgroundService() async {
+    // Check local native configuration parameters instantly
+    await _checkPermissions();
+    _initService();
+    await _startNoiseMeter();
+    debugPrint("🍏 [System Sync] Local background task pushed instantly via external controller invocation.");
+  }
   Future<void> _initController() async {
     final lang = Get.context!.lang;
     await _checkPermissions();
