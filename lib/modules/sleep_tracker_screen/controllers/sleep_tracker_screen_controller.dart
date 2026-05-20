@@ -1131,7 +1131,12 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       }
     });
   }
-
+Color getDbColor(double db) {
+    if (db < 35) return Colors.green;
+    if (db < 50) return Colors.yellow;
+    if (db < 65) return Colors.orange;
+    return Colors.red;
+  }
   void _startNightMapping() {
     _mappingTimer?.cancel();
     _mappingTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
@@ -1569,23 +1574,63 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     if (hour == 0) hour = 12;
     currentTime.value = "${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}";
   }
-Future<bool> _checkPermissions() async {
-    // 1. Check Microphone
-    final micStatus = await Permission.microphone.request();
-    print("🎙️ Mic Status: $micStatus");
-    // 2. Check Notification (Crucial for Foreground Service Visibility)
-    if (Platform.isAndroid) {
-      final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
-      if (notificationPermission != NotificationPermission.granted) {
-        await FlutterForegroundTask.requestNotificationPermission();
-      }
-    }else if (Platform.isIOS) {
-      // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
-      final notificationStatus = await Permission.notification.request();
-      print("🔔 [iOS] Notification Request Status: $notificationStatus");
+// Future<bool> _checkPermissions() async {
+//     // 1. Check Microphone
+//     final micStatus = await Permission.microphone.request();
+//     print("🎙️ Mic Status: $micStatus");
+//     // 2. Check Notification (Crucial for Foreground Service Visibility)
+//     if (Platform.isAndroid) {
+//       final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
+//       if (notificationPermission != NotificationPermission.granted) {
+//         await FlutterForegroundTask.requestNotificationPermission();
+//       }
+//     }else if (Platform.isIOS) {
+//       // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
+//       final notificationStatus = await Permission.notification.request();
+//       print("🔔 [iOS] Notification Request Status: $notificationStatus");
+//     }
+//
+//     return micStatus.isGranted;
+//   }
+
+  Future<bool> _checkPermissions() async {
+    // 1. Microphone Status Verification
+    PermissionStatus micStatus = await Permission.microphone.status;
+    print("🎙️ Current Mic Status: $micStatus");
+
+    if (!micStatus.isGranted) {
+      micStatus = await Permission.microphone.request();
+      print("🎙️ Post-Request Mic Status: $micStatus");
     }
 
-    return micStatus.isGranted;
+    // 2. Notification Framework Status Validation
+    bool notificationGranted = false;
+    if (Platform.isAndroid) {
+      final NotificationPermission notificationPermission =
+      await FlutterForegroundTask.checkNotificationPermission();
+
+      if (notificationPermission != NotificationPermission.granted) {
+        final NotificationPermission requestResult =
+        await FlutterForegroundTask.requestNotificationPermission();
+        notificationGranted = (requestResult == NotificationPermission.granted);
+      } else {
+        notificationGranted = true;
+      }
+    } else if (Platform.isIOS) {
+      // Apple Devices Validation Check
+      PermissionStatus iosNotiStatus = await Permission.notification.status;
+      print("🔔 [iOS] Current Notification Status: $iosNotiStatus");
+      toast("🔔 [iOS] Current Notification Status: $iosNotiStatus");
+
+      if (!iosNotiStatus.isGranted) {
+        iosNotiStatus = await Permission.notification.request();
+        toast("🔔 [iOS] Post-Request Notification Status: $iosNotiStatus");
+      }
+      notificationGranted = iosNotiStatus.isGranted;
+    }
+
+    // Return true ONLY if both are absolutely granted
+    return micStatus.isGranted && notificationGranted;
   }
 
 }
