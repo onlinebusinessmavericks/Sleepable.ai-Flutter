@@ -128,10 +128,18 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     });
   }
   Future<void> triggerInstantBackgroundService() async {
-    await _checkPermissions();
+    toast("🔍 Step 1: Requesting Permissions...");
+    bool hasPermission = await _checkPermissions();
+    if (!hasPermission) {
+      toast("❌ Error: Microphone/Notification Permission Denied!");
+      return;
+    }
+
+    toast("🛠️ Step 2: Initializing Foreground Config...");
     _initService();
+
+    toast("📡 Step 3: Pushing Service Native Request...");
     await _startNoiseMeter();
-    debugPrint("🍏 [System Sync] Foreground Task Engine forced instantly via external invocation.");
   }
   Future<void> _initController() async {
     final lang = Get.context!.lang;
@@ -699,21 +707,64 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   //   _noiseSub = _noiseMeter.noise.listen(_onNoise);
   //   debugPrint("✅ [Step 6] Noise Meter listener attached.");
   // }
+  // Future<void> _startNoiseMeter() async {
+  //   if (_noiseStarted) return;
+  //   final lang = Get.context!.lang;
+  //   debugPrint("🎙️ [Step 3] Starting Noise Meter & Service...");
+  //
+  //   if (!await _checkPermissions()) {
+  //     debugPrint("❌ [Step 3.1] Permission Denied!");
+  //     return;
+  //   }
+  //
+  //   bool isRunning = await FlutterForegroundTask.isRunningService;
+  //   debugPrint("🧐 [Step 3.2] Is service already running? $isRunning");
+  //
+  //   if (!isRunning) {
+  //     debugPrint("📡 [Step 4] Attempting to START Foreground Service...");
+  //     try {
+  //       final ServiceRequestResult success = await FlutterForegroundTask.startService(
+  //         serviceId: 256,
+  //         notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
+  //         notificationText: lang.serviceText ?? 'Monitoring your sleep...',
+  //         notificationIcon: const NotificationIcon(
+  //           metaDataName: 'mipmap/ic_launcher',
+  //         ),
+  //       );
+  //       debugPrint("📊 [Step 5] Service Start Success: $success");
+  //
+  //       if (Platform.isIOS) {
+  //         // iOS dynamic notification handler sync update
+  //         await FlutterForegroundTask.updateService(
+  //           notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
+  //           notificationText: lang.serviceText ?? 'Monitoring your sleep...',
+  //         );
+  //         _noiseStarted = true;
+  //         toast("🍏 iOS Background Notification Pushed!");
+  //       } else {
+  //         _noiseStarted = true;
+  //       }
+  //     } catch (e) {
+  //       debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
+  //     }
+  //   } else {
+  //     _noiseStarted = true;
+  //   }
+  //
+  //   // Attach stream listeners securely after service register verification
+  //   if (_noiseStarted) {
+  //     _noiseMeter = NoiseMeter();
+  //     _noiseSub = _noiseMeter.noise.listen(_onNoise);
+  //     trackerState.value = TrackerState.silenceRecording;
+  //     debugPrint("✅ [Step 6] Noise Meter listener attached successfully.");
+  //   }
+  // }
   Future<void> _startNoiseMeter() async {
     if (_noiseStarted) return;
     final lang = Get.context!.lang;
-    debugPrint("🎙️ [Step 3] Starting Noise Meter & Service...");
-
-    if (!await _checkPermissions()) {
-      debugPrint("❌ [Step 3.1] Permission Denied!");
-      return;
-    }
 
     bool isRunning = await FlutterForegroundTask.isRunningService;
-    debugPrint("🧐 [Step 3.2] Is service already running? $isRunning");
-
     if (!isRunning) {
-      debugPrint("📡 [Step 4] Attempting to START Foreground Service...");
       try {
         final ServiceRequestResult success = await FlutterForegroundTask.startService(
           serviceId: 256,
@@ -723,32 +774,36 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
             metaDataName: 'mipmap/ic_launcher',
           ),
         );
-        debugPrint("📊 [Step 5] Service Start Success: $success");
+
+        // 🔥 DEBUG TOAST 1: Native plugin link response verify karne ke liye
+        toast("📊 Native Result: ${success.toString()}");
 
         if (Platform.isIOS) {
-          // iOS dynamic notification handler sync update
           await FlutterForegroundTask.updateService(
             notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
             notificationText: lang.serviceText ?? 'Monitoring your sleep...',
           );
           _noiseStarted = true;
-          toast("🍏 iOS Background Notification Pushed!");
+          // 🔥 DEBUG TOAST 2: iOS notification bridge activation tracer
+          toast("🍏 iOS Foreground Channel Active!");
         } else {
           _noiseStarted = true;
         }
       } catch (e) {
-        debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
+        // 🔥 DEBUG TOAST 3: Kuch bhi catch exception hua toh direct trigger alert
+        toast("❌ Service Start Exception: ${e.toString()}");
       }
     } else {
       _noiseStarted = true;
     }
 
-    // Attach stream listeners securely after service register verification
     if (_noiseStarted) {
       _noiseMeter = NoiseMeter();
       _noiseSub = _noiseMeter.noise.listen(_onNoise);
       trackerState.value = TrackerState.silenceRecording;
-      debugPrint("✅ [Step 6] Noise Meter listener attached successfully.");
+
+      // 🔥 DEBUG TOAST 4: Final pipeline complete sync trace
+      toast("🎙️ System Monitoring Active!");
     }
   }
   // Controller ke andar ye naya function add karein
@@ -810,25 +865,77 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     }
   }
 
+  // Future<bool> _checkPermissions() async {
+  //   // 1. Check Microphone
+  //   final micStatus = await Permission.microphone.request();
+  //   print("🎙️ Mic Status: $micStatus");
+  //   // 2. Check Notification (Crucial for Foreground Service Visibility)
+  //   if (Platform.isAndroid) {
+  //     final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
+  //     if (notificationPermission != NotificationPermission.granted) {
+  //       await FlutterForegroundTask.requestNotificationPermission();
+  //     }
+  //   }else if (Platform.isIOS) {
+  //     // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
+  //     final notificationStatus = await Permission.notification.request();
+  //     print("🔔 [iOS] Notification Request Status: $notificationStatus");
+  //   }
+  //
+  //   return micStatus.isGranted;
+  // }
   Future<bool> _checkPermissions() async {
     // 1. Check Microphone
     final micStatus = await Permission.microphone.request();
     print("🎙️ Mic Status: $micStatus");
+
+    // 🔥 Microphone status toast
+    if (!micStatus.isGranted) {
+      toast("⚠️ Mic Permission Denied!");
+    } else {
+      toast("🎙️ Mic Permission Granted");
+    }
+
+    bool isNotificationGranted = false;
+
     // 2. Check Notification (Crucial for Foreground Service Visibility)
     if (Platform.isAndroid) {
       final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
       if (notificationPermission != NotificationPermission.granted) {
-        await FlutterForegroundTask.requestNotificationPermission();
+        final res = await FlutterForegroundTask.requestNotificationPermission();
+        isNotificationGranted = (res == NotificationPermission.granted);
+      } else {
+        isNotificationGranted = true;
       }
-    }else if (Platform.isIOS) {
+
+      // Android Notification Toast
+      if (!isNotificationGranted) {
+        toast("⚠️ Android Notification Permission Denied!");
+      }
+    } else if (Platform.isIOS) {
       // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
       final notificationStatus = await Permission.notification.request();
       print("🔔 [iOS] Notification Request Status: $notificationStatus");
+      isNotificationGranted = notificationStatus.isGranted;
+
+      // iOS Notification Toast
+      if (!isNotificationGranted) {
+        toast("⚠️ iOS Notification Permission Denied!");
+      } else {
+        toast("🔔 iOS Notification Permission Granted");
+      }
     }
 
-    return micStatus.isGranted;
-  }
+    // Master validation response
+    bool finalResult = micStatus.isGranted && isNotificationGranted;
 
+    if (finalResult) {
+      toast("✅ All Permissions Secured! Ready to start.");
+    } else {
+      toast("❌ Setup Blocked: Missing mandatory hardware rights.");
+    }
+
+    return finalResult;
+  }
   Future<void> _uploadInBackground(String path) async {
     final file = File(path);
     final now = DateTime.now();

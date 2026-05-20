@@ -141,9 +141,6 @@ class HeartBpmMeasurementController extends GetxController {
       print("⏰ savedWakeUpTimeam: $savedWakeUpTimeam");
       print("⏰ savedHeartRate: $savedHeartRate");
 
-      // 🔥 TOAST 1: Prefs data pull checking
-      // toast("📡 Tracker API Hit Time: $savedWakeUpTimeam");
-
       final response = await TrackerApis.startSleepTracker(
         wakeUpTime: savedWakeUpTimeam,
         noteIds: savedNoteIds,
@@ -164,35 +161,28 @@ class HeartBpmMeasurementController extends GetxController {
           print("📢 SleepSoundController notified: isTrackingActive = true");
         }
 
-        // 🔥 TOAST 3: Bridge mapping setup confirmation
-        // toast("🧠 Initializing SleepTrackerController Memory...");
-
-        // Screen badalne se PEHLE controller ko find/put karo taaki memory bridge ban sake.
+        // 🔥 FIX: Controller ko 'permanent: true' ke sath put karo!
+        // Isse screen route (Get.offNamed) change hone par bhi controller delete nahi hoga,
+        // aur native background notification thread strictly lock rahega.
         final sleepTrackerCtrl = Get.isRegistered<SleepTrackerController>()
             ? Get.find<SleepTrackerController>()
-            : Get.put(SleepTrackerController());
+            : Get.put(SleepTrackerController(), permanent: true);
 
-        // 🔥 TOAST 4: Live invocation point check for Apple threads
-        // toast("🚀 Force Triggering iOS Foreground Notification System...");
-
-        // Bina kisi front-end ui delay ke local dynamic initialization hit karo
+        // Bina kisi delay ke local service start karo (Toasts and checks run inside)
         await sleepTrackerCtrl.triggerInstantBackgroundService();
 
         await prefs.remove('sleep_note_ids');
         await prefs.remove('sleep_description');
 
-        // 🔥 TOAST 5: Safe route transition check
-        // toast("📱 Switching UI to Tracker View...");
+        // Safe page replacement
         Get.offNamed(Routes.sleepTracker);
       }
       else {
-        // 🔥 TOAST 6: Server status reject logging
         toast("❌ Backend Rejected Session: ${response.message}");
         Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
       }
 
     } catch (e) {
-      // 🔥 TOAST 7: Dynamic runtime check
       toast("💥 Code Exception Triggered: ${e.toString()}");
       Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
