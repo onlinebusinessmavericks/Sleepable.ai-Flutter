@@ -128,11 +128,10 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     });
   }
   Future<void> triggerInstantBackgroundService() async {
-    // Check local native configuration parameters instantly
     await _checkPermissions();
     _initService();
     await _startNoiseMeter();
-    debugPrint("🍏 [System Sync] Local background task pushed instantly via external controller invocation.");
+    debugPrint("🍏 [System Sync] Foreground Task Engine forced instantly via external invocation.");
   }
   Future<void> _initController() async {
     final lang = Get.context!.lang;
@@ -653,6 +652,53 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       ),
     );
   }
+  // Future<void> _startNoiseMeter() async {
+  //   if (_noiseStarted) return;
+  //   final lang = Get.context!.lang;
+  //   debugPrint("🎙️ [Step 3] Starting Noise Meter & Service...");
+  //
+  //   if (!await _checkPermissions()) {
+  //     debugPrint("❌ [Step 3.1] Permission Denied!");
+  //     return;
+  //   }
+  //
+  //   bool isRunning = await FlutterForegroundTask.isRunningService;
+  //   debugPrint("🧐 [Step 3.2] Is service already running? $isRunning");
+  //
+  //   if (!isRunning) {
+  //     debugPrint("📡 [Step 4] Attempting to START Foreground Service...");
+  //     try {
+  //
+  //       // SleepTrackerController.dart mein
+  //       final ServiceRequestResult success = await FlutterForegroundTask.startService(
+  //         serviceId: 256,
+  //         notificationTitle: lang.serviceTitle, //'Sleepable AI is Active',
+  //         notificationText: lang.serviceText, //'Monitoring your sleep...',
+  //         // 🔥 Ye icon dena mandatory hai varna service crash hoti rahegi
+  //         notificationIcon: const NotificationIcon(
+  //           metaDataName: 'mipmap/ic_launcher', // Aapka launcher icon use hoga
+  //         ),
+  //       );
+  //       debugPrint("📊 [Step 5] Service Start Success: $success");
+  //       if (Platform.isIOS) {
+  //         await FlutterForegroundTask.updateService(
+  //           notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
+  //           notificationText: lang.serviceText ?? 'Monitoring your sleep...',
+  //         );
+  //         // 🔥 TESTFLIGHT TOAST: iOS framework trigger hote hi bta dega
+  //         toast("🍏 iOS Background Notification Pushed!");
+  //         debugPrint("🍏 [iOS] Native background notification thread initialized successfully.");
+  //       }
+  //     } catch (e) {
+  //       debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
+  //     }
+  //   }
+  //
+  //   _noiseStarted = true;
+  //   _noiseMeter = NoiseMeter();
+  //   _noiseSub = _noiseMeter.noise.listen(_onNoise);
+  //   debugPrint("✅ [Step 6] Noise Meter listener attached.");
+  // }
   Future<void> _startNoiseMeter() async {
     if (_noiseStarted) return;
     final lang = Get.context!.lang;
@@ -669,38 +715,42 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     if (!isRunning) {
       debugPrint("📡 [Step 4] Attempting to START Foreground Service...");
       try {
-
-        // SleepTrackerController.dart mein
         final ServiceRequestResult success = await FlutterForegroundTask.startService(
           serviceId: 256,
-          notificationTitle: lang.serviceTitle, //'Sleepable AI is Active',
-          notificationText: lang.serviceText, //'Monitoring your sleep...',
-          // 🔥 Ye icon dena mandatory hai varna service crash hoti rahegi
+          notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
+          notificationText: lang.serviceText ?? 'Monitoring your sleep...',
           notificationIcon: const NotificationIcon(
-            metaDataName: 'mipmap/ic_launcher', // Aapka launcher icon use hoga
+            metaDataName: 'mipmap/ic_launcher',
           ),
         );
         debugPrint("📊 [Step 5] Service Start Success: $success");
+
         if (Platform.isIOS) {
+          // iOS dynamic notification handler sync update
           await FlutterForegroundTask.updateService(
             notificationTitle: lang.serviceTitle ?? 'Sleepable AI is Active',
             notificationText: lang.serviceText ?? 'Monitoring your sleep...',
           );
-          // 🔥 TESTFLIGHT TOAST: iOS framework trigger hote hi bta dega
+          _noiseStarted = true;
           toast("🍏 iOS Background Notification Pushed!");
-          debugPrint("🍏 [iOS] Native background notification thread initialized successfully.");
+        } else {
+          _noiseStarted = true;
         }
       } catch (e) {
         debugPrint("❌ [Step 5 ERROR] Error starting service: $e");
       }
+    } else {
+      _noiseStarted = true;
     }
 
-    _noiseStarted = true;
-    _noiseMeter = NoiseMeter();
-    _noiseSub = _noiseMeter.noise.listen(_onNoise);
-    debugPrint("✅ [Step 6] Noise Meter listener attached.");
+    // Attach stream listeners securely after service register verification
+    if (_noiseStarted) {
+      _noiseMeter = NoiseMeter();
+      _noiseSub = _noiseMeter.noise.listen(_onNoise);
+      trackerState.value = TrackerState.silenceRecording;
+      debugPrint("✅ [Step 6] Noise Meter listener attached successfully.");
+    }
   }
-
   // Controller ke andar ye naya function add karein
   Future<void> forceQuitFromNotification() async {
     debugPrint("🚨 Notification Stop Triggered: Running Cleanup...");

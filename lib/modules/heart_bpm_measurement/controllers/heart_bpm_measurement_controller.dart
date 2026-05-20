@@ -142,7 +142,7 @@ class HeartBpmMeasurementController extends GetxController {
       print("⏰ savedHeartRate: $savedHeartRate");
 
       // 🔥 TOAST 1: Prefs data pull checking
-      toast("📡 Tracker API Hit Time: $savedWakeUpTimeam");
+      // toast("📡 Tracker API Hit Time: $savedWakeUpTimeam");
 
       final response = await TrackerApis.startSleepTracker(
         wakeUpTime: savedWakeUpTimeam,
@@ -165,7 +165,7 @@ class HeartBpmMeasurementController extends GetxController {
         }
 
         // 🔥 TOAST 3: Bridge mapping setup confirmation
-        toast("🧠 Initializing SleepTrackerController Memory...");
+        // toast("🧠 Initializing SleepTrackerController Memory...");
 
         // Screen badalne se PEHLE controller ko find/put karo taaki memory bridge ban sake.
         final sleepTrackerCtrl = Get.isRegistered<SleepTrackerController>()
@@ -173,7 +173,7 @@ class HeartBpmMeasurementController extends GetxController {
             : Get.put(SleepTrackerController());
 
         // 🔥 TOAST 4: Live invocation point check for Apple threads
-        toast("🚀 Force Triggering iOS Foreground Notification System...");
+        // toast("🚀 Force Triggering iOS Foreground Notification System...");
 
         // Bina kisi front-end ui delay ke local dynamic initialization hit karo
         await sleepTrackerCtrl.triggerInstantBackgroundService();
@@ -182,7 +182,7 @@ class HeartBpmMeasurementController extends GetxController {
         await prefs.remove('sleep_description');
 
         // 🔥 TOAST 5: Safe route transition check
-        toast("📱 Switching UI to Tracker View...");
+        // toast("📱 Switching UI to Tracker View...");
         Get.offNamed(Routes.sleepTracker);
       }
       else {
