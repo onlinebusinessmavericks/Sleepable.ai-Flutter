@@ -22,7 +22,7 @@ class APIEndPoints {
   static const userSettings = "users/settings/";
   static const String updateStreak = "users/update-streak/";
   static const String streak = "users/streak/";
-  static const String updateUser = 'users/update/';
+  // static const String updateUser = 'users/update/';
   /// Tracker
   static const String trackerNotesCategories = 'tracker/notes/categories/';
   static const String createSleepNote = 'tracker/notes/create/';

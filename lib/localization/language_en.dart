@@ -2419,4 +2419,80 @@ class LanguageEn extends BaseLanguage {
   String get default1 => 'Default';
   @override
   String get definition => 'Definition';
+
+  ///
+   @override
+  String get welcomeToTheMost => 'Welcome to the most';
+   @override
+  String get advancedSleepTracker => 'advanced sleep tracker';
+   @override
+  String get knowAboutSleepPatterns => 'Know about sleep patterns';
+   @override
+  String get gainInsightOfYourSleep => 'Gain insight of your sleep.';
+   @override
+  String get monitorTalkingAndSnoring => 'Monitor talking and snoring.';
+   @override
+  String get trackSleepSounds => 'Track sleep sounds';
+   @override
+  String get smartSleepAnalysis => 'Smart sleep analysis';
+   @override
+  String get improveSleepEfficiency => 'Improve sleep efficiency.';
+   @override
+  String get placeTheDeviceAsPicture => 'Place the device as picture';
+   @override
+  String get pleasePlacePhoneNextBedKeepChargerConnected => 'Please place the phone next to your bed and keep the charger connected.';
+   @override
+  String get setYourWakeUpTime => 'Set your wake up time';
+   @override
+  String get trySleepNote => 'Try Sleep Note?';
+   @override
+  String get sleepNoteEasyRevealFactorsGoodNightsRest => "Sleep note is an easy tool to reveal factors that may stop you from getting a good night's rest.";
+   @override
+  String get done => 'Done';
+   @override
+  String get dontShowAgain => "Don't show again";
+  @override
+  String get addSleepNote => 'Add Sleep Note';
+  @override
+  String get others => 'Others';
+  @override
+  String get describeYourDay => 'Maybe, you want to describe us your day!';
+  @override
+  String get sleepNoteHintText => 'Today, I had 3 cups of coffee... and I was feeling sleepy/lazy in the noon 🥱';
+  @override
+  String get add => 'Add';
+  @override
+  String get deleteNote => 'Delete Note?';
+  @override
+  String get areSureWantDeleteNote => 'Are you sure you want to delete this note?';
+  @override
+  String get thisActionCannotUndone => 'This action cannot be undone.';
+  @override
+  String get failedDeleteNote => 'Failed to delete note';
+  @override
+  String get edit => 'Edit';
+  @override
+  String get tag => 'Tag';
+  @override
+  String get enterTagName => 'Enter tag name';
+  @override
+  String get sleepNoteAddedSuccessfully => 'Sleep note added successfully!';
+  @override
+  String get oK => 'OK';
+  @override
+  String get update => 'Update';
+  @override
+  String get setSleepTimer => 'Set Sleep Timer';
+  @override
+  String get soundList => 'Sound List';
+  @override
+  String get noItemsFound => 'No items found';
+  @override
+  String get storyteller => 'Storyteller';
+  @override
+  String get relaxingMelody => 'Relaxing Melody';
+  @override
+  String get relaxYourBody => 'Relax Your Body';
+  @override
+  String get unknownArtist => 'Unknown Artist';
 }

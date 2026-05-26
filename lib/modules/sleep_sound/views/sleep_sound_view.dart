@@ -383,7 +383,8 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                       return SizedBox(
                         height: 35,
                         child: ListView.builder(
-                          key: ValueKey(currentTab),
+                          // key: ValueKey(currentTab),
+                          key: ValueKey("${currentTab}_${Get.locale?.languageCode ?? 'en'}"),
                           controller: chipScrollController,
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 12),

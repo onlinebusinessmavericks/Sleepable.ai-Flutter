@@ -13,6 +13,7 @@ import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/widgets/custom_loader.dart';
 
 import '../../../core/utils/library.dart';
+import '../../../localization/lang_extension.dart';
 import '../../../widgets/cached_image_widget.dart';
 import '../../alarm/controllers/alarm_controller.dart';
 import '../../music/views/music_view.dart';
@@ -69,8 +70,8 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Sound List",
+               Text(
+                context.lang.soundList,
                 style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
               ),
               IconButton(
@@ -82,110 +83,15 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
           SizedBox(height: 12 * SizeConfigs.paddingScale),
 
           /// 🔹 Sound list with animation
-          // Expanded(
-          //   child: Obx(() {
-          //     // 1. Use your dynamic getter to get only Music items
-          //     final musicList = controller.allMusicItems;
-          //
-          //     if (musicList.isEmpty) {
-          //       return const Center(
-          //         child: Text("No music loaded", style: TextStyle(color: Colors.white54)),
-          //       );
-          //     }
-          //
-          //     return AnimationLimiter(
-          //       child: ListView(
-          //         physics: const BouncingScrollPhysics(),
-          //         children: AnimationConfiguration.toStaggeredList(
-          //           duration: const Duration(milliseconds: 600),
-          //           childAnimationBuilder: (widget) => SlideAnimation(
-          //             horizontalOffset: 100.0,
-          //             curve: Curves.easeOutCubic,
-          //             child: FadeInAnimation(child: widget),
-          //           ),
-          //           children: List.generate(musicList.length, (index) {
-          //             final sound = musicList[index];
-          //
-          //             // 2. Check if THIS specific song is the one currently in playingMusic
-          //             final bool isCurrent = controller.playingMusic.any((m) => m.id == sound.id);
-          //             // 3. Check if it's playing or paused for the icon
-          //             final bool isPlayingIcon = isCurrent && !controller.isPaused.value;
-          //
-          //             return Container(
-          //               margin: EdgeInsets.symmetric(
-          //                   vertical: 6 * SizeConfigs.paddingScale,
-          //                   horizontal: 4 * SizeConfigs.paddingScale
-          //               ),
-          //               decoration: BoxDecoration(
-          //                 // Highlight the background slightly if it is the current song
-          //                 color: isCurrent
-          //                     ? Colors.white.withOpacity(0.1)
-          //                     : AppColors.cardBackGroundGreyColor,
-          //                 borderRadius: BorderRadius.circular(16),
-          //                 border: isCurrent
-          //                     ? Border.all(color: Colors.blueAccent.withOpacity(0.5), width: 1)
-          //                     : null,
-          //               ),
-          //               child: ListTile(
-          //                 onTap: () => controller.toggleMusic(sound),
-          //                 leading: ClipRRect(
-          //                   borderRadius: BorderRadius.circular(8),
-          //                   child: CachedImageWidget(
-          //                     url: sound.image,
-          //                     height: 45 * SizeConfigs.paddingScale,
-          //                     width: 45 * SizeConfigs.paddingScale,
-          //                     fit: BoxFit.cover,
-          //                   ),
-          //                 ),
-          //                 title: Text(
-          //                   sound.name,
-          //                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          //                       fontWeight: FontWeight.w600,
-          //                       color: isCurrent ? Colors.blueAccent : Colors.white,
-          //                       fontSize: 14 * SizeConfigs.textScale
-          //                   ),
-          //                 ),
-          //                 subtitle: Text(
-          //                   sound.artist?.name ?? "Relaxing Melody",
-          //                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          //                       fontWeight: FontWeight.w400,
-          //                       color: Colors.white70,
-          //                       fontSize: 12 * SizeConfigs.textScale
-          //                   ),
-          //                 ),
-          //                 trailing: Material(
-          //                   // Trailing button turns Blue if this song is active
-          //                   color: isCurrent ? Colors.blueAccent : Colors.white.withOpacity(0.1),
-          //                   shape: const CircleBorder(),
-          //                   child: InkWell(
-          //                     customBorder: const CircleBorder(),
-          //                     onTap: () => controller.toggleMusic(sound),
-          //                     child: Padding(
-          //                       padding: const EdgeInsets.all(6),
-          //                       child: Icon(
-          //                           isPlayingIcon ? Icons.pause : Icons.play_arrow,
-          //                           color: Colors.white,
-          //                           size: 24 * SizeConfigs.paddingScale
-          //                       ),
-          //                     ),
-          //                   ),
-          //                 ),
-          //               ),
-          //             );
-          //           }),
-          //         ),
-          //       ),
-          //     );
-          //   }),
-          // ),
+
           Expanded(
             child: Obx(() {
               // 🔥 Uses the dynamic list we created above
               final list = controller.activePlaylist;
 
               if (list.isEmpty) {
-                return const Center(
-                  child: Text("No items found", style: TextStyle(color: Colors.white54)),
+                return  Center(
+                  child: Text(context.lang.noItemsFound, style: TextStyle(color: Colors.white54)),
                 );
               }
 
@@ -224,7 +130,7 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
                             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: isCurrent ? Colors.blueAccent : Colors.white, fontSize: 14 * SizeConfigs.textScale),
                           ),
                           subtitle: Text(
-                            sound.artist?.name ?? (sound.categoryName.toLowerCase() == "story" ? "Storyteller" : "Relaxing Melody"),
+                            sound.artist?.name ?? (sound.categoryName.toLowerCase() == "story" ? context.lang.storyteller : context.lang.relaxingMelody),
                             style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w400, color: Colors.white70, fontSize: 12 * SizeConfigs.textScale),
                           ),
                           trailing: Material(
@@ -307,30 +213,10 @@ class PlayerFullSheetUI extends StatelessWidget {
                         SmallCircleIcon(icon: Icons.arrow_back_rounded, size: 20 * SizeConfigs.textScale, iconColor: Colors.white, backgroundColor: Colors.white10, onTap: () => Get.back()),
                         const Spacer(),
                         Text(
-                          "Relax Your Body",
+                          context.lang.relaxYourBody,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 22 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                         ),
                         const Spacer(),
-                        // isFromStory ==true ? SizedBox() :
-                        // Obx(
-                        //       () => GestureDetector(
-                        //     // onTap: controller.isLiked.toggle,
-                        //         onTap: () {
-                        //           // Tamara controller ma je main toggle function che ene call karo
-                        //           // categorySlug ane subCategorySlug tamare controller mathi ya constructor mathi leva padse
-                        //           controller.toggleLike(activeSound, activeSound.categoryName, activeSound.subcategoryName);
-                        //
-                        //           // Force UI refresh (Optional, depend on how your toggleLike is written)
-                        //           controller.playingMusic.refresh();
-                        //         },
-                        //     child: Container(
-                        //       height: 32,
-                        //       width: 32,
-                        //       decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                        //       child: Icon(controller.isLiked.value ? Icons.favorite : Icons.favorite_border, color: controller.isLiked.value ? Colors.red : Colors.white, size: 20),
-                        //     ),
-                        //   ),
-                        // ),
                         Obx(() {
                           // Current active sound select karo
                           final activeSound = controller.playingMusic.isNotEmpty ? controller.playingMusic.first : sound;
@@ -353,25 +239,6 @@ class PlayerFullSheetUI extends StatelessWidget {
                       ],
                     ),
 
-                    /// 🖼 DYNAMIC MAIN COVER IMAGE
-                    // Obx(() {
-                    //   final activeSound = controller.playingMusic.isNotEmpty ? controller.playingMusic.first : sound;
-                    //
-                    //   return Container(
-                    //     margin: const EdgeInsets.symmetric(vertical: 12),
-                    //     width: MediaQuery.of(context).size.width * 0.85,
-                    //     height:
-                    //         // isFromStory ==true ?MediaQuery.of(context).size.height * 0.20:
-                    //         MediaQuery.of(context).size.height * 0.40,
-                    //     decoration: BoxDecoration(
-                    //       borderRadius: BorderRadius.circular(20), // Optional: rounds the cover
-                    //       image: DecorationImage(
-                    //         image: CachedNetworkImageProvider(activeSound.image,), // Changed to activeSound
-                    //         fit: BoxFit.cover,
-                    //       ),
-                    //     ),
-                    //   );
-                    // }),
                     /// 🖼 DYNAMIC MAIN COVER IMAGE
                     Obx(() {
                       final activeSound = controller.playingMusic.isNotEmpty ? controller.playingMusic.first : sound;
@@ -416,7 +283,7 @@ class PlayerFullSheetUI extends StatelessWidget {
                               ),
                               SizedBox(height: 4 * SizeConfigs.paddingScale),
                               Text(
-                                activeSound.artist?.name ?? "Unknown Artist",
+                                activeSound.artist?.name ?? context.lang.unknownArtist,
                                 style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white70, fontSize: 16 * SizeConfigs.textScale),
                               ),
                             ],
@@ -514,32 +381,6 @@ class PlayerFullSheetUI extends StatelessWidget {
                         SizedBox(height: 30),
 
                         /// 🌙 START SLEEP
-
-
-                        // Center(
-                        //   child: ElevatedButton(
-                        //     style: ElevatedButton.styleFrom(
-                        //       backgroundColor: AppColors.blueColor,
-                        //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30 * SizeConfigs.paddingScale)),
-                        //       padding: EdgeInsets.symmetric(horizontal: 18 * SizeConfigs.paddingScale, vertical: 12 * SizeConfigs.paddingScale),
-                        //     ),
-                        //     onPressed: () async {
-                        //       await openSleepOnboardingBottomSheet(context);
-                        //     },
-                        //     child: Row(
-                        //       mainAxisSize: MainAxisSize.min,
-                        //       children: [
-                        //         Image.asset(Assets.homeSleepableAppIcon, height: 24 * SizeConfigs.paddingScale),
-                        //         SizedBox(width: 8 * SizeConfigs.paddingScale),
-                        //         Text(
-                        //           "Start Sleep",
-                        //           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
-                        //         ),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // ),
-                        /// 🌙 START SLEEP
                         Obx(() {
 
                           print("---controller.isTrackingActive.value -------${controller.isTrackingActive.value}");
@@ -569,7 +410,7 @@ class PlayerFullSheetUI extends StatelessWidget {
                                   Image.asset(Assets.homeSleepableAppIcon, height: 24 * SizeConfigs.paddingScale),
                                   SizedBox(width: 8 * SizeConfigs.paddingScale),
                                   Text(
-                                    "Start Sleep",
+                                    context.lang.startSleep,
                                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         color: Colors.white,
                                         fontSize: 16 * SizeConfigs.textScale,
@@ -630,7 +471,7 @@ openSleepNoteBottomSheet(BuildContext context) {
           children: [
             Center(
               child: Text(
-                "Add Sleep Note",
+                context.lang.addSleepNote,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 24 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                 // Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 20 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
               ),
@@ -649,14 +490,14 @@ openSleepNoteBottomSheet(BuildContext context) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSection(context, "Environment", controller.environmentTags, controller),
-                _buildSection(context, "Today", controller.todayTags, controller),
-                _buildSection(context, "Others", controller.otherTags, controller),
+                _buildSection(context,  context.lang.environment, controller.environmentTags, controller),
+                _buildSection(context, context.lang.today, controller.todayTags, controller),
+                _buildSection(context, context.lang.others, controller.otherTags, controller),
 
                 Padding(
                   padding: const EdgeInsets.only(left: 20),
                   child: Text(
-                    "Maybe, you want to describe us your day!",
+                    context.lang.describeYourDay,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -682,7 +523,7 @@ openSleepNoteBottomSheet(BuildContext context) {
                           minLines: 1,
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.text, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                           decoration: InputDecoration(
-                            hintText: "Today, I had 3 cups of coffee... and I was feeling sleepy/lazy in the noon 🥱",
+                            hintText: context.lang.sleepNoteHintText, //"Today, I had 3 cups of coffee... and I was feeling sleepy/lazy in the noon 🥱",
                             hintStyle: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.text.withOpacity(0.5), fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w400),
                             border: InputBorder.none,
                           ),
@@ -698,67 +539,6 @@ openSleepNoteBottomSheet(BuildContext context) {
           );
         }),
       ),
-      // Expanded(
-      //   child: SingleChildScrollView(
-      //     padding: EdgeInsets.symmetric(horizontal: 20 * SizeConfigs.paddingScale, vertical: 8 * SizeConfigs.paddingScale),
-      //     child: Column(
-      //       crossAxisAlignment: CrossAxisAlignment.start,
-      //       children: [
-      //         _buildSection(context, "Environment", controller.environmentTags, controller),
-      //         _buildSection(context, "Today", controller.todayTags, controller),
-      //         _buildSection(context, "Others", controller.otherTags, controller),
-      //
-      //         Padding(
-      //           padding: const EdgeInsets.only(left: 20),
-      //           child: Text(
-      //             "Maybe, you want to describe us your day!",
-      //             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
-      //           ),
-      //         ),
-      //         SizedBox(height: 16 * SizeConfigs.paddingScale),
-      //
-      //         /// 🔹 Description Field with Sleep Icon
-      //         Container(
-      //           decoration: BoxDecoration(
-      //             color: Colors.white10,
-      //             borderRadius: BorderRadius.circular(16),
-      //             border: Border.all(color: Colors.white24, width: 1),
-      //           ),
-      //           margin: EdgeInsets.symmetric(horizontal: 12),
-      //           padding: EdgeInsets.symmetric(horizontal: 12 * SizeConfigs.paddingScale, vertical: 6 * SizeConfigs.paddingScale),
-      //           child: Row(
-      //             crossAxisAlignment: CrossAxisAlignment.start,
-      //             children: [
-      //               Padding(
-      //                 padding: const EdgeInsets.only(top: 8),
-      //                 child: Icon(Icons.edit, color: AppColors.text.withOpacity(0.7), size: 22 * SizeConfigs.paddingScale),
-      //               ),
-      //               const SizedBox(width: 10),
-      //               Expanded(
-      //                 child: Padding(
-      //                   padding: const EdgeInsets.only(bottom: 10),
-      //                   child: TextField(
-      //                     controller: controller.descriptionController,
-      //                     maxLines: 5,
-      //                     minLines: 1,
-      //                     style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.text, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
-      //                     decoration: InputDecoration(
-      //                       hintText: "Today, I had 3 cups of coffee... and I was feeling sleepy/lazy in the noon 🥱",
-      //                       hintStyle: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.text.withOpacity(0.5), fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w400),
-      //                       border: InputBorder.none,
-      //                       isDense: true,
-      //                     ),
-      //                   ),
-      //                 ),
-      //               ),
-      //             ],
-      //           ),
-      //         ),
-      //         SizedBox(height: 40 * SizeConfigs.paddingScale),
-      //       ],
-      //     ),
-      //   ),
-      // ),
     ],
   );
 }
@@ -813,7 +593,7 @@ Widget _buildSection(BuildContext context, String title, RxList<Map<String, dyna
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      "Add",
+                      context.lang.add,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white60, fontSize: 11 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                       //
                     ),
@@ -920,26 +700,34 @@ void showDeleteNoteDialog({required BuildContext context, required int noteId, r
 
         giffy: Lottie.asset(Assets.lottieDelete, height: 120, fit: BoxFit.fitHeight, repeat: true),
 
-        title: const Text(
-          'Delete Note?',
+        title:  Text(
+          context.lang.deleteNote,
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
         ),
 
-        content: const Text(
-          'Are you sure you want to delete this note? '
-          'This action cannot be undone.',
+        // content:  Text(
+        //   context.lang.areSureWantDeleteNote 'Are you sure you want to delete this note? '
+        // context.lang.thisActionCannotUndone 'This action cannot be undone.',
+        //   textAlign: TextAlign.center,
+        //   style: TextStyle(color: Colors.white70, fontSize: 16),
+        // ),
+        content: Text(
+          '${context.lang.areSureWantDeleteNote} '
+              '${context.lang.thisActionCannotUndone}',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 16),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
         ),
-
         actionsAlignment: MainAxisAlignment.center,
         backgroundColor: const Color(0xFF1E1E1E),
 
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:  Text(context.lang.cancel, style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -956,10 +744,10 @@ void showDeleteNoteDialog({required BuildContext context, required int noteId, r
                 items.removeAt(index);
                 items.refresh();
               } else {
-                Get.snackbar("Error", "Failed to delete note");
+                Get.snackbar(context.lang.error, context.lang.failedDeleteNote);
               }
             },
-            child: const Text('Yes, Delete', style: TextStyle(color: Colors.white)),
+            child:  Text(context.lang.yesDelete, style: TextStyle(color: Colors.white)),
           ),
         ],
       );
@@ -990,7 +778,7 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                 children: [
                   /// TITLE
                   Text(
-                    isEdit ? "Edit $sectionTitle Tag" : "Add $sectionTitle Tag",
+                    isEdit ? "${context.lang.edit} $sectionTitle ${context.lang.tag}" : "${context.lang.add} $sectionTitle ${context.lang.tag}",
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
                   ),
 
@@ -1002,8 +790,8 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     onChanged: (v) => controller.isTextNotEmpty.value = v.trim().isNotEmpty,
-                    decoration: const InputDecoration(
-                      hintText: "Enter tag name",
+                    decoration:  InputDecoration(
+                      hintText: context.lang.enterTagName,
                       hintStyle: TextStyle(color: Colors.white38),
                       border: UnderlineInputBorder(),
                     ),
@@ -1025,7 +813,7 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
                             ),
                             child: Text(
-                              "Cancel",
+                              context.lang.cancel,
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white70, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w400),
                             ),
                           ),
@@ -1088,8 +876,8 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                                                   children: [
                                                     Lottie.asset(Assets.lottieSleepSuccess, height: 150, repeat: true),
                                                     const SizedBox(height: 16),
-                                                    const Text(
-                                                      "Sleep note added successfully!",
+                                                     Text(
+                                                      context.lang.sleepNoteAddedSuccessfully,
                                                       textAlign: TextAlign.center,
                                                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
                                                     ),
@@ -1111,7 +899,7 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                                                         //
                                                         // controller.descriptionController.clear();
                                                       },
-                                                      child: const Text("OK", style: TextStyle(color: Colors.white)),
+                                                      child:  Text(context.lang.oK , style: TextStyle(color: Colors.white)),
                                                     ),
                                                   ],
                                                 ),
@@ -1136,7 +924,7 @@ void openCreateTagBottomSheet(BuildContext context, SleepSoundController control
                               ),
 
                               child: Text(
-                                isEdit ? "Update" : "Add",
+                                isEdit ? context.lang.update : context.lang.add,
                                 style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                               ),
                             ),
@@ -1209,7 +997,7 @@ void openBottomSheet(BuildContext context) {
               // 🔹 Center title
               Center(
                 child: Text(
-                  "Set Sleep Timer",
+                  context.lang.setSleepTimer,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 20 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -1260,7 +1048,7 @@ void openBottomSheet(BuildContext context) {
                 Padding(
                   padding: EdgeInsets.only(left: 4 * SizeConfigs.paddingScale),
                   child: Text(
-                    "Min",
+                    context.lang.min,
                     style: TextStyle(color: Colors.white70, fontSize: 22 * SizeConfigs.textScale),
                   ),
                 ),
@@ -1287,7 +1075,7 @@ void openBottomSheet(BuildContext context) {
                 Get.back();
               },
               child: Text(
-                "Set Timer",
+                context.lang.setTimer,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 18 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
               ),
             ),
@@ -1349,7 +1137,7 @@ openAdvanceSleepTrackerBottomSheet(BuildContext context) {
 
               /// TITLE
               Text(
-                "Welcome to the most\nadvanced sleep tracker",
+                "${context.lang.welcomeToTheMost}\n${context.lang.advancedSleepTracker}",
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 24 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                 // style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w600),
@@ -1360,15 +1148,15 @@ openAdvanceSleepTrackerBottomSheet(BuildContext context) {
               SizedBox(height: MediaQuery.of(context).size.height * 0.04),
 
               /// FEATURES
-              const _FeatureItem(icon: Icons.pie_chart_outline, title: "Know about sleep patterns", subtitle: "Gain insight of your sleep."),
+               _FeatureItem(icon: Icons.pie_chart_outline, title: context.lang.knowAboutSleepPatterns, subtitle:  context.lang.gainInsightOfYourSleep),
 
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              const _FeatureItem(icon: Icons.mic_none, title: "Track sleep sounds", subtitle: "Monitor talking and snoring."),
+               _FeatureItem(icon: Icons.mic_none, title:  context.lang.trackSleepSounds, subtitle: context.lang.monitorTalkingAndSnoring),
 
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              const _FeatureItem(icon: Icons.flash_on_outlined, title: "Smart sleep analysis", subtitle: "Improve sleep efficiency."),
+               _FeatureItem(icon: Icons.flash_on_outlined, title:  context.lang.smartSleepAnalysis, subtitle: context.lang.improveSleepEfficiency),
               // Spacer(),
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             ],
@@ -1422,46 +1210,6 @@ class _FeatureItem extends StatelessWidget {
     );
   }
 }
-// class _FeatureItem extends StatelessWidget {
-//   final IconData icon;
-//   final String title;
-//   final String subtitle;
-//
-//   const _FeatureItem({required this.icon, required this.title, required this.subtitle});
-//
-//   Widget build(BuildContext context) {
-//     return Container(
-//       alignment: Alignment.center,
-//       // color: Colors.red,
-//       // width: MediaQuery.of(context).size.width * 0.6, // ✅ centered block
-//       child: Padding(
-//         padding: const EdgeInsets.only(left: 70),
-//         child: ListTile(
-//           dense: true,
-//           contentPadding: EdgeInsets.zero,
-//
-//           leading: Icon(icon, color: Colors.white, size: 28),
-//
-//           title: Text(
-//             title,
-//             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 19),
-//           ),
-//
-//           subtitle: Padding(
-//             padding: const EdgeInsets.only(top: 4),
-//             child: Text(
-//               subtitle,
-//               style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w200),
-//
-//               // Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70, fontSize: 15)
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 opePlaceDevicePictureBottomSheet(BuildContext context) {
   SizeConfigs.init(context);
   SizeConfigs2.init(context);
@@ -1491,7 +1239,7 @@ opePlaceDevicePictureBottomSheet(BuildContext context) {
                   SizedBox(height: 70 * SizeConfigs.paddingScale),
 
                   Text(
-                    "Place the device as picture",
+                    context.lang.placeTheDeviceAsPicture,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 24 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                     // Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26),
@@ -1500,7 +1248,7 @@ opePlaceDevicePictureBottomSheet(BuildContext context) {
                   SizedBox(height: 20 * SizeConfigs.paddingScale),
 
                   Text(
-                    "Please place the phone next to your bed and keep the charger connected.",
+                    context.lang.pleasePlacePhoneNextBedKeepChargerConnected,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w200),
 
@@ -1550,7 +1298,7 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
           SizedBox(height: 20 * SizeConfigs.paddingScale),
 
           Text(
-            "Set your wake up time",
+            context.lang.setYourWakeUpTime,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 24 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
             // Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26),
@@ -1644,7 +1392,7 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
 
                     // FIXED "h"
                     Text(
-                      "h",
+                      context.lang.h,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 25 * SizeConfigs.textScale),
                     ),
                   ],
@@ -1723,7 +1471,7 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
 
                     // FIXED "min"
                     Text(
-                      "min",
+                      context.lang.min,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 25 * SizeConfigs.textScale),
                     ),
                   ],
@@ -1751,7 +1499,7 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
                       childCount: 2,
                       builder: (context, index) {
                         return Obx(() {
-                          final text = index == 0 ? "AM" : "PM";
+                          final text = index == 0 ?  context.lang.AM :  context.lang.PM;
                           final isSelected = controller.isAm.value == (index == 0);
 
                           return Center(
@@ -1810,7 +1558,7 @@ openTrySleepNoteBottomSheet(BuildContext context) {
                   SizedBox(height: 70 * SizeConfigs.paddingScale),
 
                   Text(
-                    "Try Sleep Note?",
+                    context.lang.trySleepNote,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 24 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
                     // Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26),
@@ -1819,7 +1567,7 @@ openTrySleepNoteBottomSheet(BuildContext context) {
                   SizedBox(height: 20 * SizeConfigs.paddingScale),
 
                   Text(
-                    "Sleep note is an easy tool to reveal factors that may stop you from getting a good night's rest.",
+                    context.lang.sleepNoteEasyRevealFactorsGoodNightsRest,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w200),
                   ), // ✅ reduced spacing
@@ -1943,247 +1691,8 @@ class _SleepOnboardingSheet extends StatelessWidget {
                       child: _buildStepContent(context, c.currentStep),
                     ),
                   ),
-                  // AnimatedSwitcher(
-                  //         duration: const Duration(milliseconds: 350),
-                  //         switchInCurve: Curves.easeOut,
-                  //         switchOutCurve: Curves.easeIn,
-                  //         transitionBuilder: (child, animation) {
-                  //           return FadeTransition(opacity: animation, child: child);
-                  //         },
-                  //         child: KeyedSubtree(key: ValueKey(c.currentStep), child: _buildStepContent(context, c.currentStep)),
-                  //       ),
                 ),
 
-                // c.currentStep == SleepOnboardingStep.sleepNote
-                //     ? Padding(
-                //         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, top: 8),
-                //         child: Center(
-                //           child: SizedBox(
-                //             width: SizeConfigs.screenWidth * 0.5,
-                //             height: 50 * SizeConfigs.paddingScale,
-                //             child: ElevatedButton(
-                //               onPressed: () async {
-                //                 await Haptics.vibrate(HapticsType.success);
-                //                 final controller = Get.find<SleepSoundController>();
-                //                 final selectedEnvironment1 = controller.environmentTags.where((e) => e["isSelected"] == true).toList();
-                //                 final selectedToday1 = controller.todayTags.where((e) => e["isSelected"] == true).toList();
-                //                 final selectedOthers1 = controller.otherTags.where((e) => e["isSelected"] == true).toList();
-                //                 final description1 = controller.descriptionController.text.trim();
-                //                 print("-----description----$description1----");
-                //                 print("-----submitSleepNote----2----");
-                //                 print("-----selectedEnvironment----$selectedEnvironment1----");
-                //                 print("-----selectedToday----$selectedToday1----");
-                //                 print("-----selectedOthers----$selectedOthers1----");
-                //
-                //                 final selectedEnvironment = controller.environmentTags.where((e) => e["isSelected"] == true);
-                //
-                //                 final selectedToday = controller.todayTags.where((e) => e["isSelected"] == true);
-                //
-                //                 final selectedOthers = controller.otherTags.where((e) => e["isSelected"] == true);
-                //
-                //                 // 🔹 Combine all selected tags
-                //                 final allSelectedTags = [...selectedEnvironment, ...selectedToday, ...selectedOthers];
-                //
-                //                 // 🔹 Extract only IDs
-                //                 final List<int> noteIds = allSelectedTags.map<int>((e) => e["id"] as int).toList();
-                //
-                //                 final String description = controller.descriptionController.text.trim();
-                //                 print("-----noteIds----$noteIds");
-                //                 print("-----description----$description");
-                //                 final prefs = await SharedPreferences.getInstance();
-                //                 await prefs.setStringList('sleep_note_ids', noteIds.map((e) => e.toString()).toList());
-                //
-                //                 await prefs.setString('sleep_description', controller.descriptionController.text.trim());
-                //
-                //                 // final success = await controller.submitSleepNote();
-                //                 //
-                //                 // if (!success) return; // 👈 STOP here if nothing selected
-                //
-                //                 controller.clearAllSelected();
-                //                 controller.descriptionController.clear();
-                //                 // show success dialog (same as before)
-                //                 // showDialog(
-                //                 //   context: context,
-                //                 //   builder: (context) => Dialog(
-                //                 //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                //                 //     backgroundColor: const Color(0xFF0A152F),
-                //                 //     child: Padding(
-                //                 //       padding: const EdgeInsets.all(20),
-                //                 //       child: Column(
-                //                 //         mainAxisSize: MainAxisSize.min,
-                //                 //         children: [
-                //                 //           Lottie.asset(Assets.lottieSleepSuccess, height: 150, repeat: true),
-                //                 //           const SizedBox(height: 16),
-                //                 //           const Text(
-                //                 //             "Sleep note added successfully!",
-                //                 //             textAlign: TextAlign.center,
-                //                 //             style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                //                 //           ),
-                //                 //           const SizedBox(height: 20),
-                //                 //           ElevatedButton(
-                //                 //             style: ElevatedButton.styleFrom(
-                //                 //               backgroundColor: Colors.pinkAccent,
-                //                 //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                //                 //             ),
-                //                 //             onPressed: () {
-                //                 //               final controller = Get.find<SleepSoundController>();
-                //                 //
-                //                 //               Get.back();
-                //                 //               if (c.steps.isNotEmpty) c.nextStep();
-                //                 //
-                //                 //               controller.descriptionController.clear();
-                //                 //             },
-                //                 //
-                //                 //             child: const Text("OK", style: TextStyle(color: Colors.white)),
-                //                 //           ),
-                //                 //         ],
-                //                 //       ),
-                //                 //     ),
-                //                 //   ),
-                //                 // );
-                //
-                //                 if (c.steps.isNotEmpty) c.nextStep();
-                //
-                //                 controller.descriptionController.clear();
-                //                 c.steps.isEmpty ? null : c.nextStep;
-                //               },
-                //
-                //               style: ElevatedButton.styleFrom(
-                //                 backgroundColor: AppColors.accentColor,
-                //                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                //               ),
-                //               child: Text(
-                //                 "Done",
-                //                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-                //
-                //                 // style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //       )
-                //     : Padding(
-                //         padding: const EdgeInsets.only(bottom: 0),
-                //         child: SizedBox(
-                //           width: MediaQuery.of(context).size.width * 0.7,
-                //           height: 52,
-                //           child: ElevatedButton(
-                //             // onPressed: c.steps.isEmpty ? null : c.nextStep,
-                //             onPressed: c.steps.isEmpty
-                //                 ? null
-                //                 : () async {
-                //               // 1. Trigger a crisp "light impact" tap
-                //               await Haptics.vibrate(HapticsType.heavy);
-                //
-                //               // 2. Run your existing next step logic
-                //               c.nextStep();
-                //             },
-                //             style: ElevatedButton.styleFrom(
-                //               backgroundColor: AppColors.accentColor,
-                //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                //             ),
-                //             child: Text(
-                //               "Continue",
-                //               style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-                //             ),
-                //           ),
-                //         ),
-                //       ),
-                // c.currentStep == SleepOnboardingStep.sleepNote
-                //     ? Padding(
-                //         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, top: 8),
-                //         child: Center(
-                //           child: Obx(
-                //             () => GestureDetector(
-                //               // --- Animation Logic ---
-                //               onTapDown: (_) => c.updateScale(0.92), // Shrink
-                //               onTapUp: (_) => c.updateScale(1.0), // Return to normal
-                //               onTapCancel: () => c.updateScale(1.0),
-                //               child: AnimatedScale(
-                //                 scale: c.scale.value,
-                //                 duration: const Duration(milliseconds: 100),
-                //                 curve: Curves.easeOut,
-                //                 child: SizedBox(
-                //                   width: SizeConfigs.screenWidth * 0.5,
-                //                   height: 50 * SizeConfigs.paddingScale,
-                //                   child: ElevatedButton(
-                //                     onPressed: () async {
-                //                       final controller = Get.find<SleepSoundController>();
-                //
-                //                       // Logic for gathering tags
-                //                       final selectedEnvironment = controller.environmentTags.where((e) => e["isSelected"] == true);
-                //                       final selectedToday = controller.todayTags.where((e) => e["isSelected"] == true);
-                //                       final selectedOthers = controller.otherTags.where((e) => e["isSelected"] == true);
-                //
-                //                       final allSelectedTags = [...selectedEnvironment, ...selectedToday, ...selectedOthers];
-                //                       final List<int> noteIds = allSelectedTags.map<int>((e) => e["id"] as int).toList();
-                //                       final String description = controller.descriptionController.text.trim();
-                //
-                //                       // Save to Preferences
-                //                       final prefs = await SharedPreferences.getInstance();
-                //                       await prefs.setStringList('sleep_note_ids', noteIds.map((e) => e.toString()).toList());
-                //                       await prefs.setString('sleep_description', description);
-                //
-                //                       // UI Reset
-                //                       controller.clearAllSelected();
-                //                       controller.descriptionController.clear();
-                //
-                //                       if (c.steps.isNotEmpty) c.nextStep();
-                //                     },
-                //                     style: ElevatedButton.styleFrom(
-                //                       backgroundColor: AppColors.accentColor,
-                //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                //                     ),
-                //                     child: Text(
-                //                       "Done",
-                //                       style:
-                //                           Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //       )
-                //     : Padding(
-                //         padding: const EdgeInsets.only(bottom: 0),
-                //         child: Center(
-                //           child: Obx(
-                //             () => GestureDetector(
-                //               // --- Animation Logic ---
-                //               onTapDown: (_) => c.updateScale(0.92),
-                //               onTapUp: (_) => c.updateScale(1.0),
-                //               onTapCancel: () => c.updateScale(1.0),
-                //               child: AnimatedScale(
-                //                 scale: c.scale.value,
-                //                 duration: const Duration(milliseconds: 100),
-                //                 curve: Curves.easeOut,
-                //                 child: SizedBox(
-                //                   width: MediaQuery.of(context).size.width * 0.7,
-                //                   height: 52,
-                //                   child: ElevatedButton(
-                //                     onPressed: c.steps.isEmpty
-                //                         ? null
-                //                         : () async {
-                //                             c.nextStep();
-                //                           },
-                //                     style: ElevatedButton.styleFrom(
-                //                       backgroundColor: AppColors.accentColor,
-                //                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                //                     ),
-                //                     child: Text(
-                //                       "Continue",
-                //                       style:
-                //                           Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //       ),
                 c.currentStep == SleepOnboardingStep.sleepNote
                     ? Padding(
                   padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16, top: 8),
@@ -2214,7 +1723,7 @@ class _SleepOnboardingSheet extends StatelessWidget {
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
-                            "Done",
+                            context.lang.done,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 color: Colors.white,
                                 fontSize: 16 * SizeConfigs.textScale,
@@ -2254,7 +1763,7 @@ class _SleepOnboardingSheet extends StatelessWidget {
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
-                            "Continue",
+                            context.lang.continues,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 color: Colors.white,
                                 fontSize: 16 * SizeConfigs.textScale,
@@ -2268,31 +1777,6 @@ class _SleepOnboardingSheet extends StatelessWidget {
                 ),
                 c.currentStep == SleepOnboardingStep.sleepNote ? SizedBox() : SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-                // if (c.currentStep == SleepOnboardingStep.setSmartAlarm)
-                //   Padding(
-                //     padding: const EdgeInsets.only(bottom: 0),
-                //     child: GestureDetector(
-                //       onTap: () async {
-                //         await setSkipSetSmartAlarm(true);
-                //
-                //         // ✅ remove immediately for current session
-                //         c.steps.remove(SleepOnboardingStep.setSmartAlarm);
-                //         c.update();
-                //
-                //         // ✅ continue onboarding
-                //         // c.nextStep();
-                //       },
-                //       child: SizedBox(
-                //         width: MediaQuery.of(context).size.width * 0.7,
-                //         height: 52,
-                //         child: Text(
-                //           "Not now",
-                //           textAlign: TextAlign.center,
-                //           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-                //         ),
-                //       ),
-                //     ),
-                //   ),
                 if (c.currentStep == SleepOnboardingStep.placeDevice)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 0),
@@ -2308,7 +1792,7 @@ class _SleepOnboardingSheet extends StatelessWidget {
                         width: MediaQuery.of(context).size.width * 0.7,
                         height: 52,
                         child: Text(
-                          "Don't show again",
+                          context.lang.dontShowAgain,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
 

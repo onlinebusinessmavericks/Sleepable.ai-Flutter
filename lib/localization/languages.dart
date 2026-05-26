@@ -931,4 +931,43 @@ abstract class BaseLanguage {
   String get tlBilling;
   String get tlBillingSub;
   String get appSettings;
+
+  /// bottom sheet
+  String get welcomeToTheMost;
+  String get advancedSleepTracker;
+  String get knowAboutSleepPatterns;
+  String get gainInsightOfYourSleep;
+  String get monitorTalkingAndSnoring;
+  String get trackSleepSounds;
+  String get smartSleepAnalysis;
+  String get improveSleepEfficiency;
+  String get placeTheDeviceAsPicture;
+  String get pleasePlacePhoneNextBedKeepChargerConnected;
+  String get setYourWakeUpTime;
+  String get trySleepNote;
+  String get sleepNoteEasyRevealFactorsGoodNightsRest;
+  String get done;
+  String get dontShowAgain;
+  String get addSleepNote;
+  String get others;
+  String get describeYourDay;
+  String get sleepNoteHintText;
+  String get add;
+  String get deleteNote;
+  String get areSureWantDeleteNote;
+  String get thisActionCannotUndone;
+  String get failedDeleteNote;
+  String get edit;
+  String get tag;
+  String get enterTagName;
+  String get sleepNoteAddedSuccessfully;
+  String get oK;
+  String get update;
+  String get setSleepTimer;
+  String get soundList;
+  String get noItemsFound;
+  String get storyteller;
+  String get relaxingMelody;
+  String get relaxYourBody;
+  String get unknownArtist;
 }

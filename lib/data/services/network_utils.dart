@@ -48,6 +48,9 @@ Map<String, String> buildHeaderTokens({bool isAuthRequired = true}) {
 
   header[HttpHeaders.contentTypeHeader] = 'application/json';
   header[HttpHeaders.acceptHeader] = 'application/json';
+  // final String currentLanguageCode = getStringAsync("selected_language_code", defaultValue: "en");
+  // // header[HttpHeaders.acceptLanguageHeader] = currentLanguageCode;
+  // header['language'] = currentLanguageCode;
 
   return header;
 }

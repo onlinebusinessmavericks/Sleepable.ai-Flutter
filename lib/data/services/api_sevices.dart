@@ -189,14 +189,6 @@ class SoundsApis {
     return CommonResponse.fromJson(response);
   }
 
-  // static Future<List<MixedSoundRecord>> fetchSoundsMixedRecords({int page = 1, int pageSize = 10}) async {
-  //   final response = await buildHttpResponse(endPoint: '${APIEndPoints.soundsMixedList}?page=$page&page_size=$pageSize', method: MethodType.get);
-  //
-  //   // Use the main response class for parsing logic consistency
-  //   final mixedListResponse = SoundsMixedListResponse.fromJson(response);
-  //
-  //   return mixedListResponse.data?.records ?? [];
-  // }
   static Future<List<MixedSoundRecord>> fetchSoundsMixedRecords({int page = 1, int pageSize = 10}) async {
     final response = await buildHttpResponse(endPoint: '${APIEndPoints.soundsMixedList}?page=$page&page_size=$pageSize', method: MethodType.get);
 
@@ -213,84 +205,6 @@ class SoundsApis {
 
     return mixedListResponse.data?.records ?? [];
   }
-
-  //
-  // static Future<List<MixedSoundRecord>> fetchSoundsMixedRecords({int page = 1, int pageSize = 10}) async {
-  //   final response = await buildHttpResponse(endPoint: '${APIEndPoints.soundsMixedList}?page=$page&page_size=$pageSize', method: MethodType.get);
-  //
-  //   final data = response['data'];
-  //   if (data is Map && data['records'] is List) {
-  //     return List<MixedSoundRecord>.from(data['records'].map((e) => MixedSoundRecord.fromJson(e)));
-  //   }
-  //
-  //   return [];
-  // }
-  // static Future<List<SoundItem>> fetchFavoriteSoundsList({required String categorySlug, required String subCategorySlug}) async {
-  //   final response = await buildHttpResponse(
-  //     endPoint: '${APIEndPoints.fetchSoundsList}?page=1&subcategory_slug=$subCategorySlug&category_slug=$categorySlug',
-  //     method: MethodType.get,
-  //   );
-  //
-  //   final data = response['data'];
-  //   if (data is Map && data['records'] is List) {
-  //     return (data['records'] as List).map((e) {
-  //       // 🔥 Extract the "sound" object from the record wrapper
-  //       return SoundItem.fromJson(e['sound']);
-  //     }).toList();
-  //   }
-  //   return [];
-  // }
-  // static Future<List<SoundItem>> fetchFavoriteSoundsList({required String categorySlug, required String subCategorySlug}) async {
-  //   final response = await buildHttpResponse(
-  //     endPoint: '${APIEndPoints.fetchSoundsList}?page=1&subcategory_slug=$subCategorySlug&category_slug=$categorySlug',
-  //     method: MethodType.get,
-  //   );
-  //
-  //   // 1. Ensure response is not null and has data
-  //   if (response == null || response['data'] == null) return [];
-  //
-  //   final data = response['data'];
-  //
-  //   if (data is Map && data['records'] is List) {
-  //     return (data['records'] as List).map((e) {
-  //       // 2. Safely check if 'sound' exists and is a Map
-  //       if (e != null && e['sound'] is Map<String, dynamic>) {
-  //         return SoundItem.fromJson(e['sound']);
-  //       }
-  //       // 3. Return a null or handle empty items (we filter them out below)
-  //       return null;
-  //     })
-  //         .whereType<SoundItem>() // 4. This removes any nulls from the list
-  //         .toList();
-  //   }
-  //   return [];
-  // }
-  // static Future<List<SoundItem>> fetchFavoriteSoundsList({int page = 1}) async {
-  //   final response = await buildHttpResponse(
-  //     // 🔥 Use the specific Favorite List endpoint
-  //     endPoint: '${APIEndPoints.fetchFavoriteSounds}?page=$page',
-  //     method: MethodType.get,
-  //   );
-  //
-  //   if (response == null || response['data'] == null) return [];
-  //
-  //   final data = response['data'];
-  //
-  //   // Handle both cases: Data as Map (Paginated) or Data as List (Empty)
-  //   if (data is Map<String, dynamic> && data['records'] is List) {
-  //     final List records = data['records'];
-  //
-  //     return records.map((e) {
-  //       // 🔥 CRITICAL: Extract the nested 'sound' object
-  //       if (e != null && e['sound'] is Map<String, dynamic>) {
-  //         return SoundItem.fromJson(e['sound']);
-  //       }
-  //       return null;
-  //     }).whereType<SoundItem>().toList();
-  //   }
-  //
-  //   return [];
-  // }
 
   // // In your SoundsApis class
   static Future<CommonResponse> toggleFavorite({required int soundId}) async {
@@ -456,9 +370,9 @@ class SettingsApis {
       // buildHttpResponse automatically context se token uthata hai
       // aur method type PATCH use karega.
       final response = await buildHttpResponse(
-        endPoint: APIEndPoints.updateUser,
+        endPoint: APIEndPoints.updateProfile,
         request: request,
-        method: MethodType.patch,
+        method: MethodType.put,
       );
 
       // Agar backend success boolean bhej raha hai toh use check karein

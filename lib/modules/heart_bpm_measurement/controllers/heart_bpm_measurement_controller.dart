@@ -153,7 +153,7 @@ class HeartBpmMeasurementController extends GetxController {
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
 
         // 🔥 TOAST 2: Server response sync alert
-        toast("✅ Session Active! ID: ${response.data!.sleepTrackerId}");
+        // toast("✅ Session Active! ID: ${response.data!.sleepTrackerId}");
 
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
@@ -178,12 +178,12 @@ class HeartBpmMeasurementController extends GetxController {
         Get.offNamed(Routes.sleepTracker);
       }
       else {
-        toast("❌ Backend Rejected Session: ${response.message}");
+        // toast("❌ Backend Rejected Session: ${response.message}");
         Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
       }
 
     } catch (e) {
-      toast("💥 Code Exception Triggered: ${e.toString()}");
+      // toast("💥 Code Exception Triggered: ${e.toString()}");
       Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
       isLoading.value = false;

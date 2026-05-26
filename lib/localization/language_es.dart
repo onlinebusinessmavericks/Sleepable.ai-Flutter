@@ -1701,4 +1701,80 @@ class LanguageEs extends BaseLanguage {
   String get default1 => 'Por defecto';
   @override 
   String get definition => 'Definición';
+
+  ///
+   @override
+  String get welcomeToTheMost => 'Bienvenido al más';
+   @override
+  String get advancedSleepTracker => 'monitor de sueño avanzado';
+   @override
+  String get knowAboutSleepPatterns => 'Conozca los patrones de sueño';
+   @override
+  String get gainInsightOfYourSleep => 'Obtén información valiosa sobre tu sueño.';
+   @override
+  String get monitorTalkingAndSnoring => 'Controlar las conversaciones y los ronquidos.';
+   @override
+  String get trackSleepSounds => 'Grabar sonidos para dormir';
+   @override
+  String get smartSleepAnalysis => 'Análisis inteligente del sueño';
+   @override
+  String get improveSleepEfficiency => 'Mejorar la calidad del sueño.';
+   @override
+  String get placeTheDeviceAsPicture => 'Coloca el dispositivo como se muestra en la imagen.';
+   @override
+  String get pleasePlacePhoneNextBedKeepChargerConnected => 'Por favor, coloque el teléfono junto a su cama y mantenga el cargador conectado.';
+   @override
+  String get setYourWakeUpTime => 'Establece tu hora de despertar.';
+   @override
+  String get trySleepNote => '¿Has probado Sleep Note?';
+   @override
+  String get sleepNoteEasyRevealFactorsGoodNightsRest => 'Sleep Note es una herramienta sencilla para descubrir factores que pueden impedirle descansar bien por la noche.';
+   @override
+  String get done => 'Hecho';
+   @override
+  String get dontShowAgain => 'No volver a mostrarlo';
+  @override
+  String get addSleepNote => 'Agregar nota de sueño';
+  @override
+  String get others => 'Otros';
+  @override
+  String get describeYourDay => '¡Quizás quieras describirnos tu día!';
+  @override
+  String get sleepNoteHintText => 'Hoy tomé 3 tazas de café... y al mediodía tenía sueño/pereza 🥱';
+  @override
+  String get add => 'Agregar';
+  @override
+  String get deleteNote => '¿Eliminar nota?';
+  @override
+  String get areSureWantDeleteNote => '¿Estás seguro de que quieres eliminar esta nota?';
+  @override
+  String get thisActionCannotUndone => 'Esta acción no se puede deshacer.';
+  @override
+  String get failedDeleteNote => 'No se pudo eliminar la nota';
+  @override
+  String get edit => 'Editar';
+  @override
+  String get tag => 'Etiqueta';
+  @override
+  String get enterTagName => 'Introduzca el nombre de la etiqueta';
+  @override
+  String get sleepNoteAddedSuccessfully => '¡Nota de sueño añadida correctamente!';
+  @override
+  String get oK => 'DE ACUERDO';
+  @override
+  String get update => 'Actualizar';
+  @override
+  String get setSleepTimer => 'Configurar temporizador de apagado';
+  @override
+  String get soundList => 'Lista de sonidos';
+  @override
+  String get noItemsFound => 'No se encontraron artículos';
+  @override
+  String get storyteller => 'Cuentista';
+  @override
+  String get relaxingMelody => 'Melodía relajante';
+  @override
+  String get relaxYourBody => 'Relaja tu cuerpo';
+  @override
+  String get unknownArtist => 'Artista desconocido';
 }

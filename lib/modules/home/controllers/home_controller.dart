@@ -455,13 +455,32 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     }
   }
+  // List<Color> getGradientColors(double progress) {
+  //   if (progress < 0.3) return [Colors.red, Colors.orange];
+  //   if (progress < 0.5) return [Colors.orange, Colors.yellow];
+  //   if (progress < 0.8) return [AppColors.animationStartColor, AppColors.animationEndColor];
+  //   return [Colors.green, Colors.teal];
+  // }
   List<Color> getGradientColors(double progress) {
-    if (progress < 0.3) return [Colors.red, Colors.orange];
-    if (progress < 0.5) return [Colors.orange, Colors.yellow];
-    if (progress < 0.8) return [AppColors.animationStartColor, AppColors.animationEndColor];
+    // 1. Agar progress 30% se kam hai (0.0 se 0.29) -> Red/Orange
+    if (progress < 0.3) {
+      return [Colors.red, Colors.orange];
+    }
+
+    // 2. Agar progress 60% se kam hai (0.3 se 0.59) -> Orange/Yellow
+    if (progress < 0.6) {
+      return [Colors.orange, Colors.yellow];
+    }
+
+    // 3. Agar progress 100% se kam hai (0.6 se 0.99) -> Blue/Purple (Jo aapka normal theme color hai)
+    // 🎯 Aapka 5.55 hours (69%) ab is range mein aayega, toh yahan Green nahi dikhega!
+    if (progress < 1.0) {
+      return [AppColors.animationStartColor, AppColors.animationEndColor];
+    }
+
+    // 4. Jab progress exact 1.0 (8 hours) ya usse upar hogi, tabhi Green/Teal milega!
     return [Colors.green, Colors.teal];
   }
-
   // final List<SleeppediaItem> dashboardSleeppedia = sleeppediaList.take(3).toList();
   final List<SleeppediaItem> dashboardSleeppedia = getLocalizedSleeppediaList().take(3).toList();
   // final List<Map<String, dynamic>> sleeppedia = [
@@ -1155,17 +1174,89 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   //   {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context!.lang.dreamBot},
   //   {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context!.lang.breathwork},
   // ];
-  List<Map<String, dynamic>>get allItems => [
-    {'id': 'white_noise', 'icon': Icons.music_note, 'label': Get.context?.lang.whiteNoise ?? "White Noise"},
-    {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': Get.context?.lang.sleepAid ?? "Sleep Aid"},
-    {'id': 'premium', 'icon': Icons.star, 'label': Get.context?.lang.premium ?? "Premium"},
-    {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': Get.context?.lang.story ?? "Story"}, // ✅ Localized
-    {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context?.lang.dreamBot ?? "DreamBot"},
-    {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context?.lang.breathwork ?? "Breathwork"},
-  ];
-
-  // 2. Ek reactive list banayein UI ke liye
+  // List<Map<String, dynamic>>get allItems => [
+  //   {'id': 'white_noise', 'icon': Icons.music_note, 'label': Get.context?.lang.whiteNoise ?? "White Noise"},
+  //   {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': Get.context?.lang.sleepAid ?? "Sleep Aid"},
+  //   {'id': 'premium', 'icon': Icons.star, 'label': Get.context?.lang.premium ?? "Premium"},
+  //   {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': Get.context?.lang.story ?? "Story"}, // ✅ Localized
+  //   {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context?.lang.dreamBot ?? "DreamBot"},
+  //   {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context?.lang.breathwork ?? "Breathwork"},
+  // ];
+  //
+  // // 2. Ek reactive list banayein UI ke liye
+  // var filteredItems = <Map<String, dynamic>>[].obs;
+  // void updateFilteredItems() {
+  //   final subController = Get.isRegistered<SubscriptionController>()
+  //       ? Get.find<SubscriptionController>()
+  //       : Get.put(SubscriptionController());
+  //
+  //   bool isPremium = subController.isPremium.value;
+  //   print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
+  //
+  //   List<Map<String, dynamic>> newList = [];
+  //
+  //   if (isPremium) {
+  //     // ✅ Premium hai: Premium hatao, Story rakho
+  //     newList = allItems.where((item) => item['id'] != 'premium').toList();
+  //   } else {
+  //     // ❌ Free hai: Premium rakho, Story hatao
+  //     newList = allItems.where((item) => item['id'] != 'story').toList();
+  //   }
+  //
+  //   filteredItems.assignAll(newList);
+  // }
+//   List<Map<String, dynamic>> getLocalizedItems() {
+//     final context = Get.context;
+//     return [
+//       {'id': 'white_noise', 'icon': Icons.music_note, 'label': context?.lang.whiteNoise ?? "White Noise"},
+//       {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': context?.lang.sleepAid ?? "Sleep Aid"},
+//       {'id': 'premium', 'icon': Icons.star, 'label': context?.lang.premium ?? "Premium"},
+//       {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': context?.lang.story ?? "Story"},
+//       {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': context?.lang.dreamBot ?? "DreamBot"},
+//       {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': context?.lang.breathwork ?? "Breathwork"},
+//     ];
+//   }
+//
+// // 2. Reactive list UI ke liye as it is rahegi
   var filteredItems = <Map<String, dynamic>>[].obs;
+//
+// // 3. Is function ko jab bhi language change ho ya app init ho tab call karna h
+//   void updateFilteredItems() {
+//     final subController = Get.isRegistered<SubscriptionController>()
+//         ? Get.find<SubscriptionController>()
+//         : Get.put(SubscriptionController());
+//
+//     bool isPremium = subController.isPremium.value;
+//     print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
+//
+//     // 🔥 FIX: Hamesha fresh localized list generate karo taaki naye locale ki strings load hon
+//     List<Map<String, dynamic>> freshItems = getLocalizedItems();
+//     List<Map<String, dynamic>> newList = [];
+//
+//     if (isPremium) {
+//       // ✅ Premium hai: Premium hatao, Story rakho
+//       newList = freshItems.where((item) => item['id'] != 'premium').toList();
+//     } else {
+//       // ❌ Free hai: Premium rakho, Story hatao
+//       newList = freshItems.where((item) => item['id'] != 'story').toList();
+//     }
+//
+//     filteredItems.assignAll(newList);
+//     filteredItems.refresh(); // 🔥 Force refresh reactive UI workers
+//   }
+// 1. आइटम लिस्ट को स्टेटिक और क्लीन रखें (यहाँ context.lang हटा दें)
+  List<Map<String, dynamic>> getLocalizedItems() {
+    return [
+      {'id': 'white_noise', 'icon': Icons.music_note, 'lang_key': 'white_noise'},
+      {'id': 'sleep_aid', 'icon': Icons.bedtime, 'lang_key': 'sleep_aid'},
+      {'id': 'premium', 'icon': Icons.star, 'lang_key': 'premium'},
+      {'id': 'story', 'icon': Icons.auto_stories_rounded, 'lang_key': 'story'},
+      {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot'},
+      {'id': 'breathwork', 'icon': Icons.lens_blur, 'lang_key': 'breathwork'},
+    ];
+  }
+
+// 2. फ़िल्टर फंक्शन को बिना किसी स्ट्रिंग डिपेंडेंसी के चलाएं
   void updateFilteredItems() {
     final subController = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
@@ -1174,28 +1265,16 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     bool isPremium = subController.isPremium.value;
     print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
 
+    List<Map<String, dynamic>> freshItems = getLocalizedItems();
     List<Map<String, dynamic>> newList = [];
 
     if (isPremium) {
-      // ✅ Premium hai: Premium hatao, Story rakho
-      newList = allItems.where((item) => item['id'] != 'premium').toList();
+      newList = freshItems.where((item) => item['id'] != 'premium').toList();
     } else {
-      // ❌ Free hai: Premium rakho, Story hatao
-      newList = allItems.where((item) => item['id'] != 'story').toList();
+      newList = freshItems.where((item) => item['id'] != 'story').toList();
     }
 
     filteredItems.assignAll(newList);
+    filteredItems.refresh(); // UI को फ़ोर्स रिफ्रेश करेगा
   }
-  // void updateFilteredItems() {
-  //   final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
-  //   print("STABLE DEBUG: Running Filter. User Premium: ${subController.isPremium.value}");
-  //
-  //   if (subController.isPremium.value == true) {
-  //     // strict check using 'id'
-  //     final newList = allItems.where((item) => item['id'] != 'premium').toList();
-  //     filteredItems.assignAll(newList);
-  //   } else {
-  //     filteredItems.assignAll(allItems);
-  //   }}
-/// Payment
 }

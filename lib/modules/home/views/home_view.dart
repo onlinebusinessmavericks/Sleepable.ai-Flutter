@@ -169,114 +169,21 @@ class HomeScreen extends GetView<HomeController> {
                                       itemBuilder: (context, index) {
                                         // final item = controller.items[index];
                                       final item = currentItems[index];
+                                      String itemLabel = "";
+                                      switch (item['lang_key']) {
+                                        case 'white_noise': itemLabel = context.lang.whiteNoise; break;
+                                        case 'sleep_aid': itemLabel = context.lang.sleepAid; break;
+                                        case 'premium': itemLabel = context.lang.premium; break;
+                                        case 'story': itemLabel = context.lang.story ?? "Story"; break;
+                                        case 'dreamBot': itemLabel = context.lang.dreamBot; break;
+                                        case 'breathwork': itemLabel = context.lang.breathwork; break;
+                                        default: itemLabel = "Class";
+                                      }
                                         return Obx(() {
                                           final isTapped = controller.tappedIndex.value == index;
-                                          final lang = Get.context?.lang;
                                           return GestureDetector(
-
-                                            // onTap: () {
-                                            //   controller.tappedIndex.value = index;
-                                            //
-                                            //   Future.delayed(const Duration(milliseconds: 120), () {
-                                            //     if (controller.tappedIndex.value == index) {
-                                            //       controller.tappedIndex.value = -1;
-                                            //     }
-                                            //
-                                            //     // 🔥 THE FIX: Safe Retrieval for your Controllers
-                                            //
-                                            //     if (item['label'] == 'White Noise') {
-                                            //       // 1. Setup State
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "white-noise", jumpFilter: "__all__");
-                                            //       // 2. Switch Tab
-                                            //       dashboardController.changeTab(1);
-                                            //     } else if (item['label'] == 'Sleep Aid') {
-                                            //       // 1. Setup State
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "music", jumpFilter: "__all__");
-                                            //       // 2. Switch Tab
-                                            //       dashboardController.changeTab(1);
-                                            //       // showPremiumOfferSheet4(context);
-                                            //     }
-                                            //     else if (item['id'] == 'story') {
-                                            //       // 🔥 Story click hone par Sleep Sound ke 'story' filter par jump karein
-                                            //
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "story", jumpFilter: "__all__"); // Ya jo bhi aapka filter name ho
-                                            //       dashboardController.changeTab(1);
-                                            //     // } else if (item['label'] == 'Premium' || item['label'] == Get.context!.lang.premium) {
-                                            //       // Shortcut for cleaner code
-                                            //       } else if (item['label'] == 'Premium' || (lang != null && item['label'] == lang.premium)) {
-                                            //       controller.showRotatingPremiumSheet(context);
-                                            //     // else if (item['label'] == 'Premium') {
-                                            //     //   // 🔥 Use the controller to show the next rotating sheet
-                                            //     //   controller.showRotatingPremiumSheet(context);
-                                            //     }
-                                            //     else if (item['label'] == 'Dream Bot') {
-                                            //       Get.toNamed(
-                                            //         Routes.dreamBot,
-                                            //         parameters: {
-                                            //           "fromProgress": "true", // Tells controller to use ChatApis
-                                            //           "dreamId": "0",
-                                            //         },
-                                            //       );
-                                            //     } else if (item['label'] == 'Breathwork') {
-                                            //       Get.toNamed(Routes.breathwork);
-                                            //     }
-                                            //
-                                            //     print("$isTapped ${controller.tappedIndex.value} ${item['label']}");
-                                            //   });
-                                            // },
-                                            // onTap: () {
-                                            //   controller.tappedIndex.value = index;
-                                            //
-                                            //   Future.delayed(const Duration(milliseconds: 120), () {
-                                            //     if (controller.tappedIndex.value == index) {
-                                            //       controller.tappedIndex.value = -1;
-                                            //     }
-                                            //
-                                            //     // 🔥 THE FIX: Safe Retrieval for your Controllers
-                                            //
-                                            //     if (item['label'] == 'White Noise') {
-                                            //       // 1. Setup State
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "white-noise", jumpFilter: "__all__");
-                                            //       // 2. Switch Tab
-                                            //       dashboardController.changeTab(1);
-                                            //     } else if (item['label'] == 'Sleep Aid') {
-                                            //       // 1. Setup State
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "music", jumpFilter: "__all__");
-                                            //       // 2. Switch Tab
-                                            //       dashboardController.changeTab(1);
-                                            //       // showPremiumOfferSheet4(context);
-                                            //     }
-                                            //     else if (item['id'] == 'story') {
-                                            //       // 🔥 Story click hone par Sleep Sound ke 'story' filter par jump karein
-                                            //
-                                            //       sleepSoundController.setJumpArguments(jumpTab: "story", jumpFilter: "__all__"); // Ya jo bhi aapka filter name ho
-                                            //       dashboardController.changeTab(1);
-                                            //       // } else if (item['label'] == 'Premium' || item['label'] == Get.context!.lang.premium) {
-                                            //       // Shortcut for cleaner code
-                                            //     } else if (item['label'] == 'Premium' || (lang != null && item['label'] == lang.premium)) {
-                                            //       controller.showRotatingPremiumSheet(context);
-                                            //       // else if (item['label'] == 'Premium') {
-                                            //       //   // 🔥 Use the controller to show the next rotating sheet
-                                            //       //   controller.showRotatingPremiumSheet(context);
-                                            //     }
-                                            //     else if (item['label'] == 'Dream Bot') {
-                                            //       Get.toNamed(
-                                            //         Routes.dreamBot,
-                                            //         parameters: {
-                                            //           "fromProgress": "true", // Tells controller to use ChatApis
-                                            //           "dreamId": "0",
-                                            //         },
-                                            //       );
-                                            //     } else if (item['label'] == 'Breathwork') {
-                                            //       Get.toNamed(Routes.breathwork);
-                                            //     }
-                                            //
-                                            //     print("$isTapped ${controller.tappedIndex.value} ${item['label']}");
-                                            //   });
-                                            // },
                                             onTap: () {
                                               controller.tappedIndex.value = index;
-
                                               Future.delayed(const Duration(milliseconds: 120), () {
                                                 if (controller.tappedIndex.value == index) {
                                                   controller.tappedIndex.value = -1;
@@ -333,7 +240,7 @@ class HomeScreen extends GetView<HomeController> {
                                                   ),
                                                   SizedBox(height: 6 * SizeConfigs.paddingScale),
                                                   Text(
-                                                    item['label'],
+                                                    itemLabel,
                                                     maxLines: 2,
                                                     textAlign: TextAlign.center,
                                                     style: Theme
@@ -538,14 +445,144 @@ class HomeScreen extends GetView<HomeController> {
                     //   ),
                     // ).paddingSymmetric(horizontal: 18 * SizeConfigs.paddingScale),
                     /// Last Night's Sleep (Old UI style + New API Data)
+                    // Obx(() {
+                    //   // 1. Extract Data from API model
+                    //   final summary = controller.homeData.value?.data?.sleepSummary;
+                    //   final sleepHours = summary?.totalSleepHours ?? 0.0;
+                    //
+                    //   final qualityRating = summary?.qualityRating ?? 0;
+                    //   // final progress = (summary?.progressPercentage ?? 0) / 100;
+                    //   double actualHours = summary?.totalSleepHours ?? 0.0; // e.g. 5.7
+                    //   double goalHours = summary?.goalHours ?? 8.0;
+                    //   double progress = (actualHours / goalHours).clamp(0.0, 1.0);
+                    //
+                    //   return Container(
+                    //     padding: const EdgeInsets.only(top: 10, bottom: 15, left: 18, right: 18),
+                    //     decoration: BoxDecoration(
+                    //       color: AppColors.card,
+                    //       borderRadius: BorderRadius.circular(20),
+                    //       border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                    //     ),
+                    //     child: Column(
+                    //       crossAxisAlignment: CrossAxisAlignment.start,
+                    //       children: [
+                    //         SizedBox(height: 4 * SizeConfigs.paddingScale),
+                    //         Row(
+                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //           children: [
+                    //             Text(
+                    //               context.lang.lastNightSleep,
+                    //               style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.white, fontSize: 22 * SizeConfigs.textScale),
+                    //             ),
+                    //             Padding(
+                    //               padding: const EdgeInsets.only(right: 1.0),
+                    //               child: Image.asset(Assets.iconsGraph, height: 20, width: 30, color: AppColors.graphIconColor),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         SizedBox(height: 18 * SizeConfigs.paddingScale),
+                    //         Row(
+                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //           crossAxisAlignment: CrossAxisAlignment.end,
+                    //           children: [
+                    //             Column(
+                    //               crossAxisAlignment: CrossAxisAlignment.start,
+                    //               children: [
+                    //                 Text(
+                    //                   "${sleepHours}${context.lang.h}",
+                    //                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900, color: AppColors.white, fontSize: 48 * SizeConfigs.textScale, height: 1),
+                    //                 ),
+                    //                 Text(
+                    //                   context.lang.totalSleep,
+                    //                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: AppColors.textBoldColor, fontSize: 15 * SizeConfigs.textScale),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //             Column(
+                    //               crossAxisAlignment: CrossAxisAlignment.end,
+                    //               mainAxisAlignment: MainAxisAlignment.end,
+                    //               children: [
+                    //                 Row(
+                    //                   children: List.generate(5, (index) {
+                    //                     if (index < qualityRating.floor()) {
+                    //                       // 🌟 FULL STAR: Index is completely less than the rating (e.g., index 0, 1 for rating 2.5)
+                    //                       return Icon(Icons.star_rounded, color: AppColors.starFillColor);
+                    //                     } else if (index == qualityRating.floor() && (qualityRating % 1) != 0) {
+                    //                       // 🌓 HALF STAR: Index matches the floor, and there is a decimal remainder (e.g., index 2 for rating 2.5)
+                    //                       return Icon(Icons.star_half_rounded, color: AppColors.starFillColor);
+                    //                     } else {
+                    //                       // 🌑 EMPTY STAR: Everything else
+                    //                       return Icon(Icons.star_rounded, color: AppColors.starColor);
+                    //                     }
+                    //                   }),
+                    //                 ),
+                    //                 Text(
+                    //                   context.lang.quality,
+                    //                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: AppColors.textBoldColor, fontSize: 15 * SizeConfigs.textScale),
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         SizedBox(height: 10 * SizeConfigs.paddingScale),
+                    //
+                    //         /// Keeping your original "AnimatedContainer" and "MediaQuery" logic
+                    //         TweenAnimationBuilder<double>(
+                    //           tween: Tween(begin: 0, end: progress),
+                    //           duration: const Duration(seconds: 2),
+                    //           curve: Curves.easeInOut,
+                    //           builder: (context, value, _) {
+                    //             final gradientColors = controller.getGradientColors(value);
+                    //
+                    //             // 🔥 LayoutBuilder use karein taaki parent Container ki exact width mile
+                    //             return LayoutBuilder(builder: (context, constraints) {
+                    //               // 🎯 Calculate safe width: constraints.maxWidth se bar kabhi bahar nahi jayega
+                    //               // Aur exact percentage fill hoga.
+                    //               final double fillWidth = constraints.maxWidth * value;
+                    //
+                    //               return Container(
+                    //                 height: 12,
+                    //                 width: double.infinity, // Parent ka pura space occupy karega
+                    //                 decoration: BoxDecoration(
+                    //                     color: Colors.grey[800],
+                    //                     borderRadius: BorderRadius.circular(12)
+                    //                 ),
+                    //                 child: Align(
+                    //                   alignment: Alignment.centerLeft,
+                    //                   child: AnimatedContainer(
+                    //                     duration: const Duration(milliseconds: 200),
+                    //                     width: fillWidth,
+                    //                     decoration: BoxDecoration(
+                    //                       borderRadius: BorderRadius.circular(12),
+                    //                       gradient: LinearGradient(
+                    //                           colors: gradientColors,
+                    //                           begin: Alignment.centerLeft,
+                    //                           end: Alignment.centerRight
+                    //                       ),
+                    //                     ),
+                    //                   ),
+                    //                 ),
+                    //               );
+                    //             });
+                    //           },
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ).paddingSymmetric(horizontal: 18 * SizeConfigs.paddingScale);
+                    // }),
                     Obx(() {
                       // 1. Extract Data from API model
                       final summary = controller.homeData.value?.data?.sleepSummary;
                       final sleepHours = summary?.totalSleepHours ?? 0.0;
                       final qualityRating = summary?.qualityRating ?? 0;
-                      // final progress = (summary?.progressPercentage ?? 0) / 100;
-                      double actualHours = summary?.totalSleepHours ?? 0.0; // e.g. 5.7
-                      double goalHours = summary?.goalHours ?? 8.0;
+
+                      double actualHours = summary?.totalSleepHours ?? 0.0;
+
+                      // 🔥 FIX 1: Agar hamesha 8 hours ka hi goal rakhna hai, toh API se variable mat lo.
+                      // Direct 8.0 hardcode karo taaki calculation hamesha 8 ke hisab se ho.
+                      double goalHours = 8.0;
+
+                      // 5.55 / 8.0 = 0.69375 (Clamping isko 0.69 hi rakhegi, 1.0 nahi hone degi)
                       double progress = (actualHours / goalHours).clamp(0.0, 1.0);
 
                       return Container(
@@ -597,13 +634,10 @@ class HomeScreen extends GetView<HomeController> {
                                     Row(
                                       children: List.generate(5, (index) {
                                         if (index < qualityRating.floor()) {
-                                          // 🌟 FULL STAR: Index is completely less than the rating (e.g., index 0, 1 for rating 2.5)
                                           return Icon(Icons.star_rounded, color: AppColors.starFillColor);
                                         } else if (index == qualityRating.floor() && (qualityRating % 1) != 0) {
-                                          // 🌓 HALF STAR: Index matches the floor, and there is a decimal remainder (e.g., index 2 for rating 2.5)
                                           return Icon(Icons.star_half_rounded, color: AppColors.starFillColor);
                                         } else {
-                                          // 🌑 EMPTY STAR: Everything else
                                           return Icon(Icons.star_rounded, color: AppColors.starColor);
                                         }
                                       }),
@@ -618,57 +652,30 @@ class HomeScreen extends GetView<HomeController> {
                             ),
                             SizedBox(height: 10 * SizeConfigs.paddingScale),
 
-                            /// Keeping your original "AnimatedContainer" and "MediaQuery" logic
-                            // TweenAnimationBuilder<double>(
-                            //   tween: Tween(begin: 0, end: progress),
-                            //   duration: const Duration(seconds: 2),
-                            //   curve: Curves.easeInOut,
-                            //   builder: (context, value, _) {
-                            //     // Using your controller's gradient logic
-                            //     final gradientColors = controller.getGradientColors(value);
-                            //
-                            //     return Container(
-                            //       height: 12,
-                            //       margin: const EdgeInsets.only(right: 3),
-                            //       decoration: BoxDecoration(color: Colors.grey[800], borderRadius: BorderRadius.circular(12)),
-                            //       child: Align(
-                            //         alignment: Alignment.centerLeft,
-                            //         child: AnimatedContainer(
-                            //           duration: const Duration(milliseconds: 200),
-                            //           width: (value * (MediaQuery.of(context).size.width - 72)),
-                            //           decoration: BoxDecoration(
-                            //             borderRadius: BorderRadius.circular(12),
-                            //             gradient: LinearGradient(colors: gradientColors, begin: Alignment.centerLeft, end: Alignment.centerRight),
-                            //           ),
-                            //         ),
-                            //       ),
-                            //     );
-                            //   },
-                            // ),
+                            /// Safe & Clean Progress Bar
                             TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0, end: progress),
+                              tween: Tween(begin: 0.0, end: progress),
                               duration: const Duration(seconds: 2),
                               curve: Curves.easeInOut,
                               builder: (context, value, _) {
                                 final gradientColors = controller.getGradientColors(value);
 
-                                // 🔥 LayoutBuilder use karein taaki parent Container ki exact width mile
                                 return LayoutBuilder(builder: (context, constraints) {
-                                  // 🎯 Calculate safe width: constraints.maxWidth se bar kabhi bahar nahi jayega
-                                  // Aur exact percentage fill hoga.
+                                  // Ab constraints.maxWidth ka exact 69% hi fillWidth banega
                                   final double fillWidth = constraints.maxWidth * value;
 
                                   return Container(
                                     height: 12,
-                                    width: double.infinity, // Parent ka pura space occupy karega
+                                    width: double.infinity,
                                     decoration: BoxDecoration(
                                         color: Colors.grey[800],
                                         borderRadius: BorderRadius.circular(12)
                                     ),
                                     child: Align(
                                       alignment: Alignment.centerLeft,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
+                                      // 🔥 FIX 2: AnimatedContainer hata kar normal Container lagaya hai
+                                      // Kyunki smooth animation TweenAnimationBuilder khud handle kar raha hai
+                                      child: Container(
                                         width: fillWidth,
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(12),

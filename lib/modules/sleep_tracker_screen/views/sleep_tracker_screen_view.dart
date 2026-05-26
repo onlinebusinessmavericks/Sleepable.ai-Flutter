@@ -831,7 +831,7 @@ Widget _buildFixedLabel(BuildContext context, String label) {
     ),
   ).paddingSymmetric(horizontal: 2);
 }
-void _handleSetReminder(BuildContext context, dynamic controller) {
+void _handleSetReminder(BuildContext context, dynamic controller) async{
   // 1. Calculate the 24h format for the API
   int h = controller.bedHour.value;
   if (!controller.bedIsAm.value && h != 12) h += 12; // PM
@@ -857,9 +857,21 @@ void _handleSetReminder(BuildContext context, dynamic controller) {
   progressController.loadAllData();
 
   // 3. Run Cleanup and Navigate
-  final sleepController = Get.find<SleepTrackerController>();
-  sleepController.performCleanup(sleepController);
+  // final sleepController = Get.find<SleepTrackerController>();
+  // sleepController.performCleanup(sleepController);
+// 🔥 CRITICAL SYNC FIX: Wait for full hardware release
+  if (Get.isRegistered<SleepTrackerController>()) {
+    final sleepController = Get.find<SleepTrackerController>();
 
+    // Force status update to block any automated background re-record loop
+    sleepController.trackerState.value = TrackerState.idle;
+
+    // 🛑 AWAIT CLEANUP: Mic close hona, API hit aur notification stop hone ka intezar karo
+    await sleepController.performCleanup(sleepController);
+  }
+
+  // ⏳ Small explicit delay for iOS hardware channel buffer reset (Removes Orange Dot instantly)
+  await Future.delayed(const Duration(milliseconds: 400));
   Get.offAllNamed(Routes.dashboard);
   Future.delayed(const Duration(milliseconds: 400), () {
     Get.dialog(

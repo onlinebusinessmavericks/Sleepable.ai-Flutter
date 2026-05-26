@@ -128,17 +128,17 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     });
   }
   Future<void> triggerInstantBackgroundService() async {
-    toast("🔍 Step 1: Requesting Permissions...");
+    // toast("🔍 Step 1: Requesting Permissions...");
     bool hasPermission = await _checkPermissions();
     if (!hasPermission) {
-      toast("❌ Error: Microphone/Notification Permission Denied!");
+      // toast("❌ Error: Microphone/Notification Permission Denied!");
       return;
     }
 
-    toast("🛠️ Step 2: Initializing Foreground Config...");
+    // toast("🛠️ Step 2: Initializing Foreground Config...");
     _initService();
 
-    toast("📡 Step 3: Pushing Service Native Request...");
+    // toast("📡 Step 3: Pushing Service Native Request...");
     await _startNoiseMeter();
   }
   Future<void> _initController() async {
@@ -776,7 +776,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
         );
 
         // 🔥 DEBUG TOAST 1: Native plugin link response verify karne ke liye
-        toast("📊 Native Result: ${success.toString()}");
+        // toast("📊 Native Result: ${success.toString()}");
 
         if (Platform.isIOS) {
           await FlutterForegroundTask.updateService(
@@ -785,13 +785,13 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
           );
           _noiseStarted = true;
           // 🔥 DEBUG TOAST 2: iOS notification bridge activation tracer
-          toast("🍏 iOS Foreground Channel Active!");
+          // toast("🍏 iOS Foreground Channel Active!");
         } else {
           _noiseStarted = true;
         }
       } catch (e) {
         // 🔥 DEBUG TOAST 3: Kuch bhi catch exception hua toh direct trigger alert
-        toast("❌ Service Start Exception: ${e.toString()}");
+        // toast("❌ Service Start Exception: ${e.toString()}");
       }
     } else {
       _noiseStarted = true;
@@ -803,7 +803,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       trackerState.value = TrackerState.silenceRecording;
 
       // 🔥 DEBUG TOAST 4: Final pipeline complete sync trace
-      toast("🎙️ System Monitoring Active!");
+      // toast("🎙️ System Monitoring Active!");
     }
   }
   // Controller ke andar ye naya function add karein
@@ -889,11 +889,11 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     print("🎙️ Mic Status: $micStatus");
 
     // 🔥 Microphone status toast
-    if (!micStatus.isGranted) {
-      toast("⚠️ Mic Permission Denied!");
-    } else {
-      toast("🎙️ Mic Permission Granted");
-    }
+    // if (!micStatus.isGranted) {
+    //   toast("⚠️ Mic Permission Denied!");
+    // } else {
+    //   toast("🎙️ Mic Permission Granted");
+    // }
 
     bool isNotificationGranted = false;
 
@@ -908,9 +908,9 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       }
 
       // Android Notification Toast
-      if (!isNotificationGranted) {
-        toast("⚠️ Android Notification Permission Denied!");
-      }
+      // if (!isNotificationGranted) {
+      //   // toast("⚠️ Android Notification Permission Denied!");
+      // }
     } else if (Platform.isIOS) {
       // 🔥 THE ABSOLUTE IOS NOTIFICATION FIX
       final notificationStatus = await Permission.notification.request();
@@ -918,21 +918,21 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       isNotificationGranted = notificationStatus.isGranted;
 
       // iOS Notification Toast
-      if (!isNotificationGranted) {
-        toast("⚠️ iOS Notification Permission Denied!");
-      } else {
-        toast("🔔 iOS Notification Permission Granted");
-      }
+      // if (!isNotificationGranted) {
+      //   toast("⚠️ iOS Notification Permission Denied!");
+      // } else {
+      //   toast("🔔 iOS Notification Permission Granted");
+      // }
     }
 
     // Master validation response
     bool finalResult = micStatus.isGranted && isNotificationGranted;
 
-    if (finalResult) {
-      toast("✅ All Permissions Secured! Ready to start.");
-    } else {
-      toast("❌ Setup Blocked: Missing mandatory hardware rights.");
-    }
+    // if (finalResult) {
+    //   toast("✅ All Permissions Secured! Ready to start.");
+    // } else {
+    //   toast("❌ Setup Blocked: Missing mandatory hardware rights.");
+    // }
 
     return finalResult;
   }

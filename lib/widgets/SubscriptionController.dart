@@ -190,25 +190,97 @@ class SubscriptionController extends GetxController {
   //     print("DEBUG: RC Fetch Error: $e");
   //   }
   // }
+  // Future<void> fetchStoreProducts() async {
+  //   if (!isConfigured) return;
+  //   try {
+  //     Offerings offerings = await Purchases.getOfferings();
+  //     print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
+  //
+  //     if (offerings.current != null) {
+  //       packages.assignAll(offerings.current!.availablePackages);
+  //       print("✅ [RC] Standard Plans Loaded: ${packages.length}");
+  //     }
+  //
+  //     if (offerings.all["yearly_spin"] != null) {
+  //       final spinOffering = offerings.all["yearly_spin"]!;
+  //       spinYearlyPackage.value = spinOffering.annual;
+  //       spinWeeklyPackage.value = spinOffering.weekly;
+  //       print("🎁 [RC] SPIN OFFER LOADED: ${spinYearlyPackage.value?.storeProduct.priceString}");
+  //     } else {
+  //       print("⚠️ [RC] 'yearly_spin' NOT FOUND in RevenueCat Dashboard");
+  //     }
+  //   } catch (e) {
+  //     print("❌ [RC] Fetch Error: $e");
+  //   }
+  // }
+  // Future<void> fetchStoreProducts() async {
+  //   if (!isConfigured) return;
+  //   try {
+  //     Offerings offerings = await Purchases.getOfferings();
+  //     print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
+  //
+  //     // ✅ 1. Current default offering loading
+  //     if (offerings.current != null) {
+  //       final allAvailablePackages = offerings.current!.availablePackages;
+  //
+  //       // Hamesha saare packages ko map karo taaki packages.assignAll properly reactive chale
+  //       packages.assignAll(allAvailablePackages);
+  //       print("✅ [RC] Standard Plans Loaded: ${packages.length}");
+  //
+  //       // 🔥 THE ABSOLUTE SYNC LOCK:
+  //       // Caching glitch se bachne ke liye standard packages me se hi direct
+  //       // identifier match karke hum discounted aur normal variables ko link karenge.
+  //       spinYearlyPackage.value = allAvailablePackages.firstWhereOrNull(
+  //               (p) => p.storeProduct.identifier == "com.sleepableai.yearly.discount"
+  //       );
+  //
+  //       spinWeeklyPackage.value = allAvailablePackages.firstWhereOrNull(
+  //               (p) => p.packageType == PackageType.weekly
+  //       );
+  //
+  //       if (spinYearlyPackage.value != null) {
+  //         print("🎁 [RC] SPIN OFFER LOADED DIRECTLY FROM CURRENT PACKAGES: ${spinYearlyPackage.value?.storeProduct.priceString}");
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print("❌ [RC] Fetch Error: $e");
+  //   }
+  // }
   Future<void> fetchStoreProducts() async {
     if (!isConfigured) return;
     try {
       Offerings offerings = await Purchases.getOfferings();
       print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
 
+      // ✅ 1. Current / Regular Offering Loading (default_new - ₹5,400)
       if (offerings.current != null) {
-        packages.assignAll(offerings.current!.availablePackages);
-        print("✅ [RC] Standard Plans Loaded: ${packages.length}");
+        final allAvailablePackages = offerings.current!.availablePackages;
+
+        // Saare regular packages ko map karo reactive list mein
+        packages.assignAll(allAvailablePackages);
+        print("✅ [RC] Standard Plans Loaded from Current: ${packages.length}");
+
+        // Regular Weekly plan link karein
+        spinWeeklyPackage.value = allAvailablePackages.firstWhereOrNull(
+                (p) => p.packageType == PackageType.weekly
+        );
       }
 
-      if (offerings.all["yearly_spin"] != null) {
-        final spinOffering = offerings.all["yearly_spin"]!;
-        spinYearlyPackage.value = spinOffering.annual;
-        spinWeeklyPackage.value = spinOffering.weekly;
-        print("🎁 [RC] SPIN OFFER LOADED: ${spinYearlyPackage.value?.storeProduct.priceString}");
+      // ✅ 2. Discount Offering Loading (discount_offering - ₹2,800)
+      // 🔥 ABSOLUTE SYNC LOCK: Ab hum specific discount offering ko dashboard se target kar rahe hain
+      if (offerings.all["discount_offering"] != null) {
+        final discountOffering = offerings.all["discount_offering"]!;
+
+        // Dashboard par humne 'Annual' identifier link kiya hai, toh direct .annual uthayenge
+        spinYearlyPackage.value = discountOffering.annual;
+
+        if (spinYearlyPackage.value != null) {
+          print("🎁 [RC] SPIN OFFER LOADED FROM discount_offering: ${spinYearlyPackage.value?.storeProduct.priceString}");
+        }
       } else {
-        print("⚠️ [RC] 'yearly_spin' NOT FOUND in RevenueCat Dashboard");
+        print("⚠️ [RC] 'discount_offering' NOT FOUND in RevenueCat Dashboard");
       }
+
     } catch (e) {
       print("❌ [RC] Fetch Error: $e");
     }
@@ -402,14 +474,14 @@ class SubscriptionController extends GetxController {
   //   }
   // }
   String getCurrencySymbol(String currencyCode) {
-    print("💰 [Debug] RevenueCat Currency Code Received: $currencyCode");
+    // print("💰 [Debug] RevenueCat Currency Code Received: $currencyCode");
 
     // 🔥 TESTFLIGHT TOAST: Yeh batayega ki store se USD aa raha hai ya INR
-    toast("RC Store Currency: $currencyCode");
+    // toast("RC Store Currency: $currencyCode");
 
     if (currencyCode == "INR" || currencyCode.toUpperCase() == "INR") {
       // 🔥 TESTFLIGHT TOAST: Confirm karega ki Rupee lock hua ya nahi
-      toast("🎯 Success: Hardlocking Rupee Symbol (₹)");
+      // toast("🎯 Success: Hardlocking Rupee Symbol (₹)");
       return "₹";
     }
 

@@ -2342,8 +2342,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
       String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
 
-      final bool isYearly = selectedPlanIndex == 1;
-
+      // final bool isYearly = selectedPlanIndex == 1;
+      // final bool isYearly = showOffer ? true : (selectedPlanIndex == 1);
+      final bool isYearly = (selectedPlanIndex == 1);
       // Dynamic UI Strings
       final lang = context.lang;
 
