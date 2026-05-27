@@ -2495,4 +2495,12 @@ class LanguageEn extends BaseLanguage {
   String get relaxYourBody => 'Relax Your Body';
   @override
   String get unknownArtist => 'Unknown Artist';
+  @override
+  String get spinToUnlockAn => 'Spin to unlock an';
+  @override
+  String get exclusiveDiscount => 'exclusive discount';
+  @override
+  String get gift => 'Gift';
+  @override
+  String get noLuck => 'No Luck';
 }

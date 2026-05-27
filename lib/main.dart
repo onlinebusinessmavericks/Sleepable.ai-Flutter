@@ -27,23 +27,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterForegroundTask.initCommunicationPort();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  // await JustAudioBackground.init(
-  //   androidNotificationChannelId: 'com.sleepableai.audio',
-  //   androidNotificationChannelName: 'Sleepable AI Audio',
-  //   androidNotificationOngoing: true, // Notification user swip karke hata nahi payega jab tak audio chal raha hai
-  // );
-  // await JustAudioBackground.init(
-  //   androidNotificationChannelId: 'com.sleepableai.audio',
-  //   androidNotificationChannelName: 'Sleepable AI Audio',
-  //   androidNotificationOngoing: true,
-  //   // This allows the notification to show even if we don't have play/pause buttons
-  // );
-  // await JustAudioBackground.init(
-  //   androidNotificationChannelId: 'com.sleepableai.audio',
-  //   androidNotificationChannelName: 'Sleepable AI Audio',
-  //   androidNotificationOngoing: true,
-  // );
-
   // 2. Lock the status bar to transparent with light icons
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -76,7 +59,6 @@ Future<void> main() async {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
   }
-  // await SubscriptionController.init();
   try {
     await SubscriptionController.init();
   } catch (e) {

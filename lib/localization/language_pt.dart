@@ -1777,4 +1777,12 @@ class LanguagePt extends BaseLanguage {
   String get relaxYourBody => 'Relaxe o seu corpo';
   @override
   String get unknownArtist => 'Artista desconhecido';
+  @override
+  String get spinToUnlockAn => 'Gire para desbloquear um';
+  @override
+  String get exclusiveDiscount => 'desconto exclusivo';
+  @override
+  String get gift => 'Presente';
+  @override
+  String get noLuck => 'Sem sorte';
 }

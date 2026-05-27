@@ -34,8 +34,6 @@ class SubscriptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // 1. Pehle cache se value load karein (Instant)
-    // isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
     isPremium.value = false;
 
     // 2. Agar user logged in hai toh sync start karein
@@ -46,24 +44,6 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  // Future<void> initData() async {
-  //   try {
-  //     isLoading.value = true;
-  //     // Parallel APIs check with timeout taaki app stuck na ho
-  //     await Future.wait([
-  //       checkPremiumStatus(),
-  //       getBackendSubscriptionStatus(),
-  //     ]).timeout(const Duration(seconds: 8));
-  //
-  //     await fetchStoreProducts();
-  //     await checkSpinStatus();
-  //   } catch (e) {
-  //     print("❌ Sync Error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //     isInitialSyncDone.value = true; // 🔥 CRITICAL: Har haal mein true hoga
-  //   }
-  // }
   Future<void> initData() async {
     try {
       await Purchases.invalidateCustomerInfoCache();
@@ -100,43 +80,12 @@ class SubscriptionController extends GetxController {
     }
 
     isPremium.value = status;
-    // 🔥 await use karein taaki storage commit ho jaye
     await setValue(PREM_KEY, status);
     isPremium.refresh();
     print("🔔 Cache Updated to: $status");
   }
-// Controller mein variables ke niche ye add karein
   bool get hasSpecialOffer => spinInfo.value != null && (spinInfo.value!.discountPct ?? 0) > 0;
 
-  // static Future<void> init() async {
-  //   await Purchases.setLogLevel(LogLevel.debug);
-  //
-  //   PurchasesConfiguration configuration;
-  //   if (Platform.isAndroid) {
-  //     // YAHAN DALNI HAI KEY
-  //     configuration = PurchasesConfiguration("goog_luerHREwpCvCyPwXSpTHyubfXpb");
-  //   } else {
-  //     configuration = PurchasesConfiguration("appl_XXXXXXXXXXXXXXX");
-  //   }
-  //
-  //   await Purchases.configure(configuration);
-  // }
-  // static Future<void> init() async {
-  //   // Agar iOS hai aur account nahi hai, toh configuration skip karein
-  //   if (Platform.isIOS) {
-  //     print("⚠️ Skipping RevenueCat Config: No iOS API Key");
-  //     return;
-  //   }
-  //
-  //   await Purchases.setLogLevel(LogLevel.debug);
-  //
-  //   PurchasesConfiguration configuration;
-  //   if (Platform.isAndroid) {
-  //     configuration = PurchasesConfiguration("goog_luerHREwpCvCyPwXSpTHyubfXpb");
-  //     await Purchases.configure(configuration);
-  //     isConfigured = true;
-  //   }
-  // }
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
@@ -161,91 +110,7 @@ class SubscriptionController extends GetxController {
       print("❌ RevenueCat Configuration Error: $e");
     }
   }
-  // Future<void> fetchStoreProducts() async {
-  //   if (!isConfigured) return;
-  //   try {
-  //     Offerings offerings = await Purchases.getOfferings();
-  //
-  //     // 1. Default Plans (Normal ₹5,400 aur Weekly ₹1,099)
-  //     if (offerings.current != null) {
-  //       packages.assignAll(offerings.current!.availablePackages);
-  //       print("DEBUG: Standard Plans Loaded: ${packages.length}");
-  //     }
-  //
-  //     // 2. Spin Offering (Discounted ₹2,800)
-  //     // Dashboard par agar identifier 'yearly_spin' hai toh:
-  //     if (offerings.all["yearly_spin"] != null) {
-  //       final spinOffering = offerings.all["yearly_spin"]!;
-  //
-  //       // ✅ Standard identifiers se hi fetch karein ($rc_annual dropdown wala)
-  //       spinYearlyPackage.value = spinOffering.annual;
-  //       spinWeeklyPackage.value = spinOffering.weekly;
-  //
-  //       if (spinYearlyPackage.value != null) {
-  //         // toast("Spin Offer Loaded: ${spinYearlyPackage.value?.storeProduct.priceString}");
-  //         print("Spin Offer Loaded: ${spinYearlyPackage.value?.storeProduct.priceString}");
-  //       }
-  //     }
-  //   } catch (e) {
-  //     print("DEBUG: RC Fetch Error: $e");
-  //   }
-  // }
-  // Future<void> fetchStoreProducts() async {
-  //   if (!isConfigured) return;
-  //   try {
-  //     Offerings offerings = await Purchases.getOfferings();
-  //     print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
-  //
-  //     if (offerings.current != null) {
-  //       packages.assignAll(offerings.current!.availablePackages);
-  //       print("✅ [RC] Standard Plans Loaded: ${packages.length}");
-  //     }
-  //
-  //     if (offerings.all["yearly_spin"] != null) {
-  //       final spinOffering = offerings.all["yearly_spin"]!;
-  //       spinYearlyPackage.value = spinOffering.annual;
-  //       spinWeeklyPackage.value = spinOffering.weekly;
-  //       print("🎁 [RC] SPIN OFFER LOADED: ${spinYearlyPackage.value?.storeProduct.priceString}");
-  //     } else {
-  //       print("⚠️ [RC] 'yearly_spin' NOT FOUND in RevenueCat Dashboard");
-  //     }
-  //   } catch (e) {
-  //     print("❌ [RC] Fetch Error: $e");
-  //   }
-  // }
-  // Future<void> fetchStoreProducts() async {
-  //   if (!isConfigured) return;
-  //   try {
-  //     Offerings offerings = await Purchases.getOfferings();
-  //     print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
-  //
-  //     // ✅ 1. Current default offering loading
-  //     if (offerings.current != null) {
-  //       final allAvailablePackages = offerings.current!.availablePackages;
-  //
-  //       // Hamesha saare packages ko map karo taaki packages.assignAll properly reactive chale
-  //       packages.assignAll(allAvailablePackages);
-  //       print("✅ [RC] Standard Plans Loaded: ${packages.length}");
-  //
-  //       // 🔥 THE ABSOLUTE SYNC LOCK:
-  //       // Caching glitch se bachne ke liye standard packages me se hi direct
-  //       // identifier match karke hum discounted aur normal variables ko link karenge.
-  //       spinYearlyPackage.value = allAvailablePackages.firstWhereOrNull(
-  //               (p) => p.storeProduct.identifier == "com.sleepableai.yearly.discount"
-  //       );
-  //
-  //       spinWeeklyPackage.value = allAvailablePackages.firstWhereOrNull(
-  //               (p) => p.packageType == PackageType.weekly
-  //       );
-  //
-  //       if (spinYearlyPackage.value != null) {
-  //         print("🎁 [RC] SPIN OFFER LOADED DIRECTLY FROM CURRENT PACKAGES: ${spinYearlyPackage.value?.storeProduct.priceString}");
-  //       }
-  //     }
-  //   } catch (e) {
-  //     print("❌ [RC] Fetch Error: $e");
-  //   }
-  // }
+
   Future<void> fetchStoreProducts() async {
     if (!isConfigured) return;
     try {
@@ -413,7 +278,6 @@ class SubscriptionController extends GetxController {
       );
       if (response['success']) {
         bool backendStatus = response['data']['is_premium'] ?? false;
-        // 🔥 PASS 'true' for isFromBackend taaki status confirm ho jaye
         updatePremiumStatus(backendStatus, isFromBackend: true);
       }
     } catch (e) {
@@ -429,9 +293,6 @@ class SubscriptionController extends GetxController {
 
     try {
       print("⏳ [RC] Fetching CustomerInfo...");
-
-      // 1. Simulator ke liye timeout lagana bahut zaroori hai
-      // Agar 5 second mein response nahi aaya toh code aage badh jayega
       CustomerInfo customerInfo = await Purchases.getCustomerInfo().timeout(
         const Duration(seconds: 5),
         onTimeout: () {
@@ -446,42 +307,20 @@ class SubscriptionController extends GetxController {
       updatePremiumStatus(isActive, isFromBackend: false);
     } catch (e) {
       print("❌ [RC] Error in checkPremiumStatus: $e");
-      // Error aane par hum premium status ko change nahi karenge (Cache rehne denge)
-    }
+      }
   }
   void checkAndShowPremiumSheet(BuildContext context) {
-    // 1. Agar user already premium hai, toh kuch mat dikhao
     if (isPremium.value) return;
 
     final spinData = spinInfo.value;
-
-    // 2. CHECK FLOW:
-    // Agar user ne spin kar liya hai (alreadySpun true hai)
-    // ya uske paas koi valid discount data pehle se hai
     if (spinData != null && spinData.alreadySpun) {
       showPremiumOfferSheet6(context);
     } else {
-    //   // Agar naya user hai, toh Spin Wheel dikhao (Sheet 5)
       showPremiumOfferSheet5(context);
     }
   }
-  // String getCurrencySymbol(String currencyCode) {
-  //   try {
-  //     var format = NumberFormat.simpleCurrency(name: currencyCode);
-  //     return format.currencySymbol;
-  //   } catch (e) {
-  //     return currencyCode; // Fallback to INR/USD if symbol not found
-  //   }
-  // }
   String getCurrencySymbol(String currencyCode) {
-    // print("💰 [Debug] RevenueCat Currency Code Received: $currencyCode");
-
-    // 🔥 TESTFLIGHT TOAST: Yeh batayega ki store se USD aa raha hai ya INR
-    // toast("RC Store Currency: $currencyCode");
-
     if (currencyCode == "INR" || currencyCode.toUpperCase() == "INR") {
-      // 🔥 TESTFLIGHT TOAST: Confirm karega ki Rupee lock hua ya nahi
-      // toast("🎯 Success: Hardlocking Rupee Symbol (₹)");
       return "₹";
     }
 
@@ -500,21 +339,13 @@ class SubscriptionController extends GetxController {
       return currencyMap[currencyCode.toUpperCase()] ?? currencyCode;
     }
   }
-  // SubscriptionController.dart ke andar
 
   void checkAndShowRatingAfterPostDelay() {
-    // 1. Agar user ne already rate kar diya hai, toh popup mat dikhao
     bool hasRated = getBoolAsync("user_has_rated", defaultValue: false);
     if (hasRated) return;
 
-    // 2. 1.5 second ka delay taaki transitions smooth lagein
     Future.delayed(const Duration(milliseconds: 1500), () {
-      // 3. Check karein ki screen abhi bhi active hai aur koi aur dialog toh nahi khula
       if (Get.context != null && !Get.isDialogOpen!) {
-
-        // Safety: Sirf tabhi dikhao jab user main dashboard ya home par ho
-        // (Optional: Agar aap specific screens par hi dikhana chahte ho)
-
         Get.dialog(
           const RatingDialog(),
           barrierDismissible: false, // User ko "No" ya "Rate" click karne par majboor karein

@@ -13,6 +13,7 @@ import 'package:sleepable_ai/modules/home/model/artist_model.dart';
 import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../widgets/SubscriptionController.dart';
+import '../../../widgets/notification_service.dart';
 import '../../../widgets/rating_dialog.dart';
 import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../../widgets/timezone.dart';
@@ -257,6 +258,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     else {
       _checkAndShowRatingDialog();
     }
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (!isClosed) {
+        NotificationService.requestNotificationPermission();
+      }
+    });
   }
   // Helper 1: Paywall Handler
   void _showInitialPaywall() {

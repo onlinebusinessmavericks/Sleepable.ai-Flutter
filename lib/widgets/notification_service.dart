@@ -20,11 +20,6 @@ class NotificationService {
 
   static Future<void> init() async {
     dev.log("🔔 NotificationService: Initializing...");
-// 🔥 iOS Debug Bypass: Agar iOS hai toh init hi mat karo
-//     if (Platform.isIOS) {
-//       dev.log("⚠️ iOS Free Account: Skipping NotificationService init entirely.");
-//       return;
-//     }
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       dev.log("🔄 FCM Token Rotated Automatically: $newToken");
 
@@ -34,18 +29,7 @@ class NotificationService {
         await _sendTokenToBackend(newToken);
       }
     });
-    // 1. Request Permissions (Sirf ek baar)
-    // await _messaging.requestPermission(alert: true, badge: true, sound: true);
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false, // Isse proper permission prompt aayega
-    );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      dev.log("✅ User granted notification permission");
-    }
     // 2. Token Updates
     try {
       await updateTokenToServer();
@@ -88,6 +72,24 @@ class NotificationService {
     RemoteMessage? initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       Future.delayed(const Duration(seconds: 2), () => handleRedirect(initialMessage.data));
+    }
+  }
+
+  static Future<void> requestNotificationPermission() async {
+    dev.log("📡 Requesting Notification Permission from Home Screen...");
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      dev.log("✅ User granted notification permission from Home Screen");
+      // Token refresh push karwa dein safe side ke liye
+      await updateTokenToServer();
+    } else {
+      dev.log("❌ User denied notification permission");
     }
   }
   // NotificationService.dart mein

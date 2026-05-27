@@ -1776,4 +1776,12 @@ class LanguageDe extends BaseLanguage {
   String get relaxYourBody => 'Entspanne deinen Körper';
   @override
   String get unknownArtist => 'Unbekannter Künstler';
+  @override
+  String get spinToUnlockAn => 'Drehe, um ein';
+  @override
+  String get exclusiveDiscount => 'exklusiver Rabatt';
+  @override
+  String get gift => 'Geschenk';
+  @override
+  String get noLuck => 'Kein Glück';
 }

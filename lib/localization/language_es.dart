@@ -1777,4 +1777,12 @@ class LanguageEs extends BaseLanguage {
   String get relaxYourBody => 'Relaja tu cuerpo';
   @override
   String get unknownArtist => 'Artista desconocido';
+  @override
+  String get spinToUnlockAn => 'Gira para desbloquear un';
+  @override
+  String get exclusiveDiscount => 'descuento exclusivo';
+  @override
+  String get gift => 'Regalo';
+  @override
+  String get noLuck => 'Sin suerte';
 }

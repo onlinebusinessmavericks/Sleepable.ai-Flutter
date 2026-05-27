@@ -1814,4 +1814,12 @@ class LanguageFr extends BaseLanguage {
   String get relaxYourBody => 'Détendez votre corps';
   @override
   String get unknownArtist => 'Artiste inconnu';
+  @override
+  String get spinToUnlockAn => 'Tournez pour débloquer un';
+  @override
+  String get exclusiveDiscount => 'réduction exclusive';
+  @override
+  String get gift => 'Cadeau';
+  @override
+  String get noLuck => 'Pas de chance';
 }

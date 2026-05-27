@@ -970,4 +970,8 @@ abstract class BaseLanguage {
   String get relaxingMelody;
   String get relaxYourBody;
   String get unknownArtist;
+  String get spinToUnlockAn;
+  String get exclusiveDiscount;
+  String get gift;
+  String get noLuck;
 }
