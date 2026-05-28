@@ -118,6 +118,25 @@ class HeartBpmMeasurementController extends GetxController {
       isLoading.value = true;
       final prefs = await SharedPreferences.getInstance();
 
+      final int existingTrackerId = prefs.getInt('sleep_tracker_id') ?? 0;
+
+      if (existingTrackerId != 0) {
+        print("⚠️ Found old/stuck tracker ID ($existingTrackerId). Forcing stop/cleanup first...");
+
+        // Agar controller registered hai toh uske functions se cleanup karo
+        if (Get.isRegistered<SleepTrackerController>()) {
+          final sleepController = Get.find<SleepTrackerController>();
+          sleepController.performCleanup(sleepController);
+        } else {
+          // Agar controller nahi hai, toh direct API hit karke state clear karo
+          try {
+            await TrackerApis.stopSleepTracker(sleepTrackerId: existingTrackerId);
+          } catch (_) {}
+          await prefs.remove('sleep_tracker_id');
+          await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
+        }
+      }
+
       final List<int> savedNoteIds =
           prefs.getStringList('sleep_note_ids')?.map(int.parse).toList() ?? [];
 
