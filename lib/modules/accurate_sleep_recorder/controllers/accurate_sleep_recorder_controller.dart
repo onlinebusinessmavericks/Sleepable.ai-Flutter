@@ -8,36 +8,24 @@ import 'package:sleepable_ai/localization/lang_extension.dart';
 import '../../../core/constants/shared_prefences.dart';
 
 class AccurateSleepRecorderController extends GetxController {
-  final player = AudioPlayer(
-    handleInterruptions: false,
-    handleAudioSessionActivation: false,
-  );
-  // final player = AudioPlayer();
+  final player = AudioPlayer(handleInterruptions: false, handleAudioSessionActivation: false);
   final audios = <SleepAudio>[
     SleepAudio(
       title: Get.context!.lang.youSnored,
       time: '00:02 ${Get.context!.lang.PM}',
       audioPath: Assets.humanSnored,
       lottiePath: Assets.lottieSleepLottie,
-      // lottiePath: Assets.lottieCloud,
     ),
     SleepAudio(
-      title:  Get.context!.lang.youGasped,
+      title: Get.context!.lang.youGasped,
       time: '00:07 ${Get.context!.lang.PM}',
       audioPath: Assets.onboardingGasps,
-      // lottiePath: Assets.lottieStar
       lottiePath: Assets.lottieGasp,
     ),
-    SleepAudio(
-      title:  Get.context!.lang.youTalked,
-      time: '00:04 ${Get.context!.lang.AM}',
-      audioPath: Assets.onboardingSleepTalking,
-      lottiePath: Assets.lottieTalking,
-      // lottiePath: Assets.lottieSleepSuccess,
-    ),
+    SleepAudio(title: Get.context!.lang.youTalked, time: '00:04 ${Get.context!.lang.AM}', audioPath: Assets.onboardingSleepTalking, lottiePath: Assets.lottieTalking),
   ];
 
-  RxInt currentIndex = 0.obs; // 👈 start from first
+  RxInt currentIndex = 0.obs;
 
   @override
   void onInit() {
@@ -54,35 +42,16 @@ class AccurateSleepRecorderController extends GetxController {
     });
   }
 
-  // Future<void> playAt(int index) async {
-  //   final path = audios[index].audioPath;
-  //   currentIndex.value = index;
-  //
-  //   if (path.startsWith('assets/')) {
-  //     await player.setAsset(path);
-  //   } else {
-  //     await player.setFilePath(path);
-  //   }
-  //
-  //   await player.play();
-  // }
   Future<void> playAt(int index) async {
     try {
       final audio = audios[index];
       final path = audio.audioPath;
       currentIndex.value = index;
 
-      // 2. setAsset/setFilePath ki jagah setAudioSource use karein tag ke saath
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(path.startsWith('assets/') ? 'asset:///$path' : path),
-          // 🟢 MANDATORY: Jab JustAudioBackground init ho, toh ye tag dena hi padega
-          tag: MediaItem(
-            id: 'recorder_$index',
-            album: 'Sleep Report',
-            title: audio.title,
-            artist: 'Sleepable AI',
-          ),
+          tag: MediaItem(id: 'recorder_$index', album: 'Sleep Report', title: audio.title, artist: 'Sleepable AI'),
         ),
       );
 
@@ -91,7 +60,6 @@ class AccurateSleepRecorderController extends GetxController {
       debugPrint("❌ Playback Error: $e");
     }
   }
-
 
   Future<void> playNext() async {
     if (currentIndex.value < audios.length - 1) {
@@ -104,8 +72,6 @@ class AccurateSleepRecorderController extends GetxController {
 
   void goNext() {
     setValue(AppSharedPreferenceKeys.accurateSleepRecorderCompleted, true);
-    // Get.offNamed(Routes.patentedSleepTracker);
-
     Get.offNamed(Routes.bestSoundMachine);
   }
 
@@ -122,10 +88,5 @@ class SleepAudio {
   final String audioPath;
   final String lottiePath;
 
-  SleepAudio({
-    required this.title,
-    required this.time,
-    required this.audioPath,
-    required this.lottiePath,
-  });
+  SleepAudio({required this.title, required this.time, required this.audioPath, required this.lottiePath});
 }

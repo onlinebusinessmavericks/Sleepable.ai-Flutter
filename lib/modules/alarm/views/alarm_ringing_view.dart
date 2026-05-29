@@ -30,36 +30,6 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
   Future<void>? _initializeVideo;
 
   @override
-  // void initState() {
-  //   super.initState();
-  //
-  //   /// 📌 Start time updater
-  //   _updateTime();
-  //   _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
-  //
-  //   /// 📌 Delayed video initialization (keeps global music running)
-  //   Future.delayed(const Duration(milliseconds: 300), () async {
-  //     // _videoController = VideoPlayerController.asset(Assets.videoWakeup);
-  //     _videoController = VideoPlayerController.asset(
-  //       Assets.videoWakeup,
-  //       videoPlayerOptions: VideoPlayerOptions(
-  //         mixWithOthers: true, // 🔥 IMPORTANT FIX
-  //       ),
-  //     );
-  //
-  //     _initializeVideo = _videoController.initialize().then((_) {
-  //       if (!mounted) return;
-  //
-  //       _videoController.setLooping(true);
-  //       _videoController.setVolume(0); // 👍 Music will NOT be affected
-  //       _videoController.play();
-  //
-  //       setState(() {});
-  //     });
-  //
-  //     setState(() {}); // For FutureBuilder
-  //   });
-  // }
   @override
   void initState() {
     super.initState();
@@ -85,26 +55,6 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
       debugPrint("🎥 Video Player Error: $error");
     });
   }
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _updateTime();
-  //   _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
-  //
-  //   // REMOVE the Future.delayed and initialize directly
-  //   _videoController = VideoPlayerController.asset(
-  //     Assets.videoWakeup,
-  //     videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-  //   );
-  //
-  //   _initializeVideo = _videoController.initialize().then((_) {
-  //     if (!mounted) return;
-  //     _videoController.setLooping(true);
-  //     _videoController.setVolume(0);
-  //     _videoController.play();
-  //     setState(() {}); // Refresh to show video
-  //   });
-  // }
 
   @override
   void dispose() {
@@ -174,14 +124,6 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
 
                   /// 🔵 STOP ALARM BUTTON
                   GestureDetector(
-                    // onTap: () async {
-                    //   await controller.stopAlarm();
-                    //
-                    //   final sleepController = Get.find<SleepTrackerController>();
-                    //   // await sleepController.resumeRecordingIfNeeded();
-                    //
-                    //   Get.back();
-                    // },
                     onTap: () async {
                       final AlarmController controller = Get.find<AlarmController>();
                       // 1. Stop the alarm immediately in the controller

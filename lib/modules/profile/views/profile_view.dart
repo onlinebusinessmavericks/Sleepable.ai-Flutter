@@ -214,7 +214,7 @@ class ProfileScreen extends StatelessWidget {
                               Obx(
                                 () => _settingsTile(
                                   title: context.lang.sleepReminder,
-                                  subtitle: controller.settings.value?.sleepReminders == true ? controller.formatTime(controller.settings.value?.remindAt) : "Off",
+                                  subtitle: controller.settings.value?.sleepReminders == true ? controller.formatTime(controller.settings.value?.remindAt) : context.lang.offLabel,//"Off"
                                   trailing: const Icon(Icons.chevron_right, color: Colors.white54),
                                   context: context,
                                   onTap: () {

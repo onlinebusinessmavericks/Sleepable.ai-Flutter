@@ -119,7 +119,6 @@ class SleepAudioCard extends StatelessWidget {
                     ),
                   ),
 
-                  // SizedBox(height: sh(8)),
                   SoundWaveLottie(isActive: isActive),
                 ],
               ),

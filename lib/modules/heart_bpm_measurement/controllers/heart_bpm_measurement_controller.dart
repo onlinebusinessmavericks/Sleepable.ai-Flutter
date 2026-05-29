@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sleepable_ai/localization/lang_extension.dart';
 import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
@@ -39,75 +40,6 @@ class HeartBpmMeasurementController extends GetxController {
     Get.toNamed(Routes.heartBPM);
   }
   /// Start sleep without heart measurement
-  // Future<void> startWithoutMeasuring() async {
-  //   if (!Get.isRegistered<AlarmController>()) {
-  //     Get.put(AlarmController(), permanent: true);
-  //   }
-  //
-  //   final AlarmController alarmController = Get.find<AlarmController>();
-  //   // final alarmController = Get.find<AlarmController>();
-  //   try {
-  //     isLoading.value = true;
-  //     final prefs = await SharedPreferences.getInstance();
-  //
-  //     final List<int> savedNoteIds =
-  //         prefs.getStringList('sleep_note_ids')?.map(int.parse).toList() ?? [];
-  //
-  //     final String savedDescription =
-  //         prefs.getString('sleep_description') ?? '';
-  //
-  //     final String savedWakeUpTime =
-  //         prefs.getString('wake_up_time') ?? '08:30';
-  //
-  //     final String savedWakeUpTimeam =
-  //         prefs.getString('wake_up_time_display') ??
-  //             '${alarmController.hour.value.toString().padLeft(2, '0')}:'
-  //                 '${alarmController.minute.value.toString().padLeft(2, '0')} '
-  //                 '${alarmController.isAm.value ? 'AM' : 'PM'}';
-  //     // toast("⏰ ----- Wake up time: $savedWakeUpTimeam");
-  //     final int savedHeartRate =
-  //         prefs.getInt('heart_rate') ?? 0;
-  //     /// 🔍 DEBUG PRINTS
-  //    print("🧠 savedNoteIds: $savedNoteIds");
-  //     print("📝 savedDescription: $savedDescription");
-  //     print("⏰ savedWakeUpTime: $savedWakeUpTime");
-  //     print("⏰ savedWakeUpTimeam: $savedWakeUpTimeam");
-  //     print("⏰ savedHeartRate: $savedHeartRate");
-  //     final response = await TrackerApis.startSleepTracker(
-  //       wakeUpTime: savedWakeUpTimeam,
-  //       noteIds: savedNoteIds,
-  //       description: savedDescription,
-  //       heartRate: savedHeartRate,
-  //     );
-  //
-  //     if (response.success == true) {
-  //       await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
-  //       await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
-  //
-  //       // 2. 🔥 THE FIX: Update the reactive variable in SleepSoundController
-  //       // This makes the "Start Sleep" button disappear instantly in the UI
-  //       if (Get.isRegistered<SleepSoundController>()) {
-  //         final soundCtrl = Get.find<SleepSoundController>();
-  //         soundCtrl.isTrackingActive.value = true;
-  //         print("📢 SleepSoundController notified: isTrackingActive = true");
-  //       }
-  //       // ✅ IMPORTANT: Clear the temporary pre-sleep notes/description
-  //       // so they don't leak into the next night's session.
-  //       await prefs.remove('sleep_note_ids');
-  //       await prefs.remove('sleep_description');
-  //
-  //       Get.offNamed(Routes.sleepTracker);
-  //     }
-  //     else {
-  //       Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
-  //     }
-  //
-  //   } catch (e) {
-  //     Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
   Future<void> startWithoutMeasuring() async {
     if (!Get.isRegistered<AlarmController>()) {
       Get.put(AlarmController(), permanent: true);
@@ -136,6 +68,26 @@ class HeartBpmMeasurementController extends GetxController {
           await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
         }
       }
+
+      // ==========================================
+      // 🛡️ STEP 1: DEFENSIVE PERMISSIONS CHECK
+      // ==========================================
+      print("🛡️ Checking permission statuses safely before invoking native engines...");
+      try {
+        // Only request audio/microphone if it isn't granted yet
+        if (!await Permission.microphone.isGranted) {
+          await Permission.microphone.request();
+        }
+
+        // Only request notification channels if they aren't configured yet
+        if (!await Permission.notification.isGranted) {
+          await Permission.notification.request();
+        }
+      } catch (permissionError) {
+        // Catches permission race conditions gracefully so code block doesn't crash
+        print("⚠️ Permission request pipeline busy: $permissionError");
+      }
+      // ==========================================
 
       final List<int> savedNoteIds =
           prefs.getStringList('sleep_note_ids')?.map(int.parse).toList() ?? [];
@@ -171,77 +123,44 @@ class HeartBpmMeasurementController extends GetxController {
         await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
 
-        // 🔥 TOAST 2: Server response sync alert
-        // toast("✅ Session Active! ID: ${response.data!.sleepTrackerId}");
-
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
           soundCtrl.isTrackingActive.value = true;
           print("📢 SleepSoundController notified: isTrackingActive = true");
         }
 
-        // 🔥 FIX: Controller ko 'permanent: true' ke sath put karo!
-        // Isse screen route (Get.offNamed) change hone par bhi controller delete nahi hoga,
-        // aur native background notification thread strictly lock rahega.
         final sleepTrackerCtrl = Get.isRegistered<SleepTrackerController>()
             ? Get.find<SleepTrackerController>()
             : Get.put(SleepTrackerController(), permanent: true);
 
-        // Bina kisi delay ke local service start karo (Toasts and checks run inside)
-        await sleepTrackerCtrl.triggerInstantBackgroundService();
+        // ==========================================
+        // ⚡ STEP 2: ISOLATED BACKGROUND SERVICE TRIGGER
+        // ==========================================
+        try {
+          // Wrapping background setup in its own try-catch prevents platform-level
+          // race conditions from crashing the UI loop.
+          await sleepTrackerCtrl.triggerInstantBackgroundService();
+        } catch (serviceError) {
+          print("💥 Non-blocking issue when starting background threads: $serviceError");
+        }
+        // ==========================================
 
         await prefs.remove('sleep_note_ids');
         await prefs.remove('sleep_description');
 
-        // Safe page replacement
+        // Safe page replacement - Will now definitely trigger!
         Get.offNamed(Routes.sleepTracker);
       }
       else {
-        // toast("❌ Backend Rejected Session: ${response.message}");
         Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
       }
 
     } catch (e) {
-      // toast("💥 Code Exception Triggered: ${e.toString()}");
       Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
       isLoading.value = false;
     }
   }
-  // Future<void> startWithoutMeasuring() async {
-  //   try {
-  //     isLoading.value = true;
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final List<int> savedNoteIds =
-  //         prefs.getStringList('sleep_note_ids')?.map(int.parse).toList() ?? [];
-  //
-  //     final String savedDescription =
-  //         prefs.getString('sleep_description') ?? '';
-  //
-  //     final String savedWakeUpTime =
-  //         prefs.getString('wake_up_time') ?? '';
-  //
-  //     /// 🔹 Dummy / default values since not measuring heart rate
-  //     final response = await TrackerApis.startSleepTracker(
-  //       wakeUpTime: savedWakeUpTime,
-  //       noteIds: savedNoteIds,
-  //       description: savedDescription,
-  //       heartRate: 0,              // 👈 no measurement
-  //     );
-  //
-  //     /// ✅ Navigate after success
-  //     Get.offNamed(Routes.sleepTracker);
-  //
-  //   } catch (e) {
-  //     Get.snackbar(
-  //       "Error",
-  //       "Failed to start sleep tracker",
-  //       snackPosition: SnackPosition.BOTTOM,
-  //     );
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
   /// Cancel timer if leaving screen
   @override
   void onClose() {

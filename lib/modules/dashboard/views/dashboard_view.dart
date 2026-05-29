@@ -17,48 +17,30 @@ class DashboardScreen extends StatelessWidget {
   final DashboardController controller = Get.put(DashboardController());
 
   final SleepSoundController sleepSoundController = Get.find();
-  // final SleepSoundController sleepSoundController = Get.put(SleepSoundController());
 
-  final List<Widget> pages = [
-    HomeScreen(),
-    SleepSoundView(),
-    ProgressScreen(),
-    ProfileScreen()
-  ];
+  final List<Widget> pages = [HomeScreen(), SleepSoundView(), ProgressScreen(), ProfileScreen()];
 
-  final iconList = [
-    Assets.homeHomeNew,
-    Assets.homeSoundsNew,
-    Assets.homeProgressNew,
-    Assets.homeProfileNew1
-  ];
+  final iconList = [Assets.homeHomeNew, Assets.homeSoundsNew, Assets.homeProgressNew, Assets.homeProfileNew1];
 
   DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-   return PopScope(
-      canPop: false, // Prevent default pop
-      // onPopInvokedWithResult: (didPop, result) async {
-      //   if (!didPop) {
-      //     // 👇 Custom exit dialog
-      //     final shouldExit = await _showExitDialog(context);
-      //     if (shouldExit) exit(0);
-      //   }
-      // },
-     onPopInvokedWithResult: (didPop, result) async {
-       if (controller.currentIndex.value != 0) {
-         // If not on Home, go back to Home first
-         controller.changeTab(0);
-         return;
-       }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (controller.currentIndex.value != 0) {
+          // If not on Home, go back to Home first
+          controller.changeTab(0);
+          return;
+        }
 
-       // Otherwise, show the exit dialog
-       if (!didPop) {
-         final shouldExit = await _showExitDialog(context);
-         if (shouldExit) exit(0);
-       }
-     },
+        // Otherwise, show the exit dialog
+        if (!didPop) {
+          final shouldExit = await _showExitDialog(context);
+          if (shouldExit) exit(0);
+        }
+      },
       child: Obx(() {
         return Scaffold(
           extendBody: true,
@@ -66,48 +48,29 @@ class DashboardScreen extends StatelessWidget {
           body: Column(
             children: [
               // 🔹 Main Page Content
-              Expanded(
-                child: pages[controller.currentIndex.value],
-              ),
-
+              Expanded(child: pages[controller.currentIndex.value]),
             ],
           ),
 
           floatingActionButton: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppColors.animationStartColor, AppColors.animationEndColor],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.animationEndColor.withOpacity(0.8),
-                  blurRadius: 20,
-                  spreadRadius: 4,
-                ),
-              ],
+              gradient: LinearGradient(colors: [AppColors.animationStartColor, AppColors.animationEndColor], begin: Alignment.bottomCenter, end: Alignment.topCenter),
+              boxShadow: [BoxShadow(color: AppColors.animationEndColor.withOpacity(0.8), blurRadius: 20, spreadRadius: 4)],
             ),
             child: FloatingActionButton(
               elevation: 0,
               backgroundColor: Colors.transparent,
               foregroundColor: Colors.white,
               shape: const CircleBorder(),
-              onPressed: () async{
+              onPressed: () async {
                 // await Haptics.vibrate(HapticsType.light);
-                await Haptics.vibrate(HapticsType.light,useAndroidHapticConstants: true);
+                await Haptics.vibrate(HapticsType.light, useAndroidHapticConstants: true);
                 await openSleepOnboardingBottomSheet(context);
               },
               child: Transform.rotate(
                 angle: 20 * 3.1415926535 / 180,
-                child: Image.asset(
-                  Assets.homeDream,
-                  width: 32,
-                  height: 32,
-                  color: Colors.white,
-                  filterQuality: FilterQuality.none,
-                ),
+                child: Image.asset(Assets.homeDream, width: 32, height: 32, color: Colors.white, filterQuality: FilterQuality.none),
               ),
             ),
           ),
@@ -122,29 +85,16 @@ class DashboardScreen extends StatelessWidget {
                 onTap: () {
                   controller.changeTab(index);
 
-                  if (index == 1) { // 🔊 Sounds tab index
+                  if (index == 1) {
+                    // 🔊 Sounds tab index
                     sleepSoundController.onSoundTabVisible();
                     sleepSoundController.refreshCurrentTabSilently();
                   }
-                  // if (index == 2) {
-                  //   // Check if it's already registered in GetX
-                  //   if (!Get.isRegistered<ProgressController>()) {
-                  //     Get.put(ProgressController());
-                  //   }
-                  //
-                  //   final ProgressController progressController = Get.find();
-                  //   progressController.onInit();
-                  // }
+
                   if (index == 2) {
                     // This will initialize the controller (and trigger its onInit)
                     // ONLY if it hasn't been created yet.
-                    final progressController = Get.isRegistered<ProgressController>()
-                        ? Get.find<ProgressController>()
-                        : Get.put(ProgressController());
-
-                    // If you want it to refresh data every time they click the tab:
-                    // progressController.loadAllData();
-                    // Otherwise, do nothing here and let the controller's internal onInit handle it.
+                    final progressController = Get.isRegistered<ProgressController>() ? Get.find<ProgressController>() : Get.put(ProgressController());
                   }
                 },
 
@@ -153,20 +103,10 @@ class DashboardScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(height: isActive ? 15 : 17),
-                    Image.asset(
-                      iconList[index],
-                      color: color,
-                      width: isActive ? 28 : 26,
-                      height: isActive ? 28 : 26,
-                      filterQuality: FilterQuality.none,
-                    ),
+                    Image.asset(iconList[index], color: color, width: isActive ? 28 : 26, height: isActive ? 28 : 26, filterQuality: FilterQuality.none),
                     Text(
-                      _getLabel(index,context),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                      _getLabel(index, context),
+                      style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ],
                 ),
@@ -193,79 +133,57 @@ class DashboardScreen extends StatelessWidget {
 
   Future<bool> _showExitDialog(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return GiffyDialog(
-          key: const Key("ExitAppDialog"),
-          backgroundColor: const Color(0xFF1E1E1E),
-          giffy: Center(
-            child: Image.asset(
-              Assets.homeSleepableAppIcon,
-              height: 120,
-              fit: BoxFit.contain,
-            ),
-          ),
-          title:  Text(
-            context.lang.exitApp,
-            // 'Exit App?',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-            ),
-          ),
-          content:  Text(
-            context.lang.areYouSureYouWantCloseApp,
-            // 'Are you sure you want to close the app?',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(result: false),
-              child:  Text(context.lang.cancel, style: TextStyle(color: Colors.white70)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          context: context,
+          builder: (context) {
+            return GiffyDialog(
+              key: const Key("ExitAppDialog"),
+              backgroundColor: const Color(0xFF1E1E1E),
+              giffy: Center(child: Image.asset(Assets.homeSleepableAppIcon, height: 120, fit: BoxFit.contain)),
+              title: Text(
+                context.lang.exitApp,
+                // 'Exit App?',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 20),
               ),
-              onPressed: () => Get.back(result: true),
-              child:  Text(context.lang.yesExit, style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    ) ??
+              content: Text(
+                context.lang.areYouSureYouWantCloseApp,
+                // 'Are you sure you want to close the app?',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                TextButton(
+                  onPressed: () => Get.back(result: false),
+                  child: Text(context.lang.cancel, style: TextStyle(color: Colors.white70)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pinkAccent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () => Get.back(result: true),
+                  child: Text(context.lang.yesExit, style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        ) ??
         false;
   }
 
-  String _getLabel(int index,BuildContext context) {
+  String _getLabel(int index, BuildContext context) {
     switch (index) {
       case 0:
-        return context.lang.home;//'Home';
+        return context.lang.home; //'Home';
       case 1:
-        return context.lang.sounds;//'Sounds';
+        return context.lang.sounds; //'Sounds';
       case 2:
-        return context.lang.progress;//'Progress';
+        return context.lang.progress; //'Progress';
       case 3:
-        return context.lang.profile;//'Profile';
+        return context.lang.profile; //'Profile';
       default:
         return '';
     }
   }
-  // void onSoundTabVisible() {
-  //   final category = sleepSoundController.selectedCategorySlug.value.isEmpty
-  //       ? 'white-noise'
-  //       : sleepSoundController.selectedCategorySlug.value;
-  //
-  //   sleepSoundController.fetchSubCategories(category);
-  //
-  //   if (sleepSoundController.selectedSubCategorySlug.value.isNotEmpty) {
-  //     sleepSoundController.fetchSounds(category, sleepSoundController.selectedSubCategorySlug.value);
-  //   }
-  // }
-
 }

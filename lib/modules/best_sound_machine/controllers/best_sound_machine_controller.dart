@@ -18,9 +18,7 @@ class BestSoundMachineController extends GetxController
     super.onInit();
 
     videoController = VideoPlayerController.asset(
-      // Assets.onboardingSleepFaster, // <-- your video asset
-      // Assets.onboardingOnboardingSounds, // <-- your video asset
-      Assets.onboardingSoundFinal, // <-- your video asset
+      Assets.onboardingSoundFinal,
     )
       ..initialize().then((_) {
         isVideoReady.value = true;
@@ -32,12 +30,8 @@ class BestSoundMachineController extends GetxController
   }
 
   void goNext() {
-    // setValue(AppSharedPreferenceKeys.bestSoundMachineCompleted, true);
-    // Get.offNamed(Routes.login);
     setValue(AppSharedPreferenceKeys.bestSoundMachineCompleted, true);
     videoController.pause();
-    // Pass an argument to hide the back button
-    // showPremiumOfferSheet4(Get.context!);
     Get.offNamed(Routes.login, arguments: {"hideBack": true});
   }
 

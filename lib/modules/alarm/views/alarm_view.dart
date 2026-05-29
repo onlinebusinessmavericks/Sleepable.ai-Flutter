@@ -141,14 +141,6 @@ class AlarmScreen extends GetView<AlarmController> {
                           SizedBox(height: 4),
 
                           /// Selected days summary
-                          // Text(
-                          //   controller.getSelectedText,
-                          //   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          //     color: Colors.blue,
-                          //     fontSize: 14 * SizeConfigs.textScale,
-                          //     fontWeight: FontWeight.w300,
-                          //   ),
-                          // ),
                           Obx(() => Text(
                             controller.getSelectedText(context),
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -223,17 +215,6 @@ class AlarmScreen extends GetView<AlarmController> {
                                   onTap: () => Get.toNamed(Routes.melodies),
                                 ),
                                 Divider(color: Colors.grey.shade700),
-                                // listTile(
-                                //   context,
-                                //   "Snooze",
-                                //   Obx(
-                                //     () => Text(
-                                //       controller.selectedSnooze.value,
-                                //       style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.textBoldColor, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w300),
-                                //     ),
-                                //   ),
-                                //   onTap: () => Get.to(() => SnoozeScreen()),
-                                // ),
                                 listTile(
                                   context,
                                   context.lang.snooze,
@@ -404,13 +385,6 @@ Widget _buildHourWheel(BuildContext context) {
       perspective: 0.002,
       squeeze: 1.1, // 🟢 Helps keep the active item dead-center
       physics: const FixedExtentScrollPhysics(),
-      // onSelectedItemChanged: (index) {
-      //   // 🟢 Logic: Convert 0-11 index to 1-12 display
-      //   int val = (index % 12);
-      //   if (val == 0) val = 12;
-      //   controller.hour.value = val;
-      //   controller.saveWakeUpTime();
-      // },
       // Inside the Hour ListWheelScrollView in the BottomSheet:
       onSelectedItemChanged: (index) {
         int displayHour = (index % 12);

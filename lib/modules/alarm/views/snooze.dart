@@ -18,7 +18,6 @@ class SnoozeScreen extends StatefulWidget {
 class _SnoozeScreenState extends State<SnoozeScreen> {
   final controller = Get.find<AlarmController>();
 
-  // final List<String> options = ["5 min", "10 min", "Never"];
   final List<String> options = ["5", "10", "0"];
 
   late final FixedExtentScrollController pickerController;
@@ -28,12 +27,6 @@ class _SnoozeScreenState extends State<SnoozeScreen> {
   void initState() {
     super.initState();
 
-    // set initial selected index
-    // int initialIndex = controller.selectedSnooze.value == "5"
-    //     ? 0
-    //     : controller.selectedSnooze.value == "10"
-    //     ? 1
-    //     : 2;
     String val = controller.selectedSnooze.value;
 
     int initialIndex = (val == "5")
@@ -138,16 +131,6 @@ class _SnoozeScreenState extends State<SnoozeScreen> {
                         ),
                       );
                     }).toList(),
-                    // children: options
-                    //     .map(
-                    //       (e) => Center(
-                    //         child: Text(
-                    //           e,
-                    //           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 17 * SizeConfigs.textScale),
-                    //         ),
-                    //       ),
-                    //     )
-                    //     .toList(),
                   ),
                 ),
               ],
@@ -157,17 +140,6 @@ class _SnoozeScreenState extends State<SnoozeScreen> {
       ),
     );
   }
-  // void _saveSelection() {
-  //   print("💾 Selected index: ${selected.value}");
-  //
-  //   if (selected.value == 0) {
-  //     controller.setSnooze("5 min"); // just save preference
-  //   } else if (selected.value == 1) {
-  //     controller.setSnooze("10 min"); // just save preference
-  //   } else {
-  //     controller.setSnooze("Never"); // just save preference
-  //   }
-  // }
   void _saveSelection() {
     // selected.value ek RxInt hai, uske index se options list ki key uthayein
     String key = options[selected.value];

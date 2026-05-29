@@ -67,7 +67,5 @@ class BestSoundMachineView extends GetView<BestSoundMachineController> {
         ),
       ),
     );
-
   }
-
 }

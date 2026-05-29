@@ -123,7 +123,6 @@ class BreathworkController extends GetxController {
   // ============================================================
 
   // Different durations for steps
-  //   final List<int> stepDurations = [4, 7, 8];
   RxList<int> stepDurations = <int>[4, 7, 8].obs;
 
   final List<List<int>> breathingPatterns = [

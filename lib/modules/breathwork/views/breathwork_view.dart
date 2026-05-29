@@ -70,13 +70,6 @@ class _BreathworkViewState extends State<BreathworkView> with TickerProviderStat
     });
   }
 
-  // @override
-  // void dispose() {
-  //   controller.stopAllTimers();
-  //   _cardAnim.dispose();
-  //   lottieController.dispose();
-  //   super.dispose();
-  // }
   @override
   void dispose() {
     // 🔥 3. DISPOSE WORKERS FIRST
@@ -361,15 +354,6 @@ class _BreathworkViewState extends State<BreathworkView> with TickerProviderStat
                                 final isSelected = controller.selectedFilter.value == i;
 
                                 return GestureDetector(
-                                  // onTap: () {
-                                  //   // controller.selectedFilter.value = i;
-                                  //   controller.onSelectFilter(i);
-                                  //   lottieController.stop();
-                                  //   lottieController.reset();
-                                  //   lottieController = AnimationController(vsync: this);
-                                  //
-                                  //
-                                  // },
                                   onTap: () {
                                     controller.onSelectFilter(i);
                                     // Don't recreate the controller, just reset it
@@ -639,12 +623,6 @@ void showInfoSheet(BuildContext context) {
                         ),
 
                         const SizedBox(height: 14),
-
-                        // _buildStep(Icons.self_improvement, "Step 1:", "Sit in a comfortable position and relax completely"),
-                        // _buildStep(Icons.play_circle_fill, "Step 2:", 'Press "Start" and stay in the moment'),
-                        // _buildStep(Icons.air, "Step 3:", "Breathe in sync with the orb; inhale, hold, exhale"),
-                        // _buildStep(Icons.timer_outlined, "Step 4:", "Gently give all your focus to your breath"),
-
                         _buildStep(Icons.self_improvement, "${context.lang.step} 1:", context.lang.sitComfortablePositionRelaxCompletely),
                         _buildStep(Icons.play_circle_fill, "${context.lang.step} 2:", context.lang.pressStartStayMoment),
                         _buildStep(Icons.air, "${context.lang.step} 3:", context.lang.breatheSyncOrbInhaleHoldExhale),

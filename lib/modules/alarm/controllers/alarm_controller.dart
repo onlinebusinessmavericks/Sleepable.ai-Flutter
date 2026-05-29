@@ -20,7 +20,6 @@ import '../../settings/model/user_settings_model.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
 import '../views/alarm_ringing_view.dart';
 
-// class AlarmController extends GetxController {
 class AlarmController extends GetxController with WidgetsBindingObserver {
   // --------------------------
   // UI Values
@@ -118,8 +117,8 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
   // ... other variables ...
   void prepareBedtimePicker() {
-    nextAlarmTime.value = ''; // Reset UI string
-    bedTimeWheelsSynced = false; // Reset sync flag
+    nextAlarmTime.value = '';
+    bedTimeWheelsSynced = false;
   }
   void syncBedTimeWheels() {
     // 🟢 Safety Check: If controllers are disposed or not in UI, stop immediately.
@@ -174,11 +173,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
         syncWakeUpWheels();
       });
     }
-
-    // final List<String> dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    // for (int i = 0; i < dayKeys.length; i++) {
-    //   selected[i] = data.repeatDays.contains(dayKeys[i]);
-    // }
   }
   Future<void> saveWakeUpTime() async {
     final prefs = await SharedPreferences.getInstance();
@@ -308,7 +302,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
 
   void setAmPm(int index) {
     isAm.value = (index == 0);
-    // nextAlarmTime.value = displayAlarmTime;
     if (Get.context != null) {
       nextAlarmTime.value = displayAlarmTime(Get.context!);
     }
@@ -437,179 +430,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   // --------------------------
   // Ring Alarm
   // --------------------------
-
-  // Future<void> ringAlarm() async {
-  //   final session = await AudioSession.instance;
-  //
-  //   // 1. Configure the session for Alarm usage
-  //   // await session.configure(AudioSessionConfiguration(
-  //   //   avAudioSessionCategory: AVAudioSessionCategory.playback,
-  //   //   avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
-  //   //   androidAudioAttributes: const AndroidAudioAttributes(
-  //   //     usage: AndroidAudioUsage.alarm, // Uses the physical Alarm volume channel
-  //   //     contentType: AndroidAudioContentType.music,
-  //   //   ),
-  //   // ));
-  //   await session.configure(AudioSessionConfiguration(
-  //     avAudioSessionCategory: AVAudioSessionCategory.playback,
-  //     avAudioSessionCategoryOptions:
-  //     AVAudioSessionCategoryOptions.duckOthers | // Dusre sounds ko dheema karega
-  //     AVAudioSessionCategoryOptions.defaultToSpeaker,
-  //     androidAudioAttributes: const AndroidAudioAttributes(
-  //       usage: AndroidAudioUsage.alarm,
-  //       contentType: AndroidAudioContentType.music,
-  //     ),
-  //   ));
-  //   if (Get.isRegistered<SleepTrackerController>()) {
-  //     Get.find<SleepTrackerController>().trackerState.value = TrackerState.idle;
-  //   }
-  //   // 2. 🔥 ACTIVATE the session (Crucial for background/locked playback)
-  //   await session.setActive(true);
-  //
-  //   // 3. Initialize/Reset player
-  //   alarmPlayer ??= AudioPlayer();
-  //
-  //   try {
-  //     // Force reload the asset to ensure it's fresh
-  //     await alarmPlayer!.setAsset(selectedMelodyAsset.value);
-  //     await alarmPlayer!.setLoopMode(LoopMode.one);
-  //
-  //     // Start playing immediately
-  //     alarmPlayer!.play();
-  //
-  //     // 4. Handle Fade-In if enabled
-  //     if (fadeIn.value) {
-  //       alarmPlayer!.setVolume(0.0);
-  //       _startFadeIn();
-  //     } else {
-  //       alarmPlayer!.setVolume(1.0);
-  //     }
-  //   } catch (e) {
-  //     debugPrint("❌ Audio Playback Error: $e");
-  //   }
-  //
-  //   // 5. Navigate to the ringing screen AFTER audio starts
-  //   Get.to(() => const AlarmRingingScreen());
-  // }
-  // Future<void> ringAlarm() async {
-  //   final session = await AudioSession.instance;
-  //
-  //   // 1. Agar SleepTracker chalu hai, toh pehle uske hardware ko stop karo
-  //   if (Get.isRegistered<SleepTrackerController>()) {
-  //     final tracker = Get.find<SleepTrackerController>();
-  //
-  //     // 🔥 Sabse pehle recorder stop karo, varna session deactivate busy error dega
-  //     if (tracker.isRecording.value) {
-  //       await tracker.recorder.stop();
-  //       tracker.isRecording.value = false;
-  //     }
-  //
-  //     // Monitoring subscriptions bhi cancel karo
-  //     tracker.trackerState.value = TrackerState.idle;
-  //     await tracker.stopRecording(); // Aapka existing stop function
-  //   }
-  //
-  //   try {
-  //     // 2. Ab hardware free hai, toh deactivate karo (Success probability 100%)
-  //     await session.setActive(false, avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation);
-  //
-  //     // 3. Naya configuration (Alarm ke liye)
-  //     await session.configure(AudioSessionConfiguration(
-  //       avAudioSessionCategory: AVAudioSessionCategory.playback,
-  //       avAudioSessionCategoryOptions:
-  //       AVAudioSessionCategoryOptions.duckOthers |
-  //       AVAudioSessionCategoryOptions.defaultToSpeaker,
-  //       androidAudioAttributes: const AndroidAudioAttributes(
-  //         usage: AndroidAudioUsage.alarm,
-  //         contentType: AndroidAudioContentType.music,
-  //       ),
-  //     ));
-  //
-  //     // 4. Activate naya session
-  //     await session.setActive(true);
-  //
-  //     // ... baaki playing logic ...
-  //     alarmPlayer ??= AudioPlayer();
-  //     await alarmPlayer!.setAsset(selectedMelodyAsset.value);
-  //     alarmPlayer!.play();
-  //
-  //   } catch (e) {
-  //     debugPrint("❌ iOS Alarm Critical Error: $e");
-  //     // Fallback: Agar deactivate fail bhi ho jaye, tab bhi play karne ki koshish karo
-  //     await session.setActive(true);
-  //   }
-  //
-  //   Get.to(() => const AlarmRingingScreen());
-  // }
-  // Future<void> ringAlarm() async {
-  //   final session = await AudioSession.instance;
-  //
-  //   print("🔔 [ALARM] Ringing Sequence Started...");
-  //
-  //   // 1. Check if Tracker is running and stop it
-  //   if (Get.isRegistered<SleepTrackerController>()) {
-  //     final tracker = Get.find<SleepTrackerController>();
-  //     print("🔔 [ALARM] Found SleepTrackerController. Initializing Stop...");
-  //
-  //     // Tracker ki state badlo taaki timer ruk jaye
-  //     tracker.trackerState.value = TrackerState.idle;
-  //     print("🔔 [ALARM] TrackerState set to IDLE.");
-  //
-  //     if (await tracker.recorder.isRecording()) {
-  //       print("🔔 [ALARM] Recorder is busy. Stopping hardware...");
-  //       await tracker.recorder.stop();
-  //       tracker.isRecording.value = false;
-  //       print("🔔 [ALARM] Hardware Recorder STOPPED.");
-  //     }
-  //
-  //     // Hardware release hone ka wait karein
-  //     await Future.delayed(const Duration(milliseconds: 300));
-  //     print("🔔 [ALARM] Wait period over. Attempting Session Deactivation...");
-  //   }
-  //
-  //   try {
-  //     // 2. Deactivate old session (Fix for Error 560030580)
-  //     print("🔔 [ALARM] Calling setActive(false)...");
-  //     await session.setActive(false,
-  //         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation);
-  //     print("🔔 [ALARM] Session DEACTIVATED successfully.");
-  //
-  //     // 3. Configure for Playback
-  //     print("🔔 [ALARM] Configuring for Category: Playback...");
-  //     await session.configure(AudioSessionConfiguration(
-  //       avAudioSessionCategory: AVAudioSessionCategory.playback,
-  //       avAudioSessionCategoryOptions:
-  //       AVAudioSessionCategoryOptions.duckOthers |
-  //       AVAudioSessionCategoryOptions.defaultToSpeaker,
-  //       androidAudioAttributes: const AndroidAudioAttributes(
-  //         usage: AndroidAudioUsage.alarm,
-  //         contentType: AndroidAudioContentType.music,
-  //       ),
-  //     ));
-  //     print("🔔 [ALARM] Configuration COMPLETE.");
-  //
-  //     // 4. Activate New Session
-  //     print("🔔 [ALARM] Activating New Session...");
-  //     await session.setActive(true);
-  //     print("🔔 [ALARM] Session ACTIVE.");
-  //
-  //     // 5. Play Music
-  //     alarmPlayer ??= AudioPlayer();
-  //     print("🔔 [ALARM] Loading Asset: ${selectedMelodyAsset.value}");
-  //     await alarmPlayer!.setAsset(selectedMelodyAsset.value);
-  //     await alarmPlayer!.setLoopMode(LoopMode.one);
-  //
-  //     alarmPlayer!.play();
-  //     print("🔔 [ALARM] Audio is now PLAYING.");
-  //
-  //   } catch (e) {
-  //     print("❌ [ALARM ERROR] Sequence Failed: $e");
-  //     // Emergency Fallback
-  //     await session.setActive(true);
-  //   }
-  //
-  //   Get.to(() => const AlarmRingingScreen());
-  // }
   Future<void> ringAlarm() async {
     final session = await AudioSession.instance;
     print("🔔 [ALARM] Ringing Sequence Started...");
@@ -659,7 +479,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
 
     } catch (e) {
       print("❌ [ALARM ERROR] Detailed: $e");
-      // Agar configure fail bhi ho jaye, toh purane session par hi play karne ki koshish karo
       alarmPlayer?.play();
     }
 
@@ -721,10 +540,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   // --------------------------
   // Utility to start alarm timer
   // --------------------------
-  // void _startAlarmTimer(Duration duration) {
-  //   alarmTimer?.cancel();
-  //   alarmTimer = Timer(duration, ringAlarm);
-  // }
   void _startAlarmTimer(Duration duration) {
     alarmTimer?.cancel(); // Clear existing
 
@@ -767,9 +582,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
 
   // // Order: Sun → Sat
-  // final List<String> daysShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  // final List<String> daysFull = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  List<String> getDaysShort(BuildContext context) {
+ List<String> getDaysShort(BuildContext context) {
     final l = context.lang;
     return [l.s, l.m1, l.t, l.w, l.t2, l.f, l.s2];
   }
@@ -780,21 +593,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
   RxList<bool> selected = RxList<bool>.from([true, true, true, true, true, true, false]);
 
-  // String get selectedText {
-  //   final lang = Get.context?.lang;
-  //   // CASE 1 — All selected
-  //   if (selected.every((e) => e)) return lang.everyDay;
-  //
-  //   // CASE 2 — None selected
-  //   if (selected.every((e) => !e)) return lang.noDaysSelected;
-  //
-  //   // CASE 3 — Some selected
-  //   List<String> list = [];
-  //   for (int i = 0; i < selected.length; i++) {
-  //     if (selected[i]) list.add(daysFull[i]);
-  //   }
-  //   return list.join(" ");
-  // }
   String getSelectedText(BuildContext context) {
     final lang = context.lang;
 
@@ -843,14 +641,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
 
   /// For UI → "07:30 AM", "10:15 PM"
-  // String get displayAlarmTime {
-  //   final h = hour.value.toString().padLeft(2, '0');
-  //   final m = minute.value.toString().padLeft(2, '0');
-  //   final period = isAm.value ? context.lang.AM : 'PM';
-  //
-  //   return '$h:$m $period';
-  // }
-  // AlarmController ke andar
   String displayAlarmTime(BuildContext context) {
     final h = hour.value.toString().padLeft(2, '0');
     final m = minute.value.toString().padLeft(2, '0');
@@ -862,13 +652,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
 
   /// Helper to force ANY string into strict "HH:mm:ss"
-  // String _ensureStrictApiFormat(String? timeStr) {
-  //   if (timeStr == null || timeStr.isEmpty || !timeStr.contains(':')) return "00:00:00";
-  //   List<String> parts = timeStr.split(':');
-  //   String h = parts[0].padLeft(2, '0');
-  //   String m = parts.length > 1 ? parts[1].padLeft(2, '0') : "00";
-  //   return "$h:$m:00";
-  // }
   String _ensureStrictApiFormat(String? timeStr) {
     if (timeStr == null || timeStr.isEmpty || !timeStr.contains(':')) return "00:00:00";
     List<String> parts = timeStr.split(':');
@@ -877,46 +660,33 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     return "$h:$m:00";
   }
 
-//   Future<void> saveAlarmSettings(UserSettingsData currentSettings) async {
+// AlarmController.dart
+//   Future<void> saveAlarmSettings(UserSettingsData currentSettings,BuildContext context) async {
 //     if (isProcessingBack.value) return;
 //     isProcessingBack.value = true;
-//     String deviceTimezone = await getCurrentTimezone();
+//
 //     try {
-//       // 1. Map Repeat Type based on selection
-//       String repeatType = "custom";
-//       if (selected.every((e) => e)) {
-//         repeatType = "everyday";
-//       } else if (selected.every((e) => !e)) {
-//         repeatType = "once";
-//       }
+//       String deviceTimezone = await getCurrentTimezone();
 //
-//       // 2. Map Melody & Snooze
-//       // Assuming melodyId 0/1 is invalid for your DB, default to 2 or keep current
-//       // int finalMelodyId = (currentSettings.melodyId <= 1) ? 2 : currentSettings.melodyId;
-//       // int finalSnooze = int.tryParse(selectedSnooze.value.split(' ')[0]) ?? 10;
-//       int finalMelodyId = currentSettings.melodyId;
-//
-// // If the melodyId is 0 or null (new user), set it to a safe fallback that exists in your DB
-//       if (finalMelodyId <= 0) {
-//         finalMelodyId = 40; // Change this to an ID you know exists on the server
-//       }
-//
-//       int finalSnooze = int.tryParse(selectedSnooze.value.split(' ')[0]) ?? 10;
-//       // 3. Prepare the update object for the API
 //       UserSettings requestBody = UserSettings(
+//         // 🔥 Alarm specific updates
 //         alarmEnabled: wakeUp.value,
 //         alarmTime: _ensureStrictApiFormat(apiAlarmTime),
-//         meridiem: isAm.value ? "AM" : "PM",
-//         repeatType: repeatType,
-//         repeatDays: _getApiRepeatDays(),
-//         melodyId: finalMelodyId,
-//         snoozeMinutes: finalSnooze,
-//         fadeIn: fadeIn.value,
-//         // Pass existing values for non-alarm fields to avoid overwriting them
+//         meridiem: isAm.value ? context.lang.AM : context.lang.PM,
+//
+//         // 🔥 Keep current bedtime and reminders SAFE
 //         bedtime: _ensureStrictApiFormat(currentSettings.bedtime),
 //         wakeUpTime: _ensureStrictApiFormat(currentSettings.wakeUpTime),
-//         sleepReminders: currentSettings.sleepReminders,
 //         remindAt: _ensureStrictApiFormat(currentSettings.remindAt),
+//         sleepReminders: currentSettings.sleepReminders,
+//
+//         // Other fields
+//         repeatType: _calculateRepeatType(context),
+//         repeatDays: _getApiRepeatDays(context),
+//         melodyId: currentSettings.melodyId <= 0 ? 40 : currentSettings.melodyId,
+//         // snoozeMinutes: int.tryParse(selectedSnooze.value.split(' ')[0]) ?? 10,
+//         snoozeMinutes: int.tryParse(selectedSnooze.value) ?? 10,
+//         fadeIn: fadeIn.value,
 //         batteryWarning: currentSettings.batteryWorning,
 //         heartRateTracking: currentSettings.heartRateTracking,
 //         notifications: currentSettings.notifications,
@@ -924,47 +694,41 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
 //       );
 //
 //       final response = await SettingsApis.updateUserSettings(requestBody);
-//         print("saveAlarmSettings response ------------- $response");
 //       if (response.success) {
-//         // 4. Update ProfileController locally using copyWith
 //         if (Get.isRegistered<ProfileController>()) {
-//           final profileCtrl = Get.find<ProfileController>();
+//           await Get.find<ProfileController>().fetchSettings();
+//         }
 //
-//           profileCtrl.settings.value = currentSettings.copyWith(
-//             alarmEnabled: wakeUp.value,
-//             alarmTime: apiAlarmTime,
-//             meridiem: isAm.value ? "AM" : "PM",
-//             repeatType: repeatType,
-//             repeatDays: _getApiRepeatDays(),
-//             snoozeMinutes: finalSnooze,
-//             fadeIn: fadeIn.value,
-//           );
-//
-//           profileCtrl.settings.refresh(); // 🔥 Force Profile UI to rebuild
+//         if (Get.isRegistered<HomeController>()) {
+//           Get.find<HomeController>().fetchHomePageData();
+//           dev.log("🏠 Home Page Refreshed after Alarm Update");
 //         }
 //         Get.back();
-//       } else {
-//         Get.snackbar("Error", response.message ?? "Update failed");
 //       }
-//     } catch (e) {
-//       debugPrint("❌ Save Error: $e");
 //     } finally {
 //       isProcessingBack.value = false;
 //     }
 //   }
-// AlarmController.dart
-  Future<void> saveAlarmSettings(UserSettingsData currentSettings,BuildContext context) async {
+//
+  Future<void> saveAlarmSettings(UserSettingsData currentSettings, BuildContext context) async {
     if (isProcessingBack.value) return;
     isProcessingBack.value = true;
 
     try {
       String deviceTimezone = await getCurrentTimezone();
 
+      // 🛡️ 1. Sanitize Meridiem Dynamically for API (Never send translated strings)
+      String apiMeridiem = isAm.value ? "AM" : "PM";
+
+      // 🛡️ 2. Sanitize Repeat Type & Repeat Days via helpers
+      String apiRepeatType = _calculateRepeatTypeForApi();
+      List<String> apiRepeatDays = _getApiRepeatDaysForApi();
+
       UserSettings requestBody = UserSettings(
         // 🔥 Alarm specific updates
         alarmEnabled: wakeUp.value,
         alarmTime: _ensureStrictApiFormat(apiAlarmTime),
-        meridiem: isAm.value ? context.lang.AM : context.lang.PM,
+        meridiem: apiMeridiem, // ✅ Safely sends "AM" or "PM"
 
         // 🔥 Keep current bedtime and reminders SAFE
         bedtime: _ensureStrictApiFormat(currentSettings.bedtime),
@@ -972,11 +736,11 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
         remindAt: _ensureStrictApiFormat(currentSettings.remindAt),
         sleepReminders: currentSettings.sleepReminders,
 
-        // Other fields
-        repeatType: _calculateRepeatType(context),
-        repeatDays: _getApiRepeatDays(context),
+        // 🔥 Backend compliant configurations
+        repeatType: apiRepeatType,   // ✅ Safely sends "everyday", "once", or "custom"
+        repeatDays: apiRepeatDays,   // ✅ Safely sends ["sun", "mon", etc.]
+
         melodyId: currentSettings.melodyId <= 0 ? 40 : currentSettings.melodyId,
-        // snoozeMinutes: int.tryParse(selectedSnooze.value.split(' ')[0]) ?? 10,
         snoozeMinutes: int.tryParse(selectedSnooze.value) ?? 10,
         fadeIn: fadeIn.value,
         batteryWarning: currentSettings.batteryWorning,
@@ -984,6 +748,9 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
         notifications: currentSettings.notifications,
         timezone: deviceTimezone,
       );
+
+      // Log request payload for confirmation before transmission
+      print("🚀 EN ROUTE SANITIZED PAYLOAD: ${requestBody.toJson()}");
 
       final response = await SettingsApis.updateUserSettings(requestBody);
       if (response.success) {
@@ -997,9 +764,37 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
         }
         Get.back();
       }
+    } catch (e) {
+      print("❌ Error in saveAlarmSettings: $e");
     } finally {
       isProcessingBack.value = false;
     }
+  }
+  String _calculateRepeatTypeForApi() {
+    // Check states using direct indexes independent of UI rendering languages
+    if (selected.every((e) => e)) {
+      return "everyday";
+    }
+    if (selected.every((e) => !e)) {
+      return "once";
+    }
+    return "custom";
+  }
+
+  // ==========================================
+  // 🛡️ HELPER 2: HARDCODED ENGLISH SYSTEM KEYS FOR API
+  // ==========================================
+  List<String> _getApiRepeatDaysForApi() {
+    // Backend standard format arrays
+    final List<String> standardApiDays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    List<String> activeDays = [];
+
+    for (int i = 0; i < selected.length; i++) {
+      if (selected[i]) {
+        activeDays.add(standardApiDays[i]);
+      }
+    }
+    return activeDays;
   }
   String _calculateRepeatType(BuildContext context) {
     // 1. Agar saare 7 din select hain

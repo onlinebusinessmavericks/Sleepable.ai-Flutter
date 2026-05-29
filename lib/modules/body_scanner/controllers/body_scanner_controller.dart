@@ -42,5 +42,4 @@ class BodyScannerController extends GetxController
     }
     super.onClose();
   }
-
 }
