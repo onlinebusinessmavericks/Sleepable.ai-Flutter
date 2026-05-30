@@ -658,16 +658,6 @@ class OpenSaveMixBottomSheet1State extends State<OpenSaveMixBottomSheet1> {
                         controller.saveCurrentMix(context);
                         Get.back(); // Close bottom sheet
                         print("Saving mix...");
-                        // Get.snackbar(
-                        //   "Mix Saved",
-                        //   "Your mix has been saved successfully!",
-                        //   snackPosition: SnackPosition.BOTTOM,
-                        //   backgroundColor: Colors.green.withOpacity(0.9),
-                        //   colorText: Colors.white,
-                        //   margin: const EdgeInsets.all(12),
-                        //   borderRadius: 12,
-                        //   duration: const Duration(seconds: 3),
-                        // );
                       }
                     : null,
                 style: ElevatedButton.styleFrom(

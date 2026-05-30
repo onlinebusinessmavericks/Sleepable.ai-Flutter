@@ -1347,26 +1347,6 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
                           controller.scheduleAlarm();
                         },
 
-                        // childDelegate: ListWheelChildBuilderDelegate(
-                        //   childCount: 12,
-                        //   builder: (context, index) {
-                        //     final value = index + 1;
-                        //
-                        //     return Obx(() {
-                        //       final isSelected = controller.hour.value == value;
-                        //
-                        //       return Center(
-                        //         child: Text(
-                        //           value.toString().padLeft(2, '0'),
-                        //           style: isSelected
-                        //               ? Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 25 * SizeConfigs.textScale)
-                        //               : Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.textBoldColor, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w300),
-                        //           //Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.grey, fontSize: 18 * SizeConfigs.textScale, fontWeight: FontWeight.w300),
-                        //         ),
-                        //       ); // Theme.of(context).textTheme.titleMedium?.copyWith(color: isSelected ? Colors.white : Colors.grey, fontSize: isSelected ? 20 : 18)
-                        //     });
-                        //   },
-                        // ),
                         childDelegate: ListWheelChildBuilderDelegate(
                           childCount: 10000, // 🟢 Set high for infinite feel
                           builder: (context, index) {
@@ -1418,11 +1398,6 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
                         itemExtent: 35,
                         perspective: 0.002,
                         physics: const FixedExtentScrollPhysics(),
-
-                        // onSelectedItemChanged: (i) {
-                        //   // controller.setMinute(i);
-                        //   controller.minute.value = i % 60;
-                        // },
                         onSelectedItemChanged: (i) {
                           controller.minute.value = i % 60;
 
@@ -1430,25 +1405,6 @@ openWakeUpAlarmBottomSheet(BuildContext context)  {
                           controller.wakeUp.value = true;
                           controller.scheduleAlarm();
                         },
-                        // childDelegate: ListWheelChildBuilderDelegate(
-                        //   childCount: 60,
-                        //   builder: (context, index) {
-                        //     return Obx(() {
-                        //       final isSelected = controller.minute.value == index;
-                        //
-                        //       return Center(
-                        //         child: Text(
-                        //           index.toString().padLeft(2, '0'),
-                        //           style: isSelected
-                        //               ? Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 25 * SizeConfigs.textScale)
-                        //               : Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.textBoldColor, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w300),
-                        //
-                        //           //  Theme.of(context).textTheme.titleMedium?.copyWith(color: isSelected ? Colors.white : Colors.grey, fontSize: isSelected ? 20 : 18),
-                        //         ),
-                        //       );
-                        //     });
-                        //   },
-                        // ),
                         childDelegate: ListWheelChildBuilderDelegate(
                           childCount: 10000, // 🟢 High for infinite feel
                           builder: (context, index) {

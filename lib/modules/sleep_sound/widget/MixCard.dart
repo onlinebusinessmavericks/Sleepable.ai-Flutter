@@ -93,58 +93,6 @@ class ApiMixCard extends StatelessWidget {
     );
   }
 }
-
-// void showMixOptions(BuildContext context, Map<String, dynamic> mix, String name) {
-//   Get.bottomSheet(
-//     Container(
-//       decoration: const BoxDecoration(
-//         color: Color(0xFF101A3D),
-//         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-//       ),
-//       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
-//       child: SafeArea(
-//         top: false,
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 GestureDetector(
-//                   onTap: () => Get.back(),
-//                   child: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 38),
-//                 ),
-//                 Expanded(
-//                   child: Center(
-//                     child: Text(
-//                       name,
-//                       textAlign: TextAlign.center,
-//                       style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 40), // spacer
-//               ],
-//             ),
-//             const SizedBox(height: 20),
-//             _buildOption(context, icon: Icons.favorite, label: "Unlike", color: Colors.pinkAccent, onTap: () {
-//               Get.back();
-//               // controller.unlikeMix(mix['id']);
-//             }),
-//             const Divider(color: Colors.white10),
-//             _buildOption(context, icon: Icons.edit_outlined, label: "Rename", onTap: () {}),
-//             const Divider(color: Colors.white10),
-//             _buildOption(context, icon: Icons.share_outlined, label: "Share", onTap: () {}),
-//             const SizedBox(height: 20),
-//           ],
-//         ),
-//       ),
-//     ),
-//     isScrollControlled: true,
-//     backgroundColor: Colors.transparent,
-//   );
-// }
-// 1. Updated signature to use MixedSoundRecord
 void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
   Get.bottomSheet(
     Container(

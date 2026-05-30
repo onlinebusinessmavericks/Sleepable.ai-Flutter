@@ -18,29 +18,6 @@ class KeyInsightsResponse {
   }
 }
 
-// class KeyInsightsData {
-//   final double averageSleepHours;
-//   final double sleepQualityScore;
-//   final int sleepStreakDays;
-//   final double consistencyScore; // 🔥 Added
-//
-//   KeyInsightsData({
-//     required this.averageSleepHours,
-//     required this.sleepQualityScore,
-//     required this.sleepStreakDays,
-//     required this.consistencyScore, // 🔥 Added
-//   });
-//
-//   factory KeyInsightsData.fromJson(Map<String, dynamic> json) {
-//     return KeyInsightsData(
-//       averageSleepHours: (json["average_sleep_hours"] ?? 0).toDouble(),
-//       sleepQualityScore: (json["sleep_quality_score"] ?? 0).toDouble(),
-//       sleepStreakDays: json["sleep_streak_days"] ?? 0,
-//       // 🔥 Map the new key from JSON
-//       consistencyScore: (json["consistency_score"] ?? 0).toDouble(),
-//     );
-//   }
-// }
 
 class KeyInsightsData {
   final double averageSleepHours;

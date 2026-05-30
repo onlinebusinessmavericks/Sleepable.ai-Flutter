@@ -204,17 +204,6 @@ class SignupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() => Stack(
       children: [
-        // Scaffold(
-        //   backgroundColor: AppColors.backgroundColor,
-        //
-        //   appBar: AppBar(
-        //     backgroundColor: AppColors.backgroundColor,
-        //     elevation: 0,
-        //     leading: SmallCircleIcon(icon: Icons.arrow_back_rounded, size: 22 * SizeConfigs.textScale, iconColor: Colors.white, backgroundColor: Colors.white10, onTap: () => Get.back()),
-        //
-        //     title: const Text("Create Account",style: TextStyle(color: Colors.white),),
-        //     centerTitle: true,
-        //   ),
         Scaffold(
           backgroundColor: AppColors.backgroundColor,
           appBar: AppBar(

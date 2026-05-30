@@ -92,71 +92,7 @@ class NotificationService {
       dev.log("❌ User denied notification permission");
     }
   }
-  // NotificationService.dart mein
-  // static Future<void> updateTokenToServer() async {
-  //   String? token = await _messaging.getToken();
-  //   if (token != null) {
-  //     _sendTokenToBackend(token);
-  //   }
-  // }
-  // static Future<void> updateTokenToServer() async {
-  //   try {
-  //     if (Platform.isIOS) {
-  //       // 🔥 CRITICAL: Pehle APNS check karein, bina paid account ke ye hamesha null aayega
-  //       String? apnsToken = await _messaging.getAPNSToken();
-  //       if (apnsToken == null) {
-  //         dev.log("⚠️ iOS Free Account: APNS Token not available. Skipping FCM Token fetch.");
-  //         return;
-  //       }
-  //     }
-  //
-  //     String? token = await _messaging.getToken();
-  //     if (token != null) {
-  //       _sendTokenToBackend(token);
-  //     }
-  //   } catch (e) {
-  //     dev.log("❌ Error fetching token: $e");
-  //   }
-  // }
-  // static Future<void> updateTokenToServer() async {
-  //   // 🔥 Sabse pehle iOS check: Bina Paid Account ke token process skip karein
-  //   if (Platform.isIOS) {
-  //     dev.log("⚠️ iOS Free Account Bypass: Skipping token fetch to prevent crash.");
-  //     return;
-  //   }
-  //
-  //   try {
-  //     // Ye code ab sirf Android par chalega
-  //     String? token = await _messaging.getToken();
-  //     if (token != null) {
-  //       _sendTokenToBackend(token);
-  //     }
-  //   } catch (e) {
-  //     dev.log("❌ Error fetching token: $e");
-  //   }
-  // }
-  // static Future<void> updateTokenToServer() async {
-  //   if (Platform.isIOS) {
-  //     dev.log("⚠️ iOS Free Account Bypass: Skipping token fetch.");
-  //     return;
-  //   }
-  //
-  //   try {
-  //     // 1. Force delete current cached token
-  //     await _messaging.deleteToken();
-  //     dev.log("🗑️ Old FCM Token deleted from cache");
-  //
-  //     // 2. Now get a fresh live token
-  //     String? token = await _messaging.getToken();
-  //
-  //     if (token != null) {
-  //       dev.log("🆕 Fresh FCM Token generated: $token");
-  //       await _sendTokenToBackend(token);
-  //     }
-  //   } catch (e) {
-  //     dev.log("❌ Error fetching fresh token: $e");
-  //   }
-  // }
+
   static Future<void> updateTokenToServer() async {
     try {
       if (Platform.isIOS) {

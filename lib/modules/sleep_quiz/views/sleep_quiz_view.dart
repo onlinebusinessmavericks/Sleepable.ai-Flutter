@@ -161,7 +161,6 @@ class SleepQuizView extends GetView<SleepQuizController> {
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), color: enabled ? (isPrimary ? AppColors.accentColor : Colors.white24) : Colors.white10),
         child: Text(
           text,
-          // style: const TextStyle(color: Colors.white, fontSize: 18)
           style: TextStyle(color: enabled ? Colors.white : Colors.white38, fontSize: 18, fontWeight: enabled ? FontWeight.w600 : FontWeight.w200),
         ),
       ),

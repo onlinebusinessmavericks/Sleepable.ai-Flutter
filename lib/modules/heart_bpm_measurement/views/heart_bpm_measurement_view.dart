@@ -20,9 +20,6 @@ class HeartBpmMeasurementView extends GetView<HeartBpmMeasurementController> {
   Widget build(BuildContext context) {
     SizeConfigs.init(context);
     SizeConfigs2.init(context);
-    // final sleepController = Get.put(SleepTrackerController());
-    // Start the timer for auto navigation
-    // controller.startAutoNavigation(seconds: 2);
     return Scaffold(
       backgroundColor: AppColors.background,
       body:  SafeArea(
@@ -61,10 +58,8 @@ class HeartBpmMeasurementView extends GetView<HeartBpmMeasurementController> {
 
             children: [
               SmallCircleIcon(icon: Icons.arrow_back_rounded, size: 20 * SizeConfigs.textScale, iconColor: Colors.white, backgroundColor: Colors.white10, onTap: () => Get.back()),
-              // const SizedBox(width: 24), // keeps title centered
               Text(
                 context.lang.heartRate,
-                // "Heart Rate",
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 21 * SizeConfigs.textScale, fontWeight: FontWeight.w500) ?? const TextStyle(),
               ),
               GestureDetector(
@@ -84,7 +79,6 @@ class HeartBpmMeasurementView extends GetView<HeartBpmMeasurementController> {
         // 🔹 Get Ready
         Text(
           context.lang.getReady,
-          // "Get Ready",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.blueLine, fontSize: 17 * SizeConfigs.textScale, fontWeight: FontWeight.w500) ?? const TextStyle(),
         ),
 
@@ -147,44 +141,6 @@ class HeartBpmMeasurementView extends GetView<HeartBpmMeasurementController> {
           padding: EdgeInsets.symmetric(horizontal: 20 * SizeConfigs.paddingScale, vertical: 16 * SizeConfigs.paddingScale),
           child: Column(
             children: [
-              // Main Button
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: ElevatedButton(
-              //     style: ElevatedButton.styleFrom(
-              //       backgroundColor: const Color(0xFF1E90FF),
-              //       padding: EdgeInsets.symmetric(vertical: 16 * SizeConfigs.paddingScale),
-              //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              //     ),
-              //     onPressed: () {
-              //       controller.goToNextScreen();
-              //     },
-              //     child: Text(
-              //       "Measure Heart Rate",
-              //       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),),
-              //
-              //   ),
-              // ),
-              //
-              // SizedBox(height: 14 * SizeConfigs.paddingScale),
-              //
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: ElevatedButton(
-              //     style: ElevatedButton.styleFrom(
-              //       backgroundColor: Colors.white12,
-              //       padding: EdgeInsets.symmetric(vertical: 16 * SizeConfigs.paddingScale),
-              //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-              //     ),
-              //     onPressed: () {
-              //       controller.startWithoutMeasuring();
-              //     },
-              //     child: Text(
-              //       "Start Without Measuring",
-              //       style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w200) ?? const TextStyle(),
-              //     ),
-              //   ),
-              // ),
               Column(
                 children: [
                   _buildAnimatedButtonHeartRate(
@@ -197,7 +153,7 @@ class HeartBpmMeasurementView extends GetView<HeartBpmMeasurementController> {
                   SizedBox(height: 14 * SizeConfigs.paddingScale),
 
                   _buildAnimatedButtonMeasuring(
-                    text: context.lang.startWithoutMeasuring,// "Start Without Measuring",
+                    text: context.lang.startWithoutMeasuring,
                     color: Colors.white12,
                     controller: controller,
                     onTap: () => controller.startWithoutMeasuring(),

@@ -37,36 +37,6 @@ class _RatingDialogState extends State<RatingDialog> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // Future<void> _launchStore() async {
-  //   const String packageName = 'com.yourcompany.sleepable';
-  //   final Uri url = Uri.parse("market://details?id=$packageName");
-  //   final Uri webUrl = Uri.parse("https://play.google.com/store/apps/details?id=$packageName");
-  //
-  //   if (await canLaunchUrl(url)) {
-  //     await launchUrl(url, mode: LaunchMode.externalApplication);
-  //   } else {
-  //     await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-  //   }
-  //   Get.back();
-  // }
-  // Future<void> _launchStore() async {
-  //   const String packageName = 'com.sleepableai.sleepableai';
-  //
-  //   // 🔥 showAllReviews=true parameter rating section open karne mein help karta hai
-  //   final Uri url = Uri.parse("market://details?id=$packageName&showAllReviews=true");
-  //   final Uri webUrl = Uri.parse("https://play.google.com/store/apps/details?id=$packageName");
-  //
-  //   try {
-  //     if (await canLaunchUrl(url)) {
-  //       await launchUrl(url, mode: LaunchMode.externalApplication);
-  //     } else {
-  //       await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Could not launch store: $e");
-  //   }
-  //   Get.back();
-  // }
   Future<void> _launchStore() async {
     const String packageName = 'com.sleepableai.sleepableai';
     final Uri url = Uri.parse("market://details?id=$packageName&showAllReviews=true");

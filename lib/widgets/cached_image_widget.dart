@@ -169,10 +169,6 @@ class CachedImageWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: (){},
-      // onTap ??
-      //     () {
-      //       if (!url.startsWith('assets')) ZoomImageScreen(galleryImages: [url], index: 0).launch(context, pageRouteAnimation: PageRouteAnimation.Fade, duration: 200.milliseconds);
-      //     },
       child: child(),
     );
   }

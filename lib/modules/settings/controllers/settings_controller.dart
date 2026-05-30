@@ -25,32 +25,6 @@ class SettingsController extends GetxController {
   void onRateUs() {
     // TODO: Play Store / App Store redirect
   }
-
-  // void onEmailSupport() async {
-  //   // 1. Manually encode parameters to avoid the "+" sign issue
-  //   final String subject = Uri.encodeComponent("Support Request");
-  //   final String body = Uri.encodeComponent("Hi team,\n\nI need help with...");
-  //
-  //   // 2. Build the URI string manually using %20 encoding
-  //   final Uri emailUri = Uri.parse(
-  //       "mailto:onlinebusinessmavericks@gmail.com?subject=$subject&body=$body"
-  //   );
-  //
-  //   try {
-  //     // 3. Launch the email client
-  //     if (await canLaunchUrl(emailUri)) {
-  //       await launchUrl(
-  //         emailUri,
-  //         mode: LaunchMode.externalApplication, // This forces it to open the actual app
-  //       );
-  //     } else {
-  //       // Helpful for debugging if no mail app is installed on the emulator
-  //       Get.snackbar("Error", "No email app found on this device");
-  //     }
-  //   } catch (e) {
-  //     debugPrint("📧 Email error → $e");
-  //   }
-  // }
   void onEmailSupport() async {
       // 1. Get localized strings for Subject and Body
       final String localizedSubject = Get.context?.lang.supportRequestSubject ?? 'Support Request';
@@ -64,16 +38,6 @@ class SettingsController extends GetxController {
           'body': localizedBody,
         }),
       );
-
-    // Define the Uri using the structured constructor
-    // final Uri emailUri = Uri(
-    //   scheme: 'mailto',
-    //   path: 'onlinebusinessmavericks@gmail.com',
-    //   query: _encodeQueryParameters({
-    //     'subject': 'Support Request',
-    //     'body': 'Hi team,\n\nI need help with...',
-    //   }),
-    // );
 
     try {
       // Note: On some Android Emulators, canLaunchUrl returns false even if it works.
@@ -196,33 +160,6 @@ class SettingsController extends GetxController {
         },
       );
     }
-  // Future<void> logout() async {
-  //   try {
-  //     final token = getStringAsync(AppSharedPreferenceKeys.apiToken);
-  //
-  //     final request = {
-  //       "fcm_token": token,
-  //     };
-  //
-  //     final CommonResponse response =
-  //     await AuthServiceApis.logOut(request: request);
-  //
-  //     if (response.success == true) {
-  //       removeKey(AppSharedPreferenceKeys.apiToken);
-  //       removeKey(AppSharedPreferenceKeys.refreshToken);
-  //       removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
-  //
-  //       Get.offAllNamed(Routes.login);
-  //     } else {
-  //       Get.snackbar(
-  //         "Logout Failed",
-  //         response.message ?? "Something went wrong",
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint("🚪 Logout error → $e");
-  //   }
-  // }
   Future<void> logout() async {
     try {
       // 1. First, sign out from Google Sign-In to clear the cached account
@@ -253,12 +190,6 @@ class SettingsController extends GetxController {
       await removeKey(SubscriptionController.PREM_KEY); // "is_user_premium_cache"
       await removeKey("cached_home_data"); // Home screen ka purana data bhi saaf karein
       if (response.success == true) {
-        // 2. Clear your local storage
-        // removeKey(AppSharedPreferenceKeys.apiToken);
-        // removeKey(AppSharedPreferenceKeys.refreshToken);
-        // removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
-        // removeKey(AppSharedPreferenceKeys.isSocialLogin); // Good to clear this too
-
         Get.offAllNamed(Routes.login);
       } else {
         Get.snackbar(Get.context?.lang.logoutFailed ?? "Logout Failed", response.message ?? "Something went wrong");

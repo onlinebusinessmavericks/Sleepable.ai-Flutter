@@ -108,17 +108,6 @@ class WelcomeController extends GetxController {
     Get.toNamed(Routes.sleepGoal);
   }
   /// ▶ Button animation
-  // Future<void> onStartPressed() async {
-  //   // await HapticFeedback.vibrate();
-  //   await Haptics.vibrate(HapticsType.light);
-  //   buttonScale.value = 0.9;
-  //   await Future.delayed(const Duration(milliseconds: 120));
-  //
-  //   buttonScale.value = 1.0;
-  //   await Future.delayed(const Duration(milliseconds: 120));
-  //
-  //   Get.toNamed(Routes.sleepGoal);
-  // }
 
   /// 📦 Save App Info
   Future<void> _saveAppInfo() async {
@@ -137,43 +126,6 @@ class WelcomeController extends GetxController {
   }
 
   /// 📱 Save Device Info
-  // Future<void> _saveDeviceInfo() async {
-  //   final deviceInfo = DeviceInfoPlugin();
-  //   final package = await PackageInfo.fromPlatform();
-  //
-  //   Map<String, dynamic> data = {};
-  //
-  //   if (Platform.isAndroid) {
-  //     final android = await deviceInfo.androidInfo;
-  //
-  //     data = {
-  //       "device_id": android.id,
-  //       "device_name": "${android.manufacturer} ${android.model}",
-  //       "device_version": android.version.release,
-  //       "app_version": package.version,
-  //       "fcm_token": getStringAsync(AppSharedPreferenceKeys.fcmToken),
-  //     };
-  //   }
-  //
-  //   if (Platform.isIOS) {
-  //     final ios_old = await deviceInfo.iosInfo;
-  //
-  //     data = {
-  //       "device_id": ios_old.identifierForVendor ?? "",
-  //       "device_name": ios_old.name,
-  //       "device_version": ios_old.systemVersion,
-  //       "app_version": package.version,
-  //       "fcm_token": getStringAsync(AppSharedPreferenceKeys.fcmToken),
-  //     };
-  //   }
-  //
-  //   await setValue(
-  //     AppSharedPreferenceKeys.deviceInfo,
-  //     jsonEncode(data),
-  //   );
-  //
-  //   log("✅ Device Info Saved: $data");
-  // }
 
   Future<void> _saveDeviceInfo() async {
     final deviceInfo = DeviceInfoPlugin();

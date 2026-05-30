@@ -1023,20 +1023,6 @@ class ProgressScreen extends GetView<ProgressController> {
               ),
               const SizedBox(height: 20),
 
-              // Dynamic Month List
-              // Expanded(
-              //   child: Obx(() {
-              //     if (controller.isCalendarLoading.value) return const Center(child: CircularProgressIndicator());
-              //
-              //     return ListView.builder(
-              //       itemCount: controller.calendarData.length,
-              //       itemBuilder: (context, index) {
-              //         final month = controller.calendarData[index];
-              //         return Padding(padding: const EdgeInsets.only(bottom: 30), child: _buildDynamicMonthGrid(month));
-              //       },
-              //     );
-              //   }),
-              // ),
               Expanded(
                 child: Obx(() {
                   if (controller.isCalendarLoading.value && controller.calendarData.isEmpty) {
@@ -1146,34 +1132,6 @@ class ProgressScreen extends GetView<ProgressController> {
     );
   }
 
-  // Widget sleepRecorderSection(BuildContext context) {
-  //   return Obx(() {
-  //     if (controller.isLoadingAudio.value) {
-  //       return const Center(child: CircularProgressIndicator());
-  //     }
-  //
-  //     // 🔥 FILTER: Only keep categories that have at least one recording with duration > 0
-  //     final visibleCategories = controller.categories.where((category) {
-  //       return category.recordings.any((item) => (item.durationSeconds ?? 0) > 0);
-  //     }).toList();
-  //
-  //     if (visibleCategories.isEmpty) {
-  //       return const Center(child: Padding(
-  //         padding: EdgeInsets.only(top: 40),
-  //         child: Text("No recordings found", style: TextStyle(color: Colors.white54)),
-  //       ));
-  //     }
-  //
-  //     return Column(
-  //       children: visibleCategories.map((category) {
-  //         int originalIndex = controller.categories.indexOf(category);
-  //         return sleepRecorderTile(context, category, () {
-  //           controller.toggleExpand(originalIndex);
-  //         });
-  //       }).toList(),
-  //     );
-  //   });
-  // }
   Widget sleepRecorderSection(BuildContext context) {
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
@@ -1187,14 +1145,6 @@ class ProgressScreen extends GetView<ProgressController> {
         return category.recordings.any((item) => (item.durationSeconds ?? 0) > 0);
       }).toList();
 
-      // if (visibleCategories.isEmpty) {
-      //   return const Center(
-      //     child: Padding(
-      //       padding: EdgeInsets.only(top: 40),
-      //       child: Text("No recordings found", style: TextStyle(color: Colors.white54)),
-      //     ),
-      //   );
-      // }
       if (visibleCategories.isEmpty) {
         return Center(
           child: Padding(
@@ -1373,22 +1323,6 @@ class ProgressScreen extends GetView<ProgressController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Duration and Lock
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //   children: [
-                    //     Text(
-                    //       controller.formatDuration(item.durationSeconds ?? 0),
-                    //       style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                    //     ),
-                    //     Obx(() => Icon(
-                    //       subController.isPremium.value ? Icons.check_circle_outline_rounded : Icons.lock_outline_rounded,
-                    //       color: subController.isPremium.value ? Colors.green : Colors.white38,
-                    //       size: 16,
-                    //     )),
-                    //     // const Icon(Icons.lock_outline_rounded, color: Colors.white38, size: 16),
-                    //   ],
-                    // ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -1619,12 +1553,6 @@ class ProgressScreen extends GetView<ProgressController> {
             Text(
               "${value.toInt()}%",
               style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: AppColors.white, fontSize: 15 * SizeConfigs.textScale),
-
-              // Theme.of(context).textTheme.titleLarge?.copyWith(
-              //   color: Colors.white,
-              //   fontSize: 16 * SizeConfigs.textScale,
-              //   fontWeight: FontWeight.bold,
-              // ),
             ),
           ],
         ),
@@ -1817,50 +1745,6 @@ class BreathEvent {
 
   BreathEvent(this.time, this.duration);
 }
-// class RestorePoint {
-//   final String metric; // "Deep Sleep", "HRV", etc
-//   final int score; // out of 100
-//
-//   RestorePoint(this.metric, this.score);
-// }
-//
-// final List<RestorePoint> restorationData = [RestorePoint("Deep Sleep", 80), RestorePoint("Light Sleep", 65), RestorePoint("HRV", 72), RestorePoint("Breathing", 85), RestorePoint("Snoring", 60)];
-
-// class SleepColors {
-//   static const awake = Color(0xFF4CFFAE); // green
-//   static const light = Color(0xFF40A5FF); // medium blue
-//   static const deep = Color(0xFF0048FF); // dark blue
-// }
-
-// final sleepData = [
-//   SleepPoint(1, 1),
-//   SleepPoint(2.5, 0),
-//   SleepPoint(3, 1),
-//   SleepPoint(4, 0),
-//   SleepPoint(5, 2),
-//   SleepPoint(6, 0),
-//   SleepPoint(7, 1),
-//   SleepPoint(8, 2),
-//   SleepPoint(9, 1),
-//   SleepPoint(10, 2),
-// ];
-//
-// class SleepPoint {
-//   final double hour;
-//   final int stage;
-//
-//   // 0 = Deep, 1 = Light, 2 = Awake
-//
-//   SleepPoint(this.hour, this.stage);
-// }
-//
-// final day = DateTime(2025, 1, 1);
-// final segs = <chart.SleepSegment>[
-//   chart.SleepSegment(start: DateTime(2025, 1, 1, 0, 0), end: DateTime(2025, 1, 1, 1, 0), stage: chart.SleepStage.deep),
-//   chart.SleepSegment(start: DateTime(2025, 1, 1, 1, 0), end: DateTime(2025, 1, 1, 3, 0), stage: chart.SleepStage.light),
-//   chart.SleepSegment(start: DateTime(2025, 1, 1, 3, 0), end: DateTime(2025, 1, 1, 4, 0), stage: chart.SleepStage.rem),
-//   chart.SleepSegment(start: DateTime(2025, 1, 1, 4, 0), end: DateTime(2025, 1, 1, 4, 30), stage: chart.SleepStage.awake),
-// ];
 
 Widget _buildMyDream(BuildContext context) {
   final controller = Get.find<ProgressController>();
@@ -2322,67 +2206,3 @@ Widget _stat(BuildContext context, IconData icon, String label, String time, Col
   ),
 );
 
-// Widget _buildDurationBarChartUI(BuildContext context, ProgressController controller) {
-//   final data = controller.chartValues;
-//   final labels = controller.chartLabels;
-//   final isMonthly = controller.selectedTab.value == "Month";
-//   final double maxVal = data.isNotEmpty ? data.reduce((a, b) => a > b ? a : b).toDouble() : 1.0;
-//
-//   return Column(
-//     children: [
-//       // Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-//       //   Text("${controller.averageSleep.value.toStringAsFixed(1)}h",
-//       //       style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 36 * SizeConfigs.textScale)),
-//       // ]),
-//       // const SizedBox(height: 20),
-//       SizedBox(
-//         height: 170,
-//         child: ListView.builder(
-//           scrollDirection: Axis.horizontal,
-//           physics: isMonthly ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
-//           itemCount: data.length,
-//           itemBuilder: (context, index) {
-//             final value = data[index];
-//             return Padding(
-//               padding: EdgeInsets.symmetric(horizontal: isMonthly ? 0 : (MediaQuery.of(context).size.width / (data.length * 5))),
-//               child: Column(
-//                 children: [
-//                   Expanded(
-//                     child: Container(
-//                       width: 14,
-//                       decoration: BoxDecoration(
-//                         border: Border.all(color: Colors.white.withOpacity(0.15)),
-//                         borderRadius: BorderRadius.circular(30),
-//                       ),
-//                       child: LayoutBuilder(
-//                         builder: (context, constraints) {
-//                           final double fillHeight = maxVal == 0 ? 0 : (value / maxVal) * constraints.maxHeight;
-//                           return Stack(
-//                             alignment: Alignment.bottomCenter,
-//                             children: [
-//                               AnimatedContainer(
-//                                 duration: const Duration(milliseconds: 600),
-//                                 width: double.infinity,
-//                                 height: fillHeight,
-//                                 decoration: BoxDecoration(
-//                                   gradient: value > 0 ? const LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.blueAccent, Colors.purpleAccent]) : null,
-//                                   borderRadius: BorderRadius.circular(30),
-//                                 ),
-//                               ),
-//                             ],
-//                           );
-//                         },
-//                       ),
-//                     ),
-//                   ),
-//                   const SizedBox(height: 8),
-//                   Text(labels[index], style: const TextStyle(color: Colors.white54, fontSize: 10)),
-//                 ],
-//               ),
-//             );
-//           },
-//         ),
-//       ),
-//     ],
-//   );
-// }

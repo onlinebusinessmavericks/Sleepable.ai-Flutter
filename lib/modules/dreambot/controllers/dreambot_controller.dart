@@ -177,38 +177,6 @@ class DreamBotController extends GetxController {
     );
   }
 
-  // void sendMessage() async {
-  //   String msg = userInput.value.trim();
-  //   if (msg.isEmpty || currentDreamId == 0) return; // 🛑 Don't send if ID is still 0
-  //
-  //   // UI Updates
-  //   messages.add({"isUser": true, "msg": msg});
-  //   userMessageCount++;
-  //   textController.clear();
-  //   userInput.value = "";
-  //   isBotTyping.value = true;
-  //   isFirstTime.value = false;
-  //   scrollToBottom();
-  //
-  //   try {
-  //     // 🚀 Using the ID we got from the start/ API
-  //     final res = await ProgressApis.sendDreamMessage(currentDreamId, msg);
-  //     isBotTyping.value = false;
-  //
-  //     if (res['success']) {
-  //       messages.add({"isUser": false, "msg": res['data']['response']});
-  //
-  //       if (res['data']['can_analyze'] == true || userMessageCount >= 3) {
-  //         canAnalyze.value = true;
-  //       }
-  //     }
-  //   } catch (e) {
-  //     isBotTyping.value = false;
-  //     debugPrint("Send Message Error: $e");
-  //   }
-  //   scrollToBottom();
-  // }
-
   void runFinalAnalysis() async {
     try {
       isFirstAnalyzeLoading.value = true;
@@ -266,34 +234,6 @@ class DreamBotController extends GetxController {
       scrollToBottom();
     }
   }
-  // void _loadOldDreamFromHistory(int id) {
-  //   isFirstTime.value = false;
-  //   try {
-  //     final progressCont = Get.find<ProgressController>();
-  //     final dream = progressCont.myDreamsList.firstWhere((d) => d.id == id);
-  //
-  //     messages.add({
-  //       "isUser": false,
-  //       "isDreamResult": true,
-  //       "title": dream.title,
-  //       "summary": dream.summary,
-  //       "emotion": dream.emotion,
-  //       "keywords": dream.keywords,
-  //       "manifestation": dream.manifestationMessage,
-  //       "interpretation": dream.interpretation, // 🔥 ADDED
-  //       "guidance": dream.guidance,             // 🔥 ADDED
-  //       "actionSteps": dream.actionSteps,       // 🔥 ADDED
-  //       "scenes": dream.scenes,                 // 🔥 ADDED
-  //       "date": dream.createdAt,
-  //       "image": dream.image.isNotEmpty
-  //           ? (dream.image.startsWith('http') ? dream.image : "https://api.sleepable.ai${dream.image}")
-  //           : "",
-  //       "chatHistory": dream.chatHistory,
-  //     });
-  //   } catch (e) {
-  //     debugPrint("Dream history error: $e");
-  //   }
-  // }
   void _loadOldDreamFromHistory(int id) async {
     isFirstTime.value = false; // Switch to chat view immediately
     try {

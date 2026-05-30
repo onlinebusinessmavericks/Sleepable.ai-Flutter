@@ -149,67 +149,10 @@ class LoginView extends GetView<LoginController> {
                           },
                         ),
                         SizedBox(height: 12),
-                        // ///  Facebook Button
-                        //  _mainButton(text: context.lang.continueFacebook, textColor: Colors.white, bgColor: Colors.transparent, image: Image.asset(Assets.homeFacebook, width: 25, height: 25),onPressed:controller.loginWithFaceBook),
-                        //
-                        // SizedBox(height: 12),
-                        //
-                        // /// 📧 Email Button
-                        // _mainButton(text:"Sign up with Email", textColor: Colors.white, bgColor: Colors.transparent, image: Image.asset(Assets.homeMail, width: 25, height: 25),onPressed: controller.loginWithEmail,),
-                        // SizedBox(height: 12),
-                        // /// 🌐 Social Icons Row
-                        // Row(
-                        //   mainAxisAlignment: MainAxisAlignment.center,
-                        //   children: [
-                        //     _socialButton(Icons.g_mobiledata, Colors.white),
-                        //     SizedBox(width: 20),
-                        //     _socialButton(Icons.facebook, Colors.blueAccent),
-                        //   ],
-                        // ),
-                        // SizedBox(height: h * 0.02),
-                        // unlock button
-                        // GestureDetector(
-                        //   onTap: (){
-                        //     // showNotBedTimeSheet(context);
-                        //     Get.offNamed(Routes.freeTrial);
-                        //   },
-                        //   child: Padding(
-                        //
-                        //         padding: EdgeInsets.symmetric(horizontal: 18 * SizeConfigs.paddingScale),
-                        //
-                        //     // padding: const EdgeInsets.symmetric(horizontal: 16),
-                        //     child: Container(
-                        //       height: 48,
-                        //       decoration: BoxDecoration(color: const Color(0xFF1E90FF), borderRadius: BorderRadius.circular(24)),
-                        //       child: Center(
-                        //         child: Text(
-                        //           "${context.lang.skipNow} ->",
-                        //           style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w600) ?? const TextStyle(),
-                        //         ),
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
                         SizedBox(height: h * 0.01),
       
                         /// 🔹 Sign In Link
-                        // RichText(
-                        //   text: TextSpan(
-                        //     text: "Already have an account?",//context.lang.wantSkipStep,
-                        //     style: textTheme.bodyMedium?.copyWith(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale),
-                        //     children: [
-                        //       TextSpan(
-                        //         text:" Log in", //context.lang.skip,
-                        //         style: textTheme.bodyMedium?.copyWith(color: Colors.blueAccent, fontWeight: FontWeight.w600, fontSize: 14 * SizeConfigs.textScale),
-                        //         recognizer: TapGestureRecognizer()
-                        //           ..onTap = () {
-                        //             /// 👉 Your navigation here
-                        //             Get.toNamed(Routes.signIn);
-                        //           },
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
+
       
                         SizedBox(height: 20),
                       ],

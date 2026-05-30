@@ -40,7 +40,7 @@ abstract class Routes {
   static const alarmRinging = _Paths.alarmRinging;
   static const dreamBot = _Paths.dreamBot;
   static const sleepReport = _Paths.sleepReport;
-  static const freeTrial = _Paths.freeTrial;
+  // static const freeTrial = _Paths.freeTrial;
   static const accurateSleepRecorder = _Paths.accurateSleepRecorder;
   static const patentedSleepTracker = _Paths.patentedSleepTracker;
   static const bestSoundMachine = _Paths.bestSoundMachine;
@@ -92,7 +92,7 @@ abstract class _Paths {
   static const alarmRinging= '/alarm_ringing';
   static const dreamBot= '/dream-bot';
   static const sleepReport= '/sleep-report';
-  static const freeTrial= '/free-trial';
+  // static const freeTrial= '/free-trial';
   static const accurateSleepRecorder= '/accurate-sleep-recorder';
   static const patentedSleepTracker= '/patented-sleep-tracker';
   static const bestSoundMachine= '/best-sound-machine';

@@ -180,55 +180,7 @@ class ProfileSleepGoalController extends GetxController {
       isSaving.value = false; // ✅ Stop loading
     }
   }
-//   Future<void> saveSleepGoal(UserSettingsData currentSettings) async {
-//     try {
-//       String deviceTimezone = await getCurrentTimezone();
-//
-//       // Helper inside function
-//       String doubleToApi(double value) {
-//         final h = value.floor() % 24;
-//         final m = ((value % 1) * 60).round() % 60;
-//         return "${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:00";
-//       }
-//
-//       UserSettings requestBody = UserSettings(
-//         // 🔥 FIX: Alarm aur Bedtime dono gauge ki values se update honge
-//         bedtime: doubleToApi(bedTime.value),
-//         wakeUpTime: doubleToApi(wakeUpTime.value),
-//         alarmTime: doubleToApi(wakeUpTime.value), // Usually wakeup = alarm
-//
-//         // Baaki sab current (existing) rahega
-//         alarmEnabled: currentSettings.alarmEnabled,
-//         meridiem: currentSettings.meridiem,
-//         repeatType: currentSettings.repeatType,
-//         repeatDays: currentSettings.repeatDays,
-//         melodyId: currentSettings.melodyId,
-//         snoozeMinutes: currentSettings.snoozeMinutes,
-//         fadeIn: currentSettings.fadeIn,
-//         sleepReminders: currentSettings.sleepReminders,
-//         remindAt: _ensureApiFormat(currentSettings.remindAt),
-//         batteryWarning: currentSettings.batteryWorning,
-//         heartRateTracking: currentSettings.heartRateTracking,
-//         notifications: currentSettings.notifications,
-//         timezone: deviceTimezone,
-//       );
-//
-//       final response = await SettingsApis.updateUserSettings(requestBody);
-//       if (response.success) {
-//         if (Get.isRegistered<ProfileController>()) {
-//           await Get.find<ProfileController>().fetchSettings();
-//         }
-//         // Get.find<ProfileController>().fetchSettings();
-//         if (Get.isRegistered<HomeController>()) {
-//           Get.find<HomeController>().fetchHomePageData();
-//           print("🏠 Home Page data refreshed after Sleep Goal update");
-//         }
-//         Get.back();
-//       }
-//     } catch (e) {
-//       print("❌ Error: $e");
-//     }
-//   }
+
   String _ensureApiFormat(String? timeStr, {String fallback = "00:00:00"}) {
     if (timeStr == null || timeStr.isEmpty || !timeStr.contains(':')) return fallback;
     List<String> parts = timeStr.split(':');

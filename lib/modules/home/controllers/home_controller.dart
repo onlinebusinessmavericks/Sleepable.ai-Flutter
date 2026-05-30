@@ -43,7 +43,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   // --- API Data ---
   final Rx<HomePageResponse?> homeData = Rx<HomePageResponse?>(null);
-  // final RxList<Artist> profiles = <Artist>[].obs;
 
   // --- Sleep Summary & Progress ---
   var lastNightSleepHours = 7.0.obs;
@@ -189,49 +188,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   void _refreshAllData() {
     fetchHomePageData();
     fetchSleepChart("weekly");
-    // fetchArtists();
   }
 
-  // @override
-  // void onReady() {
-  //   super.onReady();
-  //   // Login se jo argument bheja tha use check karein
-  //   if (Get.arguments != null && Get.arguments['show_paywall'] == true) {
-  //
-  //     // Thoda sa delay (100-200ms) dena behtar hai taaki UI settle ho jaye
-  //     Future.delayed(const Duration(milliseconds: 500), () {
-  //       final subController = Get.find<SubscriptionController>();
-  //
-  //       bool hasSpun = subController.spinInfo.value?.alreadySpun ?? false;
-  //
-  //       if (hasSpun) {
-  //         showPremiumOfferSheet6(Get.context!);
-  //       } else {
-  //         showPremiumOfferSheet4(Get.context!);
-  //       }
-  //
-  //       // Argument ko clear kar dein taaki tab change par dobara sheet na khule
-  //       Get.arguments['show_paywall'] = false;
-  //     });
-  //   }
-  //   horizontalController.forward(from: 0.0);
-  // }
-
-  // @override
-  // void onReady() {
-  //   super.onReady();
-  //
-  //   // 1. UI Animations start karein
-  //   horizontalController.forward(from: 0.0);
-  //
-  //   // 2. Logic Check: Pehle Paywall ko priority dein, agar wo nahi hai toh Rating check karein
-  //   if (Get.arguments != null && Get.arguments['show_paywall'] == true) {
-  //     _showInitialPaywall();
-  //   } else {
-  //     // Agar Paywall nahi dikhana, tabhi Rating mangne ki koshish karein
-  //     _checkAndShowRatingDialog();
-  //   }
-  // }
   @override
   void onReady() {
     super.onReady();
@@ -245,9 +203,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     if (Get.arguments != null && Get.arguments['show_paywall'] == true) {
       _showInitialPaywall();
     }
-    // 3. Priority 2: Auto-Show Premium (Agar user premium nahi hai toh)
     else if (!subController.isPremium.value) {
-      // Thoda delay taaki screen load hone ke baad smooth popup aaye
       Future.delayed(const Duration(seconds: 1), () {
         if (!isClosed) {
           showRotatingPremiumSheet(Get.context!);
@@ -270,7 +226,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       if (isClosed) return; // Safety check
 
       final subController = Get.find<SubscriptionController>();
-      // Humne pehle hi discuss kiya tha ki alreadySpun check karna hai
       bool hasSpun = subController.spinInfo.value?.alreadySpun ?? false;
 
       if (hasSpun) {
@@ -350,74 +305,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
     return text;
   }
-  // @override
-  // void onClose() {
-  //   if (screenScrollController.hasClients) {
-  //     screenScrollController.removeListener(_onScrollSafe);
-  //   }
-  //   screenScrollController.dispose();
-  //   animationController.dispose();
-  //   horizontalController.dispose();
-  //   _timer.cancel();
-  //   super.onClose();
-  // }
-  // @override
-  // void onClose() {
-  //   // Always remove listener BEFORE disposing
-  //   if (screenScrollController.hasClients) {
-  //     screenScrollController.removeListener(_onScrollSafe);
-  //   }
-  //
-  //   // Cancel timer before disposing other things
-  //   _timer?.cancel();
-  //
-  //   screenScrollController.dispose();
-  //   animationController.dispose();
-  //   horizontalController.dispose();
-  //   super.onClose();
-  // }
-  // @override
-  // void onClose() {
-  //   // 2. Stop timers and remove listeners
-  //   _timer?.cancel();
-  //   if (screenScrollController.hasClients) {
-  //     screenScrollController.removeListener(_onScrollSafe);
-  //   }
-  //
-  //   // 3. STOP animations before disposing
-  //   // This prevents the 'Ticker' from trying to update a dead controller
-  //   animationController.stop();
-  //
-  //   // 4. Dispose in order
-  //   screenScrollController.dispose();
-  //   animationController.dispose();
-  //   horizontalController.dispose();
-  //
-  //   // If you have a PageController for that PageView:
-  //   // pageController.dispose();
-  //
-  //   super.onClose();
-  // }
-  // @override
-  // void onClose() {
-  //   _timer?.cancel();
-  //
-  //   // Explicitly check if controllers were initialized before disposing
-  //   if (Get.isRegistered<HomeController>()) {
-  //     animationController.stop();
-  //     animationController.dispose();
-  //     horizontalController.stop();
-  //     horizontalController.dispose();
-  //   }
-  //
-  //   if (screenScrollController.hasClients) {
-  //     screenScrollController.removeListener(_onScrollSafe);
-  //   }
-  //   screenScrollController.dispose();
-  //   scrollController.dispose(); // You forgot to dispose the FixedExtentScrollController!
-  //
-  //   super.onClose();
-  // }
+
   @override
   void onClose() {
     _timer?.cancel();
@@ -461,12 +349,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     }
   }
-  // List<Color> getGradientColors(double progress) {
-  //   if (progress < 0.3) return [Colors.red, Colors.orange];
-  //   if (progress < 0.5) return [Colors.orange, Colors.yellow];
-  //   if (progress < 0.8) return [AppColors.animationStartColor, AppColors.animationEndColor];
-  //   return [Colors.green, Colors.teal];
-  // }
+
   List<Color> getGradientColors(double progress) {
     // 1. Agar progress 30% se kam hai (0.0 se 0.29) -> Red/Orange
     if (progress < 0.3) {
@@ -487,33 +370,9 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     // 4. Jab progress exact 1.0 (8 hours) ya usse upar hogi, tabhi Green/Teal milega!
     return [Colors.green, Colors.teal];
   }
-  // final List<SleeppediaItem> dashboardSleeppedia = sleeppediaList.take(3).toList();
+
   final List<SleeppediaItem> dashboardSleeppedia = getLocalizedSleeppediaList().take(3).toList();
-  // final List<Map<String, dynamic>> sleeppedia = [
-  //   {'title': 'Insomnia', 'image': Assets.sleeppediaInsomania},
-  //   {'title': 'Hypersomnia', 'image': Assets.sleeppediaHypersomnia1},
-  //   {'title': 'Snoring', 'image': Assets.sleeppediaSnoring},
-  // ];
-  // final sleepQuizzes = [
-  //   {'title': 'Catch Your Z\'s: Unpacking Your Sleep', 'image': Assets.homeBackgroundMountains},
-  //   {'title': 'Breathing abnormal pauses while sleeping...', 'image': Assets.homeBackgroundMountains},
-  // ];
-  // final List<Map<String, dynamic>> sleepQuizzes = [
-  //   {
-  //     'title': 'Understand Your Sleep Patterns',
-  //     'subtitle': '15 quick questions',
-  //     'image': Assets.imagesSleeppediaQuiz1,
-  //     'description':
-  //     'Explore your sleep habits, daily energy levels, and rest quality through a short assessment.',
-  //   },
-  //   {
-  //     'title': 'Night Breathing & Rest Check',
-  //     'subtitle': '12 simple questions',
-  //     'image': Assets.sleeppediaQuiz2,
-  //     'description':
-  //     'Identify possible breathing-related sleep disturbances.',
-  //   },
-  // ];
+
   final List<Map<String, dynamic>> sleepQuizzes = [
     {
       'title': Get.context?.lang.understandSleepPatterns ?? 'Understand Your Sleep Patterns',
@@ -530,17 +389,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
           'Identify possible breathing-related sleep disturbances.',
     },
   ];
-  // ---------------------------------------------------------------------------
-  // 5. PRIVATE INITIALIZERS
-  // ---------------------------------------------------------------------------
-  // void _setupControllers() {
-  //   screenScrollController.addListener(_onScrollSafe);
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     final size = MediaQuery.of(Get.context!).size;
-  //     buttonX.value = size.width * 0.8;
-  //     buttonY.value = size.height * 0.65;
-  //   });
-  // }
+
 // Inside _setupControllers
   void _setupControllers() {
     screenScrollController.addListener(_onScrollSafe);
@@ -587,41 +436,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // 6. API METHODS
-  // ---------------------------------------------------------------------------
-
-  // Future<void> fetchHomePageData() async {
-  //   try {
-  //     isLoadingHome.value = true;
-  //     final response = await HomeApis.getHomePage();
-  //
-  //     if (response != null && response.success && response.data != null) {
-  //       homeData.value = response;
-  //       updateInsightMessage();
-  //       final summary = response.data!.sleepSummary;
-  //       // .toDouble() ensures safety even if API returns int 0 instead of 0.0
-  //       lastNightSleepHours.value = summary.totalSleepHours.toDouble();
-  //       sleepProgress.value = (summary.progressPercentage / 100).toDouble();
-  //
-  //       final goal = response.data!.tonightSleepGoal;
-  //
-  //       // Safe check for the countdown text
-  //       if (goal.hoursUntilBedtime > 0) {
-  //         countdownText.value = "${goal.hoursUntilBedtime.toInt()}h until Bedtime";
-  //       } else {
-  //         countdownText.value = "Bedtime reached";
-  //       }
-  //     } else {
-  //       countdownText.value = "Unable to load goal";
-  //     }
-  //   } catch (e) {
-  //     debugPrint("❌ Home Page API Error: $e");
-  //     countdownText.value = "Error loading data";
-  //   } finally {
-  //     isLoadingHome.value = false;
-  //   }
-  // }
   Future<void> fetchHomePageData() async {
     try {
       // Only show loader if we don't have cached data yet
@@ -655,69 +469,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       isLoadingHome.value = false;
     }
   }
-  // void _syncHomeState() {
-  //   if (homeData.value?.data == null) return;
-  //
-  //   final data = homeData.value!.data!;
-  //   sleepStatus.value = data.sleepStatus;
-  //   // Update Insight (the lightbulb msg)
-  //   updateInsightMessage();
-  //   isEnabled.value = data.tonightSleepGoal.reminderEnable;
-  //   // Update Summary
-  //   lastNightSleepHours.value = data.sleepSummary.totalSleepHours.toDouble();
-  //   sleepProgress.value = (data.sleepSummary.progressPercentage / 100).toDouble();
-  //
-  //   // Update Countdown
-  //   final goal = data.tonightSleepGoal;
-  //   if (goal.hoursUntilBedtime > 0) {
-  //     countdownText.value = "${goal.hoursUntilBedtime.toInt()}h until Bedtime";
-  //   } else {
-  //     countdownText.value = "Bedtime reached";
-  //   }
-  // }
-  // void _syncHomeState() {
-  //   if (homeData.value?.data == null) return;
-  //
-  //   final data = homeData.value!.data!;
-  //   final goal = data.tonightSleepGoal;
-  //   final summary = data.sleepSummary;
-  //
-  //   sleepStatus.value = data.sleepStatus;
-  //   updateInsightMessage();
-  //
-  //   // ✅ 1. Toggle sync
-  //   isEnabled.value = goal.reminderEnable;
-  //
-  //   // ✅ 2. Summary & Progress sync
-  //   lastNightSleepHours.value = summary.totalSleepHours.toDouble();
-  //   sleepProgress.value = (summary.progressPercentage / 100).toDouble();
-  //
-  //   // ✅ 3. Target Bedtime & Goal sync (IMPORTANT)
-  //   // API se "01:00 AM" aayega, use parse karke bedtime Rx variable mein daalna hoga
-  //   if (goal.targetBedtime.isNotEmpty) {
-  //     bedtime.value = _parseTimeOfDay(goal.targetBedtime);
-  //   }
-  //   if (goal.reminderEnable != null) {
-  //     isEnabled.value = goal.reminderEnable;
-  //   }
-  //   // Goal hours (Jo 11h goal dikh raha hai)
-  //   selectedNumber.value = goal.goalHours.toInt();
-  //   int newGoal = goal.goalHours.toInt();
-  //   selectedNumber.value = newGoal;
-  //   if (scrollController.hasClients) {
-  //     // animateToItem use karein taaki smooth feel aaye
-  //     scrollController.animateToItem(
-  //         newGoal - 1,
-  //         duration: const Duration(milliseconds: 500),
-  //         curve: Curves.easeInOut
-  //     );}
-  //   // ✅ 4. Countdown Text sync (API se direct fetch karein agar available ho)
-  //   if (goal.hoursUntilBedtime > 0) {
-  //     updateCountdown(); // Isse aapka custom banner refresh hoga
-  //   } else {
-  //     countdownText.value = "Bedtime reached";
-  //   }
-  // }
+
   void _syncHomeState() {
     final newData = homeData.value?.data;
     if (newData == null) return;
@@ -752,17 +504,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     int newGoal = goal.goalHours.toInt();
     selectedNumber.value = newGoal;
 
-    // 🔥 THE STABILITY FIX: Use addPostFrameCallback
-    // Isse guarantee milti hai ki UI render hone ke BAAD hi wheel ghumega
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (scrollController.hasClients) {
-    //     scrollController.animateToItem(
-    //       newGoal - 1,
-    //       duration: const Duration(milliseconds: 600), // Thoda sa slow for premium feel
-    //       curve: Curves.easeOutCubic, // Better smoothness
-    //     );
-    //   }
-    // });
     // Inside _syncHomeState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scrollController.hasClients) {
@@ -796,18 +537,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       return const TimeOfDay(hour: 22, minute: 0); // Default fallback
     }
   }
-  // ---------------------------------------------------------------------------
-  // 7. PUBLIC BUSINESS LOGIC / HELPERS
-  // ---------------------------------------------------------------------------
-  // void onScroll(double offset) {
-  //   if (offset > 250 && !isStatusBarDark.value) {
-  //     isStatusBarDark.value = true;
-  //     _updateStatusBar(Brightness.light, Colors.black);
-  //   } else if (offset <= 250 && isStatusBarDark.value) {
-  //     isStatusBarDark.value = false;
-  //     _updateStatusBar(Brightness.light, Colors.transparent);
-  //   }
-  // }
+
   void onScroll(double offset) {
     // Only trigger logic if the state actually needs to change
     bool shouldBeDark = offset > 250;
@@ -864,14 +594,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void startCountdown() => updateCountdown();
 
-  // void updateCountdown() {
-  //   final now = DateTime.now();
-  //   final bed = DateTime(now.year, now.month, now.day, bedtime.value.hour, bedtime.value.minute);
-  //   Duration diff = bed.isBefore(now) ? bed.add(const Duration(days: 1)).difference(now) : bed.difference(now);
-  //
-  //   countdownText.value = "${diff.inHours}${Get.context!.lang.h} ${diff.inMinutes.remainder(60)}${Get.context!.lang.m} ${Get.context!.lang.untilBedtime}";
-  // }
-
   void updateCountdown() {
     final now = DateTime.now();
     final bed = DateTime(now.year, now.month, now.day, bedtime.value.hour, bedtime.value.minute);
@@ -895,68 +617,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     "${diff.inHours}$hUnit ${diff.inMinutes.remainder(60)}$mUnit $untilText "
         "(${selectedNumber.value}$hUnit $goalText)";
   }
-  // void updateCountdown() {
-  //   final now = DateTime.now();
-  //   final bed = DateTime(now.year, now.month, now.day, bedtime.value.hour, bedtime.value.minute);
-  //
-  //   // Kitna time bacha hai sone mein
-  //   Duration diff = bed.isBefore(now) ? bed.add(const Duration(days: 1)).difference(now) : bed.difference(now);
-  //
-  //   // Banner Text: Isme Bedtime aur Goal dono dikhao
-  //   // Example: "9h 38m until bedtime (8h goal)"
-  //   countdownText.value =
-  //   "${diff.inHours}${Get.context!.lang.h} ${diff.inMinutes.remainder(60)}${Get.context!.lang.m} "
-  //       "${Get.context!.lang.untilBedtime} ";
-  //       // "(${selectedNumber.value}${Get.context!.lang.h} goal)";
-  // }
-// HomeController.dart
-//   Future<void> updateReminderApi(bool newValue) async {
-//     try {
-//       isSavingSettings.value = true;
-//       final response = await SettingsApis.fetchUserSettings(); // 1. Fresh data lo
-//
-//       if (response.success && response.data != null) {
-//         final current = response.data!;
-//         String deviceTimezone = await getCurrentTimezone();
-//
-//         UserSettings requestBody = UserSettings(
-//           alarmEnabled: current.alarmEnabled,
-//           alarmTime: _ensureApiFormat(current.alarmTime),
-//           meridiem: current.meridiem,
-//           repeatType: current.repeatType,
-//           repeatDays: current.repeatDays,
-//           melodyId: current.melodyId,
-//           snoozeMinutes: current.snoozeMinutes,
-//           fadeIn: current.fadeIn,
-//           batteryWarning: current.batteryWorning,
-//           heartRateTracking: current.heartRateTracking,
-//           notifications: current.notifications,
-//           timezone: deviceTimezone,
-//
-//           // 🔥 FIX 1: Toggle status update karo
-//           sleepReminders: newValue,
-//
-//           // 🔥 FIX 2: Bedtime controller waali nahi, balki jo backend pe hai wahi rakho
-//           // Kyunki ye toggle sirf reminder ON/OFF karne ke liye hai
-//           bedtime: _ensureApiFormat(current.bedtime),
-//
-//           // Reminder time profile waala hi rehne do
-//           remindAt: _ensureApiFormat(current.remindAt),
-//           wakeUpTime: _ensureApiFormat(current.wakeUpTime),
-//         );
-//
-//         final updateResponse = await SettingsApis.updateUserSettings(requestBody);
-//         if (updateResponse.success) {
-//           isEnabled.value = newValue;
-//           fetchHomePageData();
-//         }
-//       }
-//     } catch (e) {
-//       isEnabled.value = !newValue;
-//     } finally {
-//       isSavingSettings.value = false;
-//     }
-//   }
+
   Future<void> updateReminderApi(bool newValue) async {
     // 🔥 1. Instant UI Update (Optimistic UI)
     // Isse user ko bina wait kiye turant feedback milega
@@ -1038,20 +699,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     isFullMoon.value = !isFullMoon.value;
   }
 
-  // void directionLeftRight() {
-  //   if (isDirection.value) direction.value = 10;
-  //   isDirection.value = !isDirection.value;
-  // }
-
   void toggle() => isOn.value = !isOn.value;
 
-  // void updateGreeting() {
-  //   final hour = DateTime.now().hour;
-  //   if (hour >= 5 && hour < 12) greeting.value = Get.context!.lang.goodMorning;
-  //   else if (hour >= 12 && hour < 17) greeting.value = Get.context!.lang.goodAfternoon;
-  //   else if (hour >= 17 && hour < 21) greeting.value = Get.context!.lang.goodEvening;
-  //   else greeting.value = Get.context!.lang.goodNight;
-  // }
   void updateGreeting() {
     final hour = DateTime.now().hour;
     final lang = Get.context?.lang;
@@ -1080,56 +729,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void changeIndex(int index) => selectedIndex.value = index;
-  // RxInt premiumClickCount = 0.obs;
 
-  // void showRotatingPremiumSheet(BuildContext context) {
-  //   premiumClickCount.value++;
-  //   // showPremiumOfferSheet4(context);
-  //   // Logic to rotate 1 -> 2 -> 3 and reset
-  //   if (premiumClickCount.value == 1) {
-  //     showPremiumOfferSheet(context);
-  //     // showPremiumOfferSheet5(context);
-  //     // showPremiumOfferSheet6(context);
-  //     // showPremiumOfferSheet4(context);
-  //   } else if (premiumClickCount.value == 2) {
-  //     showPremiumOfferSheet2(context);
-  //   } else {
-  //     showPremiumOfferSheet3(context);
-  //     premiumClickCount.value = 0; // Reset after the 3rd one
-  //   }
-  // }
-  // void showRotatingPremiumSheet(BuildContext context) {
-  //   final subController = Get.find<SubscriptionController>();
-  //   final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-  //
-  //   premiumClickCount.value++;
-  //
-  //   // --- Logic for 4 Sheets Rotation (If Spun) ---
-  //   if (hasAlreadySpun) {
-  //     if (premiumClickCount.value == 1) {
-  //       showPremiumOfferSheet(context);
-  //     } else if (premiumClickCount.value == 2) {
-  //       showPremiumOfferSheet2(context);
-  //     } else if (premiumClickCount.value == 3) {
-  //       showPremiumOfferSheet3(context);
-  //     } else {
-  //       // 🎯 4th Click par Discounted Sheet 6 dikhao
-  //       showPremiumOfferSheet6(context);
-  //       premiumClickCount.value = 0; // Reset after 4th
-  //     }
-  //   }
-  //   // --- Logic for 3 Sheets Rotation (Default/Not Spun) ---
-  //   else {
-  //     if (premiumClickCount.value == 1) {
-  //       showPremiumOfferSheet(context);
-  //     } else if (premiumClickCount.value == 2) {
-  //       showPremiumOfferSheet2(context);
-  //     } else {
-  //       showPremiumOfferSheet3(context);
-  //       premiumClickCount.value = 0; // Reset after 3rd
-  //     }
-  //   }
-  // }
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
     final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
@@ -1158,99 +758,13 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     }
 
-    // ✅ Jab sheet band ho jaye (User cancels), tab rating check karein
     sheetFuture?.then((_) {
-      // Thoda delay taaki sheet poori tarah band ho jaye
       subController.checkAndShowRatingAfterPostDelay();
     });
   }
-  // ---------------------------------------------------------------------------
-  // 8. STATIC DATA LISTS
-  // ---------------------------------------------------------------------------
 
-// HomeController ke andar
-
-// HomeController.dart
-  // HomeController.dart mein filteredItems ko aise update karein:
-  // final List<Map<String, dynamic>> allItems = [
-  //   {'id': 'white_noise', 'icon': Icons.music_note, 'label': Get.context!.lang.whiteNoise},
-  //   {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': Get.context!.lang.sleepAid},
-  //   {'id': 'premium', 'icon': Icons.star, 'label': Get.context!.lang.premium}, // ✅ Check ID: 'premium'
-  //   {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': "Story"}, // ✅ Naya Item
-  //   {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context!.lang.dreamBot},
-  //   {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context!.lang.breathwork},
-  // ];
-  // List<Map<String, dynamic>>get allItems => [
-  //   {'id': 'white_noise', 'icon': Icons.music_note, 'label': Get.context?.lang.whiteNoise ?? "White Noise"},
-  //   {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': Get.context?.lang.sleepAid ?? "Sleep Aid"},
-  //   {'id': 'premium', 'icon': Icons.star, 'label': Get.context?.lang.premium ?? "Premium"},
-  //   {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': Get.context?.lang.story ?? "Story"}, // ✅ Localized
-  //   {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': Get.context?.lang.dreamBot ?? "DreamBot"},
-  //   {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': Get.context?.lang.breathwork ?? "Breathwork"},
-  // ];
-  //
-  // // 2. Ek reactive list banayein UI ke liye
-  // var filteredItems = <Map<String, dynamic>>[].obs;
-  // void updateFilteredItems() {
-  //   final subController = Get.isRegistered<SubscriptionController>()
-  //       ? Get.find<SubscriptionController>()
-  //       : Get.put(SubscriptionController());
-  //
-  //   bool isPremium = subController.isPremium.value;
-  //   print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
-  //
-  //   List<Map<String, dynamic>> newList = [];
-  //
-  //   if (isPremium) {
-  //     // ✅ Premium hai: Premium hatao, Story rakho
-  //     newList = allItems.where((item) => item['id'] != 'premium').toList();
-  //   } else {
-  //     // ❌ Free hai: Premium rakho, Story hatao
-  //     newList = allItems.where((item) => item['id'] != 'story').toList();
-  //   }
-  //
-  //   filteredItems.assignAll(newList);
-  // }
-//   List<Map<String, dynamic>> getLocalizedItems() {
-//     final context = Get.context;
-//     return [
-//       {'id': 'white_noise', 'icon': Icons.music_note, 'label': context?.lang.whiteNoise ?? "White Noise"},
-//       {'id': 'sleep_aid', 'icon': Icons.bedtime, 'label': context?.lang.sleepAid ?? "Sleep Aid"},
-//       {'id': 'premium', 'icon': Icons.star, 'label': context?.lang.premium ?? "Premium"},
-//       {'id': 'story', 'icon': Icons.auto_stories_rounded, 'label': context?.lang.story ?? "Story"},
-//       {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'label': context?.lang.dreamBot ?? "DreamBot"},
-//       {'id': 'breathwork', 'icon': Icons.lens_blur, 'label': context?.lang.breathwork ?? "Breathwork"},
-//     ];
-//   }
-//
-// // 2. Reactive list UI ke liye as it is rahegi
   var filteredItems = <Map<String, dynamic>>[].obs;
-//
-// // 3. Is function ko jab bhi language change ho ya app init ho tab call karna h
-//   void updateFilteredItems() {
-//     final subController = Get.isRegistered<SubscriptionController>()
-//         ? Get.find<SubscriptionController>()
-//         : Get.put(SubscriptionController());
-//
-//     bool isPremium = subController.isPremium.value;
-//     print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
-//
-//     // 🔥 FIX: Hamesha fresh localized list generate karo taaki naye locale ki strings load hon
-//     List<Map<String, dynamic>> freshItems = getLocalizedItems();
-//     List<Map<String, dynamic>> newList = [];
-//
-//     if (isPremium) {
-//       // ✅ Premium hai: Premium hatao, Story rakho
-//       newList = freshItems.where((item) => item['id'] != 'premium').toList();
-//     } else {
-//       // ❌ Free hai: Premium rakho, Story hatao
-//       newList = freshItems.where((item) => item['id'] != 'story').toList();
-//     }
-//
-//     filteredItems.assignAll(newList);
-//     filteredItems.refresh(); // 🔥 Force refresh reactive UI workers
-//   }
-// 1. आइटम लिस्ट को स्टेटिक और क्लीन रखें (यहाँ context.lang हटा दें)
+
   List<Map<String, dynamic>> getLocalizedItems() {
     return [
       {'id': 'white_noise', 'icon': Icons.music_note, 'lang_key': 'white_noise'},
@@ -1262,7 +776,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     ];
   }
 
-// 2. फ़िल्टर फंक्शन को बिना किसी स्ट्रिंग डिपेंडेंसी के चलाएं
+
   void updateFilteredItems() {
     final subController = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
@@ -1281,6 +795,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     }
 
     filteredItems.assignAll(newList);
-    filteredItems.refresh(); // UI को फ़ोर्स रिफ्रेश करेगा
+    filteredItems.refresh();
   }
 }

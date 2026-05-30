@@ -39,10 +39,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
   @override
   void initState() {
     super.initState();
-    // final args = Get.arguments;
-    // isFromMixBar = args?["fromMixBar"] ?? widget.fromMixBar;
-    // Use the last selected tab/filter instead of hard-coded White Noise
-    // final initialIndex = controller.globalIndexFor(controller.selectedTopTab.value, controller.selectedFilter.value).clamp(0, controller.combinedPages.length - 1);
     final pageCount = controller.combinedPages.length;
 
     final initialIndex = pageCount == 0 ? 0 : controller.globalIndexFor(controller.selectedCategorySlug.value, controller.selectedSubCategorySlug.value).clamp(0, pageCount - 1);
@@ -129,11 +125,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
     final scrollOffset = tabScrollController.offset + tabPosition.dx - (screenWidth / 2) + (tabWidth / 2);
 
-    // tabScrollController.animateTo(
-    //   scrollOffset.clamp(tabScrollController.position.minScrollExtent, tabScrollController.position.maxScrollExtent),
-    //   duration: const Duration(milliseconds: 300),
-    //   curve: Curves.easeInOut,
-    // );
     if (tabScrollController.hasClients) {
       // Now it is safe to access .position and .animateTo
       final double min = tabScrollController.position.minScrollExtent;
@@ -198,13 +189,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
     final maxExtent = chipScrollController.position.maxScrollExtent;
     final safeOffset = targetOffset.clamp(0, maxExtent).toDouble();
 
-    // --- Step 4: Animate ---
-    // chipScrollController.animateTo(safeOffset, duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic);
-    // 1. Calculate the offset first (it's just math, so it's safe)
-    // final double safeOffset = scrollOffset.clamp(
-    //     chipScrollController.position.minScrollExtent,
-    //     chipScrollController.position.maxScrollExtent
-    // );
 
 // 2. Wrap the animation in the safety check
     if (chipScrollController.hasClients) {
@@ -225,11 +209,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
     // Calculate desired scroll offset to center the tab
     final offset = (tabWidth + tabMargin) * index - (screenWidth / 2) + (tabWidth / 2);
 
-    // tabScrollController.animateTo(
-    //   offset.clamp(tabScrollController.position.minScrollExtent, tabScrollController.position.maxScrollExtent),
-    //   duration: const Duration(milliseconds: 300),
-    //   curve: Curves.easeInOut,
-    // );
     // 1. Check if the controller is attached to the UI
     if (tabScrollController.hasClients) {
 
@@ -465,29 +444,14 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                             }
 
                             if (isMixesTab && isYourMixes) {
-                          // if (controller.isMixesLoading.value && controller.apiMixes.isEmpty) {
-                          //   return const Center(child: LoaderWidget());
-                          // }
+
 
                           if (controller.apiMixes.isEmpty && !controller.isMixesLoading.value) {
                             return  Center(
                               child: Text(context.lang.noMixesFound, style: TextStyle(color: Colors.white54)),
                             );
                           }
-                            // 1. Get the screen width
-                            // final double screenWidth = MediaQuery.of(context).size.width;
-                            //
-                            // // 2. Calculate the width of a single item
-                            // // (Screen Width - Total horizontal padding - spacing between items) / 2
-                            // final double itemWidth = (screenWidth - (18 * 2) - 20) / 2;
-                            //
-                            // // 3. Define your desired heights
-                            // const double iconBoxHeight = 200.0;
-                            // const double textSectionHeight = 60.0; // Space for Title + Subtitle + Spacing
-                            // final double totalItemHeight = iconBoxHeight + textSectionHeight;
-                            //
-                            // // 4. Calculate the Responsive Aspect Ratio
-                            // final double responsiveAspectRatio = itemWidth / totalItemHeight;
+
                             final double screenWidth = MediaQuery.of(context).size.width;
                             const double horizontalPadding = 18.0 * 2;
                             const double spacing = 16.0;
@@ -876,17 +840,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                                 ),
                                               ),
                                             ),
-                                            // Favorite icon
-                                            // Positioned(
-                                            //   top: 10,
-                                            //   right: 10,
-                                            //   child: GestureDetector(
-                                            //     onTap: () {}, // => controller.toggleLike(s),
-                                            //     child: Obx(() {
-                                            //       return Icon(controller.isLiked.value ? Icons.favorite : Icons.favorite_border, color: controller.isLiked.value ? Colors.red : Colors.white, size: 20);
-                                            //     }),
-                                            //   ),
-                                            // ),
+
                                             // Favorite icon inside GridView.builder
                                             Positioned(
                                               top: 10,
@@ -1018,13 +972,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                         ),
                                         child: Stack(
                                           children: [
-                                            // 1. Background Image
-                                            // Positioned.fill(
-                                            //   child: ClipRRect(
-                                            //     borderRadius: BorderRadius.circular(20),
-                                            //     child: CachedImageWidget(url: s.image, fit: BoxFit.cover),
-                                            //   ),
-                                            // ),
                                             Positioned.fill(
                                               child: ClipRRect(
                                                 borderRadius: BorderRadius.circular(20),
@@ -1053,27 +1000,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                               ),
                                             ),
 
-                                            // /// Lock Icon - Now based on isLocked from API
-                                            // if (!isPremium) Positioned(top: 12, left: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20)),
-                                            //
-                                            // // // 3. Favorite Icon
-                                            // // Positioned(top: 12, right: 12, child: Icon(Icons.favorite_border, color: Colors.white.withOpacity(0.9), size: 24)),
-                                            // Positioned(
-                                            //   top: 10,
-                                            //   right: 10,
-                                            //   child: GestureDetector(
-                                            //     // Inside your GridView.builder for the Heart Icon
-                                            //     onTap: () => controller.toggleLike(s, categorySlug, subCategorySlug),
-                                            //     child: AnimatedContainer(
-                                            //       duration: const Duration(milliseconds: 300),
-                                            //       padding: const EdgeInsets.all(6),
-                                            //       decoration: BoxDecoration(color: isFav ? Colors.red.withOpacity(0.1) : Colors.black26, shape: BoxShape.circle),
-                                            //       child: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : Colors.white, size: 18 * SizeConfigs.textScale),
-                                            //     ),
-                                            //     // }),
-                                            //   ),
-                                            // ),
-                                            // isPremium == false
 
                                             (s.isPremium == true && subController.isPremium.value == false)
                                                 ? Positioned(top: 12, right: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20))
@@ -1164,69 +1090,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                   return Obx(() {
                                     final active = controller.playingSounds.any((it) => it.id == s.id);
 
-                                    // return GestureDetector(
-                                    //   onTap: () {
-                                    //     print("Tapped sound: ${s.name}");
-                                    //     controller.toggleSound(s);
-                                    //   },
-                                    //   child: Column(
-                                    //     children: [
-                                    //       AnimatedContainer(
-                                    //         duration: const Duration(milliseconds: 200),
-                                    //         height: 72,
-                                    //         width: 72,
-                                    //         decoration: BoxDecoration(
-                                    //           shape: BoxShape.circle,
-                                    //           color: active ? Colors.white12 : const Color(0xFF1C1F2E),
-                                    //           boxShadow: active ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.35), blurRadius: 10)] : [],
-                                    //         ),
-                                    //         alignment: Alignment.center,
-                                    //         // Inside your GridView itemBuilder -> Column -> AnimatedContainer:
-                                    //         child: (s.emoji != null && s.emoji!.trim().isNotEmpty)
-                                    //             ? Text(s.emoji!, style: const TextStyle(fontSize: 26))
-                                    //             : ClipRRect(
-                                    //           borderRadius: BorderRadius.circular(36),
-                                    //           child: CachedNetworkImage(
-                                    //             imageUrl: s.image,
-                                    //             height: 72,
-                                    //             width: 72,
-                                    //             fit: BoxFit.cover,
-                                    //             // 🔥 Set these to 0 to remove the "fade/load" animation
-                                    //             fadeInDuration: Duration.zero,
-                                    //             fadeOutDuration: Duration.zero,
-                                    //
-                                    //             // 🔥 Match the background color so there is NO white flash
-                                    //             placeholder: (context, url) => Container(
-                                    //               color: const Color(0xFF1C1F2E), // Your exact tab color
-                                    //             ),
-                                    //
-                                    //             // Use these to keep memory usage low so the cache doesn't clear
-                                    //             memCacheHeight: 150,
-                                    //             memCacheWidth: 150,
-                                    //
-                                    //             errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white10),
-                                    //           ),
-                                    //         ),
-                                    //         // child: (s.emoji != null && s.emoji!.trim().isNotEmpty)
-                                    //         //     ? Text(s.emoji!, style: const TextStyle(fontSize: 26))
-                                    //         //     : IgnorePointer(
-                                    //         //         // 🔥 KEY FIX
-                                    //         //         ignoring: true,
-                                    //         //         child: CachedImageWidget(url: s.image, height: 72, width: 72, fit: BoxFit.cover, circle: true, usePlaceholderIfUrlEmpty: true),
-                                    //         //       ),
-                                    //       ),
-                                    //
-                                    //       const SizedBox(height: 6),
-                                    //       Text(
-                                    //         textAlign: TextAlign.center,
-                                    //         s.name,
-                                    //         maxLines: 2,
-                                    //         overflow: TextOverflow.ellipsis,
-                                    //         style: Theme.of(context).textTheme.titleLarge?.copyWith(color: active ? Colors.white : Colors.white70, fontSize: 10, fontWeight: FontWeight.w400),
-                                    //       ),
-                                    //     ],
-                                    //   ),
-                                    // );
                                     return GestureDetector(
                                       onTap: () {
                                         final controller1 = Get.find<HomeController>();
@@ -1281,20 +1144,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                                 ),
 
                                                 /// 2. PREMIUM LOCK OVERLAY
-                                                // if (s.isPremium )
-                                                //   Positioned.fill(
-                                                //     child: Container(
-                                                //       decoration: BoxDecoration(
-                                                //         shape: BoxShape.circle,
-                                                //         color: Colors.black.withOpacity(0.2), // Darken layer
-                                                //       ),
-                                                //       child: const Icon(
-                                                //           Icons.lock_rounded,
-                                                //           color: Colors.white,
-                                                //           size: 20
-                                                //       ),
-                                                //     ),
-                                                //   ),
 
                                                 /// 3. PREMIUM BADGE (Optional: Small star in corner)
 
@@ -1365,16 +1214,6 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
           /// 🔥 GLOBAL LOADER OVERLAY
           /// 🌍 ONE GLOBAL LOADER
-          // if (isScreenLoading)
-          //   Positioned.fill(
-          //     child: AbsorbPointer(
-          //       // 🔥 blocks touches
-          //       child: Container(
-          //         color: Colors.black.withOpacity(0.4),
-          //         child: Center(child: LoaderWidget(size: sw(150))),
-          //       ),
-          //     ),
-          //   ),
           if (isScreenLoading && !hasData)
             Positioned.fill(
               child: Container(

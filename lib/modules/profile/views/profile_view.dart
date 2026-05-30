@@ -140,41 +140,6 @@ class ProfileScreen extends StatelessWidget {
                         _buildStatsGrid(context),
 
                         const SizedBox(height: 30),
-                        // Container(
-                        //   width: double.infinity,
-                        //   padding: const EdgeInsets.only(top: 18, bottom: 15, left: 18, right: 18),
-                        //   decoration: BoxDecoration(
-                        //     color: AppColors.card,
-                        //     borderRadius: BorderRadius.circular(20),
-                        //     border: Border.all(color: Colors.white12),
-                        //   ),
-                        //   child: Column(
-                        //     crossAxisAlignment: CrossAxisAlignment.start,
-                        //     children: [
-                        //       Text(
-                        //         context.lang.appSettings, // "App Settings"
-                        //         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        //             color: AppColors.white,
-                        //             fontSize: 21 * SizeConfigs.textScale,
-                        //             fontWeight: FontWeight.w500
-                        //         ),
-                        //       ),
-                        //       SizedBox(height: 16 * SizeConfigs.paddingScale),
-                        //
-                        //       // 🔥 Language Selection Tile
-                        //       _settingsTile(
-                        //         title: context.lang.language, // "Language"
-                        //         subtitle: Get.find<LanguageController>().languages.firstWhere(
-                        //                 (l) => l.code == Get.locale?.languageCode,
-                        //             orElse: () => const LanguageItem(code: 'en', name: 'English')
-                        //         ).name,
-                        //         trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                        //         context: context,
-                        //         onTap: () => Get.to(() => const LanguageView()), // Language screen par bhejein
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
                         /// 🌙 Sleep Tracker Section
                         Container(
                           width: double.infinity,

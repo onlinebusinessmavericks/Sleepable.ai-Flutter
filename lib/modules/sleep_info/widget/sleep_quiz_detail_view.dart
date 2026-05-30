@@ -87,9 +87,6 @@ class SleepQuizDetailView extends StatelessWidget {
 
                 Row(
                   children: [
-                    // _checkItem("Quick & simple questions"),
-                    // const SizedBox(width: 20),
-                    // _checkItem("Built with sleep science"),
                     _checkItem(context.lang.quickSimpleQuestions),
                     const SizedBox(width: 20),
                     _checkItem(context.lang.builtWithSleepScience),
@@ -135,23 +132,6 @@ class SleepQuizDetailView extends StatelessWidget {
                   title: context.lang.actionableGuidanceTitle,
                   desc: context.lang.actionableGuidanceDesc,
                 ),
-                // _gainItem(
-                //   title: "Sleep overview",
-                //   desc:
-                //   "Get a clear snapshot of your current sleep patterns and potential areas of concern.",
-                // ),
-                //
-                // _gainItem(
-                //   title: "Personal insights",
-                //   desc:
-                //   "Understand how your sleep habits may influence focus, mood, and recovery.",
-                // ),
-                //
-                // _gainItem(
-                //   title: "Actionable guidance",
-                //   desc:
-                //   "Receive practical suggestions to help you improve sleep quality and consistency.",
-                // ),
 
                 const SizedBox(height: 26),
 

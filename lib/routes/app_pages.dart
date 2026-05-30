@@ -42,8 +42,6 @@ import '../modules/login/views/login_view.dart';
 import '../modules/music/bindings/music_binding.dart';
 import '../modules/music/views/music_view.dart';
 import '../modules/otp_verification/views/otp_verification_view.dart';
-import '../modules/patented_sleep_tracker/bindings/patented_sleep_tracker_binding.dart';
-import '../modules/patented_sleep_tracker/views/patented_sleep_tracker_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
 import '../modules/profile/model/user_profile_model.dart';
 import '../modules/profile/views/profile_view.dart';
@@ -66,7 +64,6 @@ import '../modules/sleep_quiz/views/sleep_quiz_view.dart';
 import '../modules/sleep_quiz_result/controllers/sleep_quiz_result_controller.dart';
 import '../modules/sleep_quiz_result/views/sleep_quiz_result_view.dart';
 import '../modules/sleep_report/bindings/sleep_report_binding.dart';
-import '../modules/sleep_sound/bindings/sleep_sound_binding.dart';
 import '../modules/sleep_sound/views/sleep_sound_view.dart';
 import '../modules/sleep_tracker_screen/bindings/sleep_tracker_screen_binding.dart';
 import '../modules/sleep_tracker_screen/views/sleep_tracker_screen_view.dart';
@@ -92,7 +89,7 @@ class AppPages {
     GetPage(name: _Paths.signup, page: () => SignupScreen(), binding: SignupBinding(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
     GetPage(name: _Paths.signIn, page: () => SignInScreen(), binding: SignInBinding(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
     GetPage(name: _Paths.forgotPassword, page: () => ForgotPasswordScreen(), binding: ForgotPasswordBinding(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
-    GetPage(name: _Paths.freeTrial, page: () => FreeTrialView(), binding: FreeTrialBinding(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
+    // GetPage(name: _Paths.freeTrial, page: () => FreeTrialView(), binding: FreeTrialBinding(), customTransition: BlurFadeRoute(), transitionDuration: const Duration(seconds: 1)),
 
 
 

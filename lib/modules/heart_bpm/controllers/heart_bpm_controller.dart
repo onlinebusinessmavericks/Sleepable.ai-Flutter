@@ -94,30 +94,6 @@ class HeartBPMController extends GetxController {
       return Colors.deepOrangeAccent;      // WITHIN target range
     }
   }
-
-
-
-  // Future<void> updateAgeBasedMessage(int bpm, int age) async {
-  //   final range = HeartRateService().getTargetRange(age);
-  //   final min = range["min"]!;
-  //   final max = range["max"]!;
-  //
-  //   String status;
-  //   if (bpm < min) {
-  //     status = Get.context?.lang.belowTargetRange ?? "Below target range.";
-  //   } else if (bpm > max) {
-  //     status = Get.context?.lang.aboveTargetRange ??  "Above target range.";
-  //   } else {
-  //     status = Get.context?.lang.withinTargetZone ?? "Within target zone.";
-  //   }
-  //
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.setInt('heart_rate', bpm);
-  //
-  //   ageBasedMessage.value =
-  //   "${Get.context!.lang.age} $age — ${Get.context!.lang.targetRange}: $min–$max ${Get.context!.lang.bpm}.\n"
-  //       "${Get.context!.lang.yourBpm}: $bpm — $status";
-  // }
   Future<void> updateAgeBasedMessage(int bpm, int age) async {
     final range = HeartRateService().getTargetRange(age);
     final min = range["min"]!;
@@ -309,48 +285,6 @@ class HeartBPMController extends GetxController {
     });
   }
 
-  // void stopMeasurement({bool reset = false}) {
-  //   isMeasuring.value = false;
-  //   cameraController?.setFlashMode(FlashMode.off);
-  //
-  //   Future.delayed(const Duration(milliseconds: 300), () {
-  //     cameraController?.stopImageStream();
-  //   });
-  //   _countdownTimer?.cancel();
-  //   _bpmTimer?.cancel();
-  //   _progressTimer?.cancel();
-  //
-  //   if (reset) {
-  //     // User removed finger or restarted
-  //     print("------------ reset-------------------");
-  //     cameraController?.setFlashMode(FlashMode.off);
-  //     return;
-  //   }
-  //
-  //   /// -------------------------------
-  //   /// ✅ FINAL BPM CALCULATION DONE
-  //   /// -------------------------------
-  //   finalBpm.value = bpm.value;
-  //   showSaveButton.value = true;
-  //   showRestartButton.value = true;
-  //
-  //   /// -------------------------------
-  //   /// 🔥 TURN OFF FLASH
-  //   /// -------------------------------
-  //   print("------------ OFF FLASH-------------------");
-  //   cameraController?.setFlashMode(FlashMode.off);
-  //   print("------------ OFF FLASH-------------------");
-  //
-  //   /// -------------------------------
-  //   /// 🔥 STOP CAMERA STREAM
-  //   /// -------------------------------
-  //   cameraController?.stopImageStream();
-  //
-  //   /// -------------------------------
-  //   /// 🔥 HIDE CAMERA FROM UI
-  //   /// -------------------------------
-  //   isCameraReady.value = false;
-  // }
   void stopMeasurement({bool reset = false}) {
     isMeasuring.value = false;
 

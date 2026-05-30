@@ -290,21 +290,6 @@ class SleepGoalView extends StatelessWidget {
                                                       ),
                                                     ),
                                                   ),
-
-                                                  //                 SizedBox(
-                                                  // height:26,
-                                                  //                   child: Marquee(
-                                                  //                     text: item['title'],
-                                                  //                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                                  //                       color: AppColors.white,
-                                                  //                       fontSize: 17 * SizeConfigs.textScale,
-                                                  //                       fontWeight: FontWeight.w100,
-                                                  //                     ),
-                                                  //                     blankSpace: 20.0,
-                                                  //                     velocity: 30.0,
-                                                  //                     pauseAfterRound: const Duration(seconds: 1),
-                                                  //                   ),
-                                                  //                 )
                                                 ),
                                               ],
                                             ).paddingAll(

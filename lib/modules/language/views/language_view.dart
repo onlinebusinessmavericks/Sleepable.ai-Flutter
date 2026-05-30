@@ -97,8 +97,6 @@ class LanguageView extends GetView<LanguageController> {
           );
         },
       ),
-
-
     );
   }
 }

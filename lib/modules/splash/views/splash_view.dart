@@ -23,36 +23,9 @@ class SplashView extends GetView<SplashController> {
             children: [
               Image.asset(
                 Assets.imagesSleepableLogo,
-                // color: AppColors.iconColor,
                 width: width * 0.765,
                 height: width * 0.765,
               ),
-              // const Text(
-              //   "Welcome to",
-              //   style: TextStyle(
-              //     fontSize: 24,
-              //     fontWeight: FontWeight.bold,
-              //     color: Colors.white,
-              //   ),
-              // ),
-              // const SizedBox(height: 8),
-              // const Text(
-              //   "Sleepable",
-              //   style: TextStyle(
-              //     fontSize: 28,
-              //     fontWeight: FontWeight.bold,
-              //     color: Colors.white,
-              //   ),
-              // ),
-              // const SizedBox(height: 16),
-              // const Text(
-              //   "Your personal sleep assistant",
-              //   style: TextStyle(
-              //     fontSize: 20,
-              //     fontWeight: FontWeight.w600,
-              //     color: Colors.white70,
-              //   ),
-              // ),
             ],
           ),
         ),

@@ -78,14 +78,6 @@ class _YouTubePlayerViewState extends State<YouTubePlayerView> {
                 child: player,
               ),
               const SizedBox(height: 20),
-              // if (!_isPlayerReady)
-              //   const Column(
-              //     children: [
-              //       CircularProgressIndicator(color: Color(0xFF3A7CFF)),
-              //       SizedBox(height: 10),
-              //       Text("Initializing secure stream...", style: TextStyle(color: Colors.white70)),
-              //     ],
-              //   ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(

@@ -103,17 +103,6 @@ class DreamBotScreen extends GetView<DreamBotController> {
         children: [
           SmallCircleIcon(icon: Icons.arrow_back_rounded, size: 20 * SizeConfigs.textScale, onTap: () => Get.back()),
           Image.asset(Assets.alarmDreamBotLogo, width: 170),
-
-          // 🔥 Show Reset/Edit ONLY for NEW sessions. Hide if viewing history.
-          // (!isViewingHistory)
-          //     ? GestureDetector(
-          //   onTap: () => controller.resetForEditing(),
-          //   child: Container(
-          //     padding: const EdgeInsets.all(8),
-          //     child: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
-          //   ),
-          // )
-          //     :
           const SizedBox(width: 40), // Placeholder to keep logo centered
         ],
       ),
@@ -212,14 +201,6 @@ class DreamBotScreen extends GetView<DreamBotController> {
                 : null,
           ),
           child: ElevatedButton(
-            // onPressed: () {
-            //   if (isLoading) return;
-            //   if (isLimitReached) {
-            //     debugPrint("Action: Go to Premium");
-            //   } else if (isUserReady) {
-            //     controller.handleFirstAction();
-            //   }
-            // },
             onPressed: () {
               if (isLoading) return;
 

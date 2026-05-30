@@ -44,7 +44,6 @@ class SignInScreen extends GetView<SignInController> {
               padding: const EdgeInsets.all(20),
               child: Container(
                 padding: const EdgeInsets.all(12),
-                // decoration: BoxDecoration(color: AppColors.cardDark, borderRadius: BorderRadius.circular(22)),
                 child: Form(
                   key: controller.formKey,
                   child: Column(
@@ -95,14 +94,6 @@ class SignInScreen extends GetView<SignInController> {
                             ],
                           ),
                         ),
-                        // TextButton(
-                        //   onPressed: () =>  Get.toNamed(Routes.signup),
-                        //   child: const Text(
-                        //     "Don’t have an account? Sign up",
-                        //     style:
-                        //     TextStyle(color: AppColors.secondaryTextColor),
-                        //   ),
-                        // ),
                       ),
                       const SizedBox(height: 15),
                       GestureDetector(

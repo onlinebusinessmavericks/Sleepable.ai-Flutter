@@ -261,26 +261,6 @@ class _HeartBPMViewState extends State<HeartBPMView> with TickerProviderStateMix
                 }),
               ),
               SizedBox(height: 12 * SizeConfigs.paddingScale),
-              // const SizedBox(height: 20),
-              // Obx(
-              //   () => c.showSaveButton.value
-              //       ? FadeTransition(
-              //           opacity: _textFade,
-              //           child: SlideTransition(
-              //             position: _textSlide,
-              //             child: Padding(
-              //               padding:  EdgeInsets.only(top: 12* SizeConfigs.paddingScale, left: 20* SizeConfigs.paddingScale, right: 20* SizeConfigs.paddingScale, bottom: 20* SizeConfigs.paddingScale),
-              //               child: Text(
-              //                 c.getAgeBasedMessage(c.finalBpm.value,30),
-              //                // "${c.finalBpm.value} Suggests stress or anxiety; might result in restless or lighter sleep.",
-              //                 textAlign: TextAlign.center,
-              //                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w300),
-              //               ),
-              //             ),
-              //           ),
-              //         )
-              //       : const SizedBox(),
-              // ),
               Obx(
                     () => c.showSaveButton.value
                     ? FadeTransition(

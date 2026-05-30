@@ -343,38 +343,6 @@ class LoginController extends BaseController {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Future<void> loginWithEmailApi() async {
-  //   if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-  //     Get.snackbar("Error", "Please fill all fields");
-  //     return;
-  //   }
-  //
-  //   try {
-  //     isLoading.value = true;
-  //
-  //     final Map<String, dynamic> request = {
-  //       "email": emailController.text.trim(),
-  //       "password": passwordController.text,
-  //     };
-  //
-  //     // Yahan apni AuthServiceApis call karein jo backend ne banayi hai
-  //     final response = await AuthServiceApis.emailLogin(request: request);
-  //
-  //     if (response.success == true) {
-  //       // OTP Screen par bhejein (Agar static OTP setup hai)
-  //       Get.toNamed(
-  //           Routes.otpScreen,
-  //           arguments: {"email": emailController.text.trim()}
-  //       );
-  //     } else {
-  //       Get.snackbar("Error", response.message);
-  //     }
-  //   } catch (e) {
-  //     print("❌ Email Login Error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
   Future<void> loginWithEmailApi() async {
     String email = emailController.text.trim().toLowerCase();
     if (email.isEmpty || passwordController.text.isEmpty) {
@@ -412,38 +380,7 @@ class LoginController extends BaseController {
 
   final otpController = TextEditingController();
 
-  // Future<void> verifyOtpApi() async {
-  //   final String email = Get.arguments["email"] ?? "";
-  //   final String otp = otpController.text.trim();
-  //
-  //   if (otp.length < 6) {
-  //     Get.snackbar("Error", "Enter 6-digit OTP");
-  //     return;
-  //   }
-  //
-  //   try {
-  //     isLoading.value = true;
-  //     final Map<String, dynamic> request = {
-  //       "email": email,
-  //       "otp_code": otp,
-  //     };
-  //
-  //     // OTP verify hone ke baad backend tokens (SocialLoginResponse) bhejega
-  //     final response = await AuthServiceApis.verifyEmailOtp(request: request);
-  //
-  //     if (response.success == true) {
-  //       // ✅ SUCCESS: Wahi logic call karein jo social login ke tokens save karta hai
-  //       // Humne _handleSocialLogin ko refactor kiya hai niche
-  //       await _saveTokensAndNavigate(response);
-  //     } else {
-  //       Get.snackbar("OTP Error", response.message ?? "Invalid OTP");
-  //     }
-  //   } catch (e) {
-  //     dev.log("❌ OTP Verification Error: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
+
   Future<void> verifyOtpApi() async {
     final String email = Get.arguments["email"] ?? "";
     final String otp = otpController.text.trim();
@@ -484,36 +421,7 @@ class LoginController extends BaseController {
       isLoading.value = false;
     }
   }
-// Common function to save tokens and move to Dashboard
-//   Future<void> _saveTokensAndNavigate(SocialLoginResponse response) async {
-//     // 1. Tokens & Login Status Save
-//     await setValue(AppSharedPreferenceKeys.apiToken, response.data.tokens.access);
-//     await setValue(AppSharedPreferenceKeys.refreshToken, response.data.tokens.refresh);
-//     await setValue(AppSharedPreferenceKeys.isUserLoggedIn, true);
-//
-//     // 2. Profile Setup
-//     final userData = UserProfileData(
-//       name: response.data.name,
-//       profileImage: response.data.avatarUrl,
-//       phoneNumber: response.data.phone,
-//       countryCode: response.data.countryCode,
-//     );
-//     await setValue(AppSharedPreferenceKeys.currentUserData, jsonEncode(response.data.toJson()));
-//     Get.put(ProfileController()).profile.value = userData;
-//
-//     // 3. Subscription Check & Navigate
-//     final subController = Get.isRegistered<SubscriptionController>()
-//         ? Get.find<SubscriptionController>()
-//         : Get.put(SubscriptionController(), permanent: true);
-//
-//     await subController.initData();
-//
-//     if (subController.isPremium.value == true) {
-//       Get.offAllNamed(Routes.dashboard);
-//     } else {
-//       Get.offAllNamed(Routes.dashboard, arguments: {'show_paywall': true});
-//     }
-//   }
+
   Future<void> _saveTokensAndNavigate({
     SocialLoginResponse? socialResponse,
     UserLoginData? reviewerData,
@@ -590,56 +498,4 @@ class LoginController extends BaseController {
       print("❌ Token Saving Error: $e");
     }
   }
-//   Future<void> _saveTokensAndNavigate(SocialLoginResponse response) async {
-//     try {
-//       // 1. Data Validation: Check karein ki data aur tokens null toh nahi
-//       if (response.data == null || response.data.tokens == null) {
-//         print("❌ Error: Backend response data or tokens are null");
-//         return;
-//       }
-//
-//       // 2. Tokens Save karein (Correct Path: response.data.tokens)
-//       String accessToken = response.data.tokens.access ?? "";
-//       String refreshToken = response.data.tokens.refresh ?? "";
-//
-//       if (accessToken.isNotEmpty) {
-//         await setValue(AppSharedPreferenceKeys.apiToken, accessToken);
-//         await setValue(AppSharedPreferenceKeys.refreshToken, refreshToken);
-//         await setValue(AppSharedPreferenceKeys.isUserLoggedIn, true);
-//         print("✅ Tokens Saved Successfully");
-//       } else {
-//         print("⚠️ Access Token is empty!");
-//       }
-//
-//       // 3. User Profile Data Setup
-//       final userData = UserProfileData(
-//         name: response.data.name ?? "Test User",
-//         profileImage: response.data.avatarUrl ?? "",
-//         phoneNumber: response.data.phone ?? "",
-//         countryCode: response.data.countryCode ?? "",
-//       );
-//
-//       // Full JSON save karein background APIs ke liye
-//       await setValue(AppSharedPreferenceKeys.currentUserData, jsonEncode(response.data.toJson()));
-//
-//       // Profile Controller update karein
-//       Get.put(ProfileController()).profile.value = userData;
-//
-//       // 4. Subscription Check & Navigation
-//       final subController = Get.isRegistered<SubscriptionController>()
-//           ? Get.find<SubscriptionController>()
-//           : Get.put(SubscriptionController(), permanent: true);
-//
-//       await subController.initData();
-//
-//       // 5. Final Navigation
-//       if (subController.isPremium.value == true) {
-//         Get.offAllNamed(Routes.dashboard);
-//       } else {
-//         Get.offAllNamed(Routes.dashboard, arguments: {'show_paywall': true});
-//       }
-//     } catch (e) {
-//       print("❌ Token Saving Error: $e");
-//     }
-//   }
 }

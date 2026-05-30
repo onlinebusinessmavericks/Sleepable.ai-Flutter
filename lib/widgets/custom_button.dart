@@ -2,55 +2,6 @@ import 'package:haptic_feedback/haptic_feedback.dart';
 
 import '../core/utils/library.dart';
 
-// class AnimatedNextButton extends StatefulWidget {
-//   final VoidCallback onPressed;
-//   const AnimatedNextButton({super.key, required this.onPressed});
-//
-//   @override
-//   State<AnimatedNextButton> createState() => _AnimatedNextButtonState();
-// }
-//
-// class _AnimatedNextButtonState extends State<AnimatedNextButton>
-//     with SingleTickerProviderStateMixin {
-//   late final AnimationController _controller =
-//   AnimationController(vsync: this, duration: const Duration(milliseconds: 120));
-//
-//   late final Animation<double> _scale =
-//   Tween(begin: 1.0, end: 0.92).animate(
-//     CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-//   );
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return ScaleTransition(
-//       scale: _scale,
-//       child: SizedBox(
-//         width: 52,
-//         height: 52,
-//         child: ElevatedButton(
-//           onPressed: () async {
-//             await _controller.forward();
-//             await _controller.reverse();
-//             widget.onPressed();
-//           },
-//           style: ElevatedButton.styleFrom(
-//             shape: const CircleBorder(),
-//             backgroundColor: Colors.blue,
-//             elevation: 6,
-//             padding: EdgeInsets.zero,
-//           ),
-//           child: const Icon(
-//             Icons.arrow_forward_rounded,
-//             size: 30,
-//             color: Colors.white,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
 class AnimatedNextButton extends StatefulWidget {
   final VoidCallback onPressed;
   final Duration delay;

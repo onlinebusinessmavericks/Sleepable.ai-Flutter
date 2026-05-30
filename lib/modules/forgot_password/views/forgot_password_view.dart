@@ -15,18 +15,6 @@ class ForgotPasswordScreen extends GetView<ForgotPasswordController> {
 
     return Obx(() => Stack(
       children: [
-        // Scaffold(
-        //   backgroundColor: AppColors.backgroundColor,
-        //   appBar: AppBar(
-        //     backgroundColor: AppColors.backgroundColor,
-        //     elevation: 0,
-        //     leading: IconButton(
-        //       icon: const Icon(Icons.arrow_back, color: Colors.white),
-        //       onPressed: () => Get.back(),
-        //     ),
-        //     title: const Text("Forgot Password"),
-        //     centerTitle: true,
-        //   ),
         Scaffold(
           backgroundColor: AppColors.backgroundColor,
           appBar: AppBar(
@@ -53,10 +41,6 @@ class ForgotPasswordScreen extends GetView<ForgotPasswordController> {
             padding: const EdgeInsets.all(20),
             child: Container(
               padding: const EdgeInsets.all(12),
-              // decoration: BoxDecoration(
-              //   color: AppColors.cardDark,
-              //   borderRadius: BorderRadius.circular(22),
-              // ),
               child: Form(
                 key: controller.formKey,
                 child: Column(
