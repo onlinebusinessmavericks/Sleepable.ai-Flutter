@@ -1822,4 +1822,29 @@ class LanguageFr extends BaseLanguage {
   String get gift => 'Cadeau';
   @override
   String get noLuck => 'Pas de chance';
+
+  @override
+  String get signInWithEmail => 'Se connecter avec un e-mail';
+  @override
+  String get emailAddress => 'Adresse email';
+  @override
+  String get password => 'Mot de passe';
+  @override
+  String get pleaseFillAllFields => 'Veuillez remplir tous les champs.';
+  @override
+  String get loginFailed => 'La connexion a échoué';
+  @override
+  String get somethingWentWrongDuringLogin => "Une erreur s'est produite lors de la connexion.";
+  @override
+  String get enter6DigitOTP => 'Saisissez le code OTP à 6 chiffres';
+  @override
+  String get oTPError => 'Erreur OTP';
+  @override
+  String get somethingWentWrongDuringotpVerification => "Une erreur s'est produite lors de la vérification du code OTP.";
+  @override
+  String get verificationCode => 'Le code de vérification';
+  @override
+  String get pleaseEnterThe6DigitCodeSentTo => 'Veuillez saisir le code à 6 chiffres envoyé à';
+  @override
+  String get verifyLogin => 'Vérifier et se connecter';
 }

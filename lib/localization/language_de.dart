@@ -1784,4 +1784,29 @@ class LanguageDe extends BaseLanguage {
   String get gift => 'Geschenk';
   @override
   String get noLuck => 'Kein Glück';
+
+  @override
+  String get signInWithEmail => 'Mit E-Mail anmelden';
+  @override
+  String get emailAddress => 'E-Mail-Adresse';
+  @override
+  String get password => 'Passwort';
+  @override
+  String get pleaseFillAllFields => 'Bitte füllen Sie alle Felder aus.';
+  @override
+  String get loginFailed => 'Fehler bei der Anmeldung';
+  @override
+  String get somethingWentWrongDuringLogin => 'Beim Anmelden ist ein Fehler aufgetreten.';
+  @override
+  String get enter6DigitOTP => 'Geben Sie den 6-stelligen OTP-Code ein.';
+  @override
+  String get oTPError => 'OTP-Fehler';
+  @override
+  String get somethingWentWrongDuringotpVerification => 'Bei der OTP-Verifizierung ist ein Fehler aufgetreten.';
+  @override
+  String get verificationCode => 'Bestätigungscode';
+  @override
+  String get pleaseEnterThe6DigitCodeSentTo => 'Bitte geben Sie den an gesendeten 6-stelligen Code ein.';
+  @override
+  String get verifyLogin => 'Verifizieren & Anmelden';
 }

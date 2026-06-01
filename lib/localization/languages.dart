@@ -974,4 +974,17 @@ abstract class BaseLanguage {
   String get exclusiveDiscount;
   String get gift;
   String get noLuck;
+
+  String get signInWithEmail;
+  String get emailAddress;
+  String get password;
+  String get pleaseFillAllFields;
+  String get loginFailed;
+  String get somethingWentWrongDuringLogin;
+  String get enter6DigitOTP;
+  String get oTPError;
+  String get somethingWentWrongDuringotpVerification;
+  String get verificationCode;
+  String get pleaseEnterThe6DigitCodeSentTo;
+  String get verifyLogin;
 }

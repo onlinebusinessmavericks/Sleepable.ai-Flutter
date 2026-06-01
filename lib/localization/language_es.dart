@@ -1785,4 +1785,28 @@ class LanguageEs extends BaseLanguage {
   String get gift => 'Regalo';
   @override
   String get noLuck => 'Sin suerte';
+  @override
+  String get signInWithEmail => 'Iniciar sesión con correo electrónico';
+  @override
+  String get emailAddress => 'Dirección de correo electrónico';
+  @override
+  String get password => 'Contraseña';
+  @override
+  String get pleaseFillAllFields => 'Por favor, rellene todos los campos.';
+  @override
+  String get loginFailed => 'error de inicio de sesion';
+  @override
+  String get somethingWentWrongDuringLogin => 'Se produjo un error durante el inicio de sesión.';
+  @override
+  String get enter6DigitOTP => 'Ingrese el código OTP de 6 dígitos.';
+  @override
+  String get oTPError => 'Error de OTP';
+  @override
+  String get somethingWentWrongDuringotpVerification => 'Algo salió mal durante la verificación del OTP.';
+  @override
+  String get verificationCode => 'Código de verificación';
+  @override
+  String get pleaseEnterThe6DigitCodeSentTo => 'Por favor, introduzca el código de 6 dígitos enviado a';
+  @override
+  String get verifyLogin => 'Verificar e iniciar sesión';
 }

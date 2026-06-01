@@ -1,4 +1,5 @@
 import '../../../core/utils/library.dart';
+import '../../../localization/lang_extension.dart';
 import '../../login/controllers/login_controller.dart';
 
 class OtpVerificationView extends GetView<LoginController> {
@@ -25,13 +26,13 @@ class OtpVerificationView extends GetView<LoginController> {
             const SizedBox(height: 40),
             const Icon(Icons.lock_person_outlined, size: 80, color: Colors.blueAccent),
             const SizedBox(height: 30),
-            const Text(
-              "Verification Code",
+             Text(
+              context.lang.verificationCode,
               style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
-              "Please enter the 6-digit code sent to\n$email",
+              "${context.lang.pleaseEnterThe6DigitCodeSentTo}\n$email",
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
@@ -67,7 +68,7 @@ class OtpVerificationView extends GetView<LoginController> {
                 ),
                 child: controller.isLoading.value
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Verify & Login", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    :  Text(context.lang.verifyLogin, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             )),
           ],

@@ -2503,4 +2503,29 @@ class LanguageEn extends BaseLanguage {
   String get gift => 'Gift';
   @override
   String get noLuck => 'No Luck';
+
+  @override
+  String get signInWithEmail => 'Sign in with Email';
+  @override
+  String get emailAddress => 'Email Address';
+  @override
+  String get password => 'Password';
+  @override
+  String get pleaseFillAllFields => 'Please fill all fields';
+  @override
+  String get loginFailed => 'Login failed';
+  @override
+  String get somethingWentWrongDuringLogin => 'Something went wrong during login';
+  @override
+  String get enter6DigitOTP => 'Enter 6-digit OTP';
+  @override
+  String get oTPError => 'OTP Error';
+  @override
+  String get somethingWentWrongDuringotpVerification => 'Something went wrong during OTP verification';
+  @override
+  String get verificationCode => 'Verification Code';
+  @override
+  String get pleaseEnterThe6DigitCodeSentTo => 'Please enter the 6-digit code sent to';
+  @override
+  String get verifyLogin => 'Verify & Login';
 }

@@ -1,4 +1,5 @@
 import '../../../core/utils/library.dart';
+import '../../../localization/lang_extension.dart';
 import '../../login/controllers/login_controller.dart';
 
 class EmailLoginView extends GetView<LoginController> {
@@ -17,7 +18,7 @@ class EmailLoginView extends GetView<LoginController> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Get.back(),
         ),
-        title: Text("Sign in with Email", style: textTheme.titleMedium?.copyWith(color: Colors.white)),
+        title: Text(context.lang.signInWithEmail, style: textTheme.titleMedium?.copyWith(color: Colors.white)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -27,7 +28,7 @@ class EmailLoginView extends GetView<LoginController> {
             // Email Field
             _textField(
               controller: controller.emailController,
-              hint: "Email Address",
+              hint:context.lang.emailAddress,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
@@ -35,7 +36,7 @@ class EmailLoginView extends GetView<LoginController> {
             // Password Field
             _textField(
               controller: controller.passwordController,
-              hint: "Password",
+              hint: context.lang.password,
               icon: Icons.lock_outline,
               isPassword: true,
             ),
@@ -52,7 +53,7 @@ class EmailLoginView extends GetView<LoginController> {
                 ),
                 child: controller.isLoading.value
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Continue", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    :  Text(context.lang.continues, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             )),
           ],

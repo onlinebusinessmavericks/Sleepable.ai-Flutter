@@ -1785,4 +1785,29 @@ class LanguagePt extends BaseLanguage {
   String get gift => 'Presente';
   @override
   String get noLuck => 'Sem sorte';
+  @override
+  String get signInWithEmail => 'Entrar com e-mail';
+  @override
+  String get emailAddress => 'Endereço de email';
+  @override
+  String get password => 'Senha';
+  @override
+  String get pleaseFillAllFields => 'Por favor, preencha todos os campos.';
+  @override
+  String get loginFailed => 'falha no login';
+  @override
+  String get somethingWentWrongDuringLogin => 'Ocorreu um erro durante o login.';
+  @override
+  String get enter6DigitOTP => 'Digite o código OTP de 6 dígitos.';
+  @override
+  String get oTPError => 'Erro de OTP';
+  @override
+  String get somethingWentWrongDuringotpVerification => 'Ocorreu um erro durante a verificação do OTP.';
+  @override
+  String get verificationCode => 'Código de verificação';
+  @override
+  String get pleaseEnterThe6DigitCodeSentTo => 'Por favor, insira o código de 6 dígitos enviado para';
+  @override
+  String get verifyLogin => 'Verificar e iniciar sessão';
+
 }

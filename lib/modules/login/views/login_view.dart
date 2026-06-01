@@ -125,7 +125,7 @@ class LoginView extends GetView<LoginController> {
 
                         if (Platform.isIOS)
                           _mainButton(
-                            text: Get.context?.lang.signupApple ?? "Sign up with Apple",
+                            text: context.lang.signupApple    ,
                             textColor: Colors.white,
                             bgColor: Colors.transparent,
                             image: Image.asset(Assets.homeApple, width: 25, height: 25),
@@ -139,9 +139,9 @@ class LoginView extends GetView<LoginController> {
                           },),
                         SizedBox(height: 12),
                         _mainButton(
-                          text: "Sign in with Email",
-                          textColor: Colors.white70,
-                          bgColor: Colors.white10,
+                          text: context.lang.signInWithEmail,
+                          textColor: Colors.white,
+                          bgColor: Colors.transparent,
                           image: Image.asset(Assets.homeMail, width: 20, height: 20),
                           onPressed: () {
                             // Nayi screen par bhejein jahan Email/Pass fill ho sake

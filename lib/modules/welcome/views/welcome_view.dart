@@ -7,6 +7,7 @@ import '../../../core/theme/text_theme.dart';
 import '../../../data/billing/billing_controller.dart';
 import '../../../generated/assets.dart';
 import '../../../localization/lang_extension.dart';
+import '../../../localization/language_controller.dart';
 import '../controllers/welcome_controller.dart';
 
 class WelcomeView extends GetView<WelcomeController> {
@@ -16,7 +17,7 @@ class WelcomeView extends GetView<WelcomeController> {
   Widget build(BuildContext context) {
     SizeConfigs.init(context);
     SizeConfigs2.init(context);
-
+    final languageController = Get.find<LanguageController>();
     return Scaffold(
       body:
           // SafeArea(
@@ -63,87 +64,120 @@ class WelcomeView extends GetView<WelcomeController> {
                       /// -------- START BUTTON --------
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: SizeConfigs.wp(0.06)),
-                        child:
-                        Align(
+                        child: Align(
                           alignment: Alignment.bottomRight,
-                          child: Obx(() => GestureDetector(
-                            // 1. PRESS DOWN: Make this almost instant (50-80ms)
-                            onTapDown: (_) {
-                              controller.buttonScale.value = 0.92;
-                              Haptics.vibrate(HapticsType.light,useAndroidHapticConstants: true);
-                            },
-                            // 2. RELEASE: Snap back with a bounce
-                            onTapUp: (_) => controller.buttonScale.value = 1.0,
-                            onTapCancel: () => controller.buttonScale.value = 1.0,
+                          child: Obx(
+                            () => GestureDetector(
+                              // 1. PRESS DOWN: Make this almost instant (50-80ms)
+                              onTapDown: (_) {
+                                controller.buttonScale.value = 0.92;
+                                Haptics.vibrate(HapticsType.light, useAndroidHapticConstants: true);
+                              },
+                              // 2. RELEASE: Snap back with a bounce
+                              onTapUp: (_) => controller.buttonScale.value = 1.0,
+                              onTapCancel: () => controller.buttonScale.value = 1.0,
 
-                            onTap: () async {
-                              // 3. TRIGGER: Delay slightly so the user sees the button pop back up
-                              await Future.delayed(const Duration(milliseconds: 120));
-                              controller.onStartPressed();
-                            },
+                              onTap: () async {
+                                // 3. TRIGGER: Delay slightly so the user sees the button pop back up
+                                await Future.delayed(const Duration(milliseconds: 120));
+                                controller.onStartPressed();
+                              },
 
-                            child: AnimatedScale(
-                              scale: controller.buttonScale.value,
-                              // Fast duration makes it feel reactive
-                              duration: const Duration(milliseconds: 120),
-                              // easeOutBack gives that tiny "pop" at the end
-                              curve: Curves.easeOutBack,
-                              child: AnimatedContainer(
+                              child: AnimatedScale(
+                                scale: controller.buttonScale.value,
+                                // Fast duration makes it feel reactive
                                 duration: const Duration(milliseconds: 120),
-                                margin: EdgeInsets.only(bottom: SizeConfigs.hp(0.13)),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: SizeConfigs.wp(0.06),
-                                  vertical: SizeConfigs.hp(0.018),
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(40 * SizeConfigs.radius),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      // Shadow gets smaller/tighter when button is pressed
-                                      blurRadius: controller.buttonScale.value < 1.0 ? 4 : 12,
-                                      spreadRadius: controller.buttonScale.value < 1.0 ? 0 : 2,
-                                      offset: controller.buttonScale.value < 1.0
-                                          ? const Offset(0, 2)
-                                          : const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      context.lang.startQuiz,
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontSize: 18 * SizeConfigs.text,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.background,
+                                // easeOutBack gives that tiny "pop" at the end
+                                curve: Curves.easeOutBack,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 120),
+                                  margin: EdgeInsets.only(bottom: SizeConfigs.hp(0.13)),
+                                  padding: EdgeInsets.symmetric(horizontal: SizeConfigs.wp(0.06), vertical: SizeConfigs.hp(0.018)),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(40 * SizeConfigs.radius),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        // Shadow gets smaller/tighter when button is pressed
+                                        blurRadius: controller.buttonScale.value < 1.0 ? 4 : 12,
+                                        spreadRadius: controller.buttonScale.value < 1.0 ? 0 : 2,
+                                        offset: controller.buttonScale.value < 1.0 ? const Offset(0, 2) : const Offset(0, 6),
                                       ),
-                                    ),
-                                    SizedBox(width: SizeConfigs.wp(0.025)),
-                                    // The Arrow Icon Circle
-                                    Container(
-                                      height: SizeConfigs.wp(0.07),
-                                      width: SizeConfigs.wp(0.07),
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.background,
-                                        shape: BoxShape.circle,
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        context.lang.startQuiz,
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18 * SizeConfigs.text, fontWeight: FontWeight.bold, color: AppColors.background),
                                       ),
-                                      child: const Icon(
-                                        Icons.arrow_forward_ios_rounded,
-                                        size: 14,
-                                        color: Colors.white,
+                                      SizedBox(width: SizeConfigs.wp(0.025)),
+                                      // The Arrow Icon Circle
+                                      Container(
+                                        height: SizeConfigs.wp(0.07),
+                                        width: SizeConfigs.wp(0.07),
+                                        decoration: const BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
+                                        child: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          )),
-                        )
+                          ),
+                        ),
                       ),
+
                     ],
+                  ),
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 10,
+                    left: SizeConfigs.wp(0.05),
+                    child: Obx(() {
+                      // Current selected language code fetch kiya
+                      final currentLangCode = languageController.locale.value.languageCode;
+
+                      return Container(
+                        // padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                        padding: const EdgeInsets.only(left: 4, right: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15), // Glassmorphic translucent effect
+                          borderRadius: BorderRadius.circular(20 * SizeConfigs.radius),
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: currentLangCode,
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                            dropdownColor: const Color(0xFF1A1A2E),
+                            // Dropdown menu open hone par dark background
+                            style: TextStyle(color: Colors.white, fontSize: 14 * SizeConfigs.text, fontWeight: FontWeight.w600),
+                            alignment: Alignment.centerRight,
+                            borderRadius: BorderRadius.circular(16),
+                            onChanged: (String? newLanguageCode) {
+                              if (newLanguageCode != null) {
+                                Haptics.vibrate(HapticsType.selection);
+                                languageController.changeLanguage(newLanguageCode);
+                              }
+                            },
+                            items: languageController.languages.map<DropdownMenuItem<String>>((item) {
+                              return DropdownMenuItem<String>(
+                                value: item.code,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.language, size: 16, color: Colors.white70),
+                                    const SizedBox(width: 8),
+                                    Text(item.name, style: const TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               );
@@ -174,4 +208,3 @@ class SizeConfigs {
 
   static double hp(double percent) => h * percent;
 }
-

@@ -367,11 +367,11 @@ class LoginController extends BaseController {
 
         Get.toNamed(Routes.otpScreen, arguments: {"email": email});
       } else {
-        Get.snackbar("Error", response.message ?? "Login failed");
+        Get.snackbar(Get.context!.lang.error, response.message ?? Get.context!.lang.loginFailed);
       }
     } catch (e) {
       print("❌ Email Login Error: $e");
-      Get.snackbar("Error", "Something went wrong during login");
+      Get.snackbar(Get.context!.lang.error, Get.context!.lang.somethingWentWrongDuringLogin);
     } finally {
     isLoading.value = false;
   }}
@@ -386,7 +386,7 @@ class LoginController extends BaseController {
     final String otp = otpController.text.trim();
 
     if (otp.length < 6) {
-      Get.snackbar("Error", "Enter 6-digit OTP");
+      Get.snackbar(Get.context!.lang.error, Get.context!.lang.enter6DigitOTP);
       return;
     }
 
@@ -412,11 +412,11 @@ class LoginController extends BaseController {
         // await _saveTokensAndNavigate(response);
         await _saveTokensAndNavigate(socialResponse: response);
       } else {
-        Get.snackbar("OTP Error", response.message ?? "Invalid OTP");
+        Get.snackbar(Get.context!.lang.oTPError, response.message ?? "Invalid OTP");
       }
     } catch (e) {
       dev.log("❌ OTP Verification Error: $e");
-      Get.snackbar("Error", "Something went wrong during OTP verification");
+      Get.snackbar(Get.context!.lang.error,Get.context!.lang.somethingWentWrongDuringotpVerification);
     } finally { // 👈 Yahan bhi proper 'finally' aayega
       isLoading.value = false;
     }
