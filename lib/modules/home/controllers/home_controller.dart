@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -203,7 +204,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     if (Get.arguments != null && Get.arguments['show_paywall'] == true) {
       _showInitialPaywall();
     }
-    else if (!subController.isPremium.value) {
+    else if (!subController.isPremium.value && !Platform.isIOS) {
       Future.delayed(const Duration(seconds: 1), () {
         if (!isClosed) {
           showRotatingPremiumSheet(Get.context!);
@@ -223,18 +224,21 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   // Helper 1: Paywall Handler
   void _showInitialPaywall() {
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (isClosed) return; // Safety check
+      if (isClosed) return;
 
       final subController = Get.find<SubscriptionController>();
-      bool hasSpun = subController.spinInfo.value?.alreadySpun ?? false;
 
-      if (hasSpun) {
-        showPremiumOfferSheet6(Get.context!);
-      } else {
+      if (Platform.isIOS) {
         showPremiumOfferSheet4(Get.context!);
+      } else {
+        bool hasSpun = subController.spinInfo.value?.alreadySpun ?? false;
+        if (hasSpun) {
+          showPremiumOfferSheet6(Get.context!);
+        } else {
+          showPremiumOfferSheet4(Get.context!);
+        }
       }
 
-      // Argument clear karein taaki loop na bane
       Get.arguments['show_paywall'] = false;
     });
   }
@@ -732,15 +736,19 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
+
+    if (Platform.isIOS) {
+      showPremiumOfferSheet4(context);
+      return;
+    }
+
     final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
     premiumClickCount.value++;
 
-    // Future<dynamic> store karein taaki hum .then() use kar sakein
     Future<dynamic>? sheetFuture;
 
     if (hasAlreadySpun) {
-      // 4 Sheets Rotation (1, 2, 3, 6)
       if (premiumClickCount.value == 1) sheetFuture = showPremiumOfferSheet(context);
       else if (premiumClickCount.value == 2) sheetFuture = showPremiumOfferSheet2(context);
       else if (premiumClickCount.value == 3) sheetFuture = showPremiumOfferSheet3(context);
@@ -749,7 +757,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         premiumClickCount.value = 0;
       }
     } else {
-      // 3 Sheets Rotation (1, 2, 3)
       if (premiumClickCount.value == 1) sheetFuture = showPremiumOfferSheet(context);
       else if (premiumClickCount.value == 2) sheetFuture = showPremiumOfferSheet2(context);
       else {

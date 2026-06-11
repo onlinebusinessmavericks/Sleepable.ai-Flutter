@@ -857,6 +857,7 @@ abstract class BaseLanguage {
 
   /// premium
   String get luckySpinOffer;
+  String get limitedPeriodOffer;
   String get specialDiscountApplied;
   String get seizeNow;
   String get cancelAnytime;

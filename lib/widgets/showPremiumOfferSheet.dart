@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'dart:math' as math;
 
@@ -21,6 +22,7 @@ import '../localization/lang_extension.dart';
 import 'SubscriptionController.dart';
 
 showPremiumOfferSheet(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen());
 }
 
@@ -259,6 +261,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
 }
 
 showPremiumOfferSheet2(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen2());
 }
 
@@ -520,6 +523,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet3(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen3());
 }
 
@@ -907,7 +911,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
     return Obx(() {
 
       final spinData = subController.spinInfo.value;
-      bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      bool showOffer = subController.shouldShowDiscountOnPaywall();
 
       // 1. Identify Package
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
@@ -925,7 +929,9 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       double storePrice = package.storeProduct.price;
 
       // 3. Yearly Price Logic (Safe Dynamic Fallback)
-      String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+      String yearlyPrice = showOffer
+          ? (spinData?.discountedPrice ?? spinPackage?.storeProduct.priceString ?? package.storeProduct.priceString)
+          : package.storeProduct.priceString;
 
       // 🔥 THE ABSOLUTE TESTFLIGHT BYPASS OVERRIDE LOCK:
       // TestFlight par agar 'USD' bhi aa raha ho, lekin backend price me '₹' maujood hai,
@@ -961,17 +967,14 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       final currentTextIndex = _currentPage % buttonTexts.length;
       String currentButtonText = buttonTexts[currentTextIndex];
       return PopScope(
-        canPop: false, // 👈 Physical back button ko block karein
+        canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
 
-          // ✅ STEP 1: Check karein user kahan se aaya hai
           if (Get.currentRoute == Routes.login) {
-            // Agar login se aaya hai, toh dashboard bhej do
             Get.back(result: true);
             Get.offAllNamed(Routes.dashboard);
           } else {
-            // Agar kisi aur screen (Recorder/Sounds) se aaya hai, toh sirf sheet band karo
             Get.back(result: false);
           }
         },
@@ -1010,10 +1013,33 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
 
                   slideFade(
                     fadeTitle,
-                    Text(
-                      "${context.lang.trySleepableFree}\n${context.lang.trySleepableFree1}", //"We want you to\ntry Sleepable for free.",
-                      textAlign: TextAlign.center,
-                      style: textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
+                    Column(
+                      children: [
+                        if (showOffer)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            margin: EdgeInsets.only(bottom: sh(10)),
+                            decoration: BoxDecoration(
+                              color: AppColors.starFillColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              Platform.isIOS
+                                  ? lang.limitedPeriodOffer.replaceAll('{discount}', '${subController.paywallDiscountPercent}')
+                                  : lang.luckySpinOffer,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10 * SizeConfigs.textScale,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          "${context.lang.trySleepableFree}\n${context.lang.trySleepableFree1}",
+                          textAlign: TextAlign.center,
+                          style: textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -1051,14 +1077,32 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                     fadePricing,
                     Padding(
                       padding: EdgeInsets.only(bottom: sh(16)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.white, size: 22),
-                          SizedBox(width: sw(8)),
-                          Text(
-                            context.lang.noPaymentDue, // "No Payment Due Now",
-                            style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
+                          if (showOffer && Platform.isIOS && standardPackage != null)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: sh(8)),
+                              child: Text(
+                                standardPackage.storeProduct.priceString,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white54,
+                                  fontSize: 14 * SizeConfigs.textScale,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.white, size: 22),
+                              SizedBox(width: sw(8)),
+                              Text(
+                                showOffer
+                                    ? "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})"
+                                    : context.lang.noPaymentDue,
+                                style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -1079,11 +1123,13 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                               foregroundColor: Colors.black,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            onPressed: () {
-                              // Pehle Sheet 4 ko close karein
+                            onPressed: () async {
+                              if (Platform.isIOS) {
+                                await subController.buyProduct(package);
+                                return;
+                              }
                               Get.back();
-                              // Fir delay ke baad agli sheet kholiye taaki UI glitch na kare
-                              Future.delayed(Duration(milliseconds: 100), () {
+                              Future.delayed(const Duration(milliseconds: 100), () {
                                 showPremiumOfferSheet7(context);
                               });
                             },
@@ -1114,6 +1160,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet5(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const LuckySpinScreen());
 }
 
@@ -1269,6 +1316,7 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 }
 
 showPremiumOfferSheet6(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const OneTimeOfferSheet());
 }
 
@@ -1630,6 +1678,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 }
 
 showPremiumOfferSheet7(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const FreeTrialReminderScreen());
 }
 
@@ -1814,6 +1863,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
 }
 
 showPremiumOfferSheet8(BuildContext context) {
+  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const UnifiedPremiumSheet());
 }
 

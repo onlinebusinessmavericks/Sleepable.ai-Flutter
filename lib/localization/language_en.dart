@@ -2142,6 +2142,9 @@ class LanguageEn extends BaseLanguage {
   String get luckySpinOffer => 'LUCKY SPIN OFFER APPLIED';
 
   @override
+  String get limitedPeriodOffer => 'LIMITED PERIOD OFFER — {discount}% OFF';
+
+  @override
   String get specialDiscountApplied => 'SPECIAL DISCOUNT APPLIED';
 
   @override

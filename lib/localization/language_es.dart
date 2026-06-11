@@ -1495,6 +1495,8 @@ class LanguageEs extends BaseLanguage {
   @override 
   String get luckySpinOffer => 'OFERTA DE GIRO DE LA SUERTE APLICADA';
   @override 
+  String get limitedPeriodOffer => 'OFERTA POR TIEMPO LIMITADO — {discount}% DE DESCUENTO';
+  @override 
   String get specialDiscountApplied => 'DESCUENTO ESPECIAL APLICADO';
   @override 
   String get seizeNow => 'Aprovecha ahora';

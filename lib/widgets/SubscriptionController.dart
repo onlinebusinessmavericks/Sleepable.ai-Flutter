@@ -86,6 +86,17 @@ class SubscriptionController extends GetxController {
   }
   bool get hasSpecialOffer => spinInfo.value != null && (spinInfo.value!.discountPct ?? 0) > 0;
 
+  /// iOS: show discount upfront on the primary paywall (no spin required).
+  bool shouldShowDiscountOnPaywall() {
+    if (Platform.isIOS) {
+      return spinYearlyPackage.value != null || (spinInfo.value?.discountPct ?? 0) > 0;
+    }
+    final spinData = spinInfo.value;
+    return spinData != null &&
+        (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+  }
+
+  int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
@@ -310,7 +321,7 @@ class SubscriptionController extends GetxController {
       }
   }
   void checkAndShowPremiumSheet(BuildContext context) {
-    if (isPremium.value) return;
+    if (isPremium.value || Platform.isIOS) return;
 
     final spinData = spinInfo.value;
     if (spinData != null && spinData.alreadySpun) {
@@ -341,6 +352,8 @@ class SubscriptionController extends GetxController {
   }
 
   void checkAndShowRatingAfterPostDelay() {
+    if (Platform.isIOS) return;
+
     bool hasRated = getBoolAsync("user_has_rated", defaultValue: false);
     if (hasRated) return;
 
