@@ -1098,7 +1098,14 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                               SizedBox(width: sw(8)),
                               Text(
                                 showOffer
-                                    ? "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})"
+                                    ? (Platform.isIOS
+                                        ? subController.formatIosYearlyPriceLine(
+                                            prefix: context.lang.just,
+                                            yearlyPrice: yearlyPrice,
+                                            currencySymbol: currencySymbol,
+                                            weeklyAvg: weeklyAvg,
+                                          )
+                                        : "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})")
                                     : context.lang.noPaymentDue,
                                 style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
                               ),
@@ -1125,7 +1132,10 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                             ),
                             onPressed: () async {
                               if (Platform.isIOS) {
-                                await subController.buyProduct(package);
+                                Get.back();
+                                Future.delayed(const Duration(milliseconds: 100), () {
+                                  showPremiumOfferSheet8(context);
+                                });
                                 return;
                               }
                               Get.back();
@@ -1141,8 +1151,14 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                         ),
                         SizedBox(height: sh(12)),
                         Text(
-                          //"Just $yearlyPrice per year (₹$weeklyAvg/week)",
-                          "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
+                          Platform.isIOS
+                              ? subController.formatIosYearlyPriceLine(
+                                  prefix: context.lang.just,
+                                  yearlyPrice: yearlyPrice,
+                                  currencySymbol: currencySymbol,
+                                  weeklyAvg: weeklyAvg,
+                                )
+                              : "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
                           style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
                         ),
                       ],
@@ -1863,7 +1879,6 @@ class FreeTrialReminderScreen extends StatelessWidget {
 }
 
 showPremiumOfferSheet8(BuildContext context) {
-  if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const UnifiedPremiumSheet());
 }
 
@@ -1885,8 +1900,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
     return Obx(() {
       final spinData = subController.spinInfo.value;
-      // Ensure this condition is same in all sheets:
-      bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      bool showOffer = Platform.isIOS
+          ? subController.shouldShowDiscountOnPaywall()
+          : spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
 
       final standardAnnual = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -1901,7 +1917,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
 
       // 3. Pricing Logic (100% Dynamic)
-      String yearlyPriceText = showOffer ? (spinData?.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
+      String yearlyPriceText = showOffer
+          ? (spinData?.discountedPrice ?? spinPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString)
+          : yearlyPackage.storeProduct.priceString;
 
       if (yearlyPackage.storeProduct.currencyCode == "INR" || yearlyPriceText.contains("₹")) {
         currencySymbol = "₹";
@@ -1911,14 +1929,22 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
       // Weekly card price (Fallback to Store's weekly price string)
       String weeklyPriceText = weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString;
+      String? weeklyOriginalPrice;
+      String? yearlyOriginalPrice;
+      if (showOffer && Platform.isIOS) {
+        if (standardAnnual != null) {
+          yearlyOriginalPrice = standardAnnual.storeProduct.priceString;
+        }
+        if (weeklyPackage != null) {
+          weeklyOriginalPrice = weeklyPackage.storeProduct.priceString;
+        }
+      }
 
       // 4. 🎯 FOOLPROOF MATH EXTRACTION
       double rawYearlyMath = storeYearlyPrice;
       if (showOffer) {
         if (spinData?.discountedPrice != null) {
-          // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
           String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
           rawYearlyMath = double.tryParse(cleanPrice) ?? storeYearlyPrice;
         } else if (spinPackage != null) {
           rawYearlyMath = spinPackage.storeProduct.price;
@@ -1927,28 +1953,29 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
       String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
 
-      // final bool isYearly = selectedPlanIndex == 1;
-      // final bool isYearly = showOffer ? true : (selectedPlanIndex == 1);
       final bool isYearly = (selectedPlanIndex == 1);
-      // Dynamic UI Strings
       final lang = context.lang;
 
       final String mainTitle = isYearly ? lang.startTrialToContinue : lang.unlockSleepableTitle;
       final String buttonText = isYearly ? lang.startFreeTrial : lang.startJourney;
 
-      // 🔥 Final sub-text calculation (Using dynamic hard-locked currencySymbol)
-      final String bottomSubText = isYearly ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly${lang.perWeek})" : "${lang.just} $weeklyPriceText ${lang.perWeek}";
+      final String bottomSubText = isYearly
+          ? (Platform.isIOS
+              ? subController.formatIosTrialSubtext(
+                  yearlyPrice: yearlyPriceText,
+                  currencySymbol: currencySymbol,
+                  weeklyAvg: weeklyAvgFromYearly,
+                )
+              : "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly${lang.perWeek})")
+          : "${lang.just} $weeklyPriceText ${lang.perWeek}";
       return PopScope(
-        canPop: false, // 👈 Physical back button ko block karein
+        canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
 
-          // ✅ STEP 1: Check karein user kahan se aaya hai
           if (Get.currentRoute == Routes.login) {
-            // Agar login se aaya hai, toh dashboard bhej do
             Get.offAllNamed(Routes.dashboard);
           } else {
-            // Agar kisi aur screen (Recorder/Sounds) se aaya hai, toh sirf sheet band karo
             Get.back();
           }
         },
@@ -1973,6 +2000,20 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     ),
                   ),
 
+                  if (showOffer && Platform.isIOS)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      margin: EdgeInsets.only(bottom: sh(8)),
+                      decoration: BoxDecoration(
+                        color: AppColors.starFillColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        lang.limitedPeriodOffer.replaceAll('{discount}', '${subController.paywallDiscountPercent}'),
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10),
+                      ),
+                    ),
+
                   const Spacer(flex: 1),
 
                   Text(
@@ -1992,11 +2033,24 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildPlanCard(index: 0, title: context.lang.weekly, price: weeklyPriceText, textTheme: textTheme),
+                        child: _buildPlanCard(
+                          index: 0,
+                          title: context.lang.weekly,
+                          price: weeklyPriceText,
+                          originalPrice: weeklyOriginalPrice,
+                          textTheme: textTheme,
+                        ),
                       ),
                       SizedBox(width: sw(12)),
                       Expanded(
-                        child: _buildPlanCard(index: 1, title: context.lang.yearly, price: yearlyPriceText, badge: context.lang.threeDaysFreeBadge, textTheme: textTheme),
+                        child: _buildPlanCard(
+                          index: 1,
+                          title: context.lang.yearly,
+                          price: yearlyPriceText,
+                          originalPrice: yearlyOriginalPrice,
+                          badge: context.lang.threeDaysFreeBadge,
+                          textTheme: textTheme,
+                        ),
                       ),
                     ],
                   ),
@@ -2164,8 +2218,16 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
     child: Icon(icon, color: Colors.white, size: 20),
   );
 
-  Widget _buildPlanCard({required int index, required String title, required String price, String? badge, required TextTheme textTheme}) {
+  Widget _buildPlanCard({
+    required int index,
+    required String title,
+    required String price,
+    String? originalPrice,
+    String? badge,
+    required TextTheme textTheme,
+  }) {
     bool isSelected = selectedPlanIndex == index;
+    final showStrike = Platform.isIOS && originalPrice != null && originalPrice != price;
     return GestureDetector(
       onTap: () => setState(() => selectedPlanIndex = index),
       child: Stack(
@@ -2189,6 +2251,15 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                       title,
                       style: textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500),
                     ),
+                    if (showStrike)
+                      Text(
+                        originalPrice,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          decoration: TextDecoration.lineThrough,
+                          fontSize: 12 * SizeConfigs.textScale,
+                        ),
+                      ),
                     Text(
                       price,
                       style: textTheme.titleSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w900),

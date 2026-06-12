@@ -98,6 +98,25 @@ class SubscriptionController extends GetxController {
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
 
+  /// iOS paywall price line: "Just {price} /year ({symbol}{weekly} / WEEK)"
+  String formatIosYearlyPriceLine({
+    required String prefix,
+    required String yearlyPrice,
+    required String currencySymbol,
+    required String weeklyAvg,
+  }) {
+    return '$prefix $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
+  }
+
+  /// iOS trial footer: "3 days free, then {price} /year ({symbol}{weekly} / WEEK)"
+  String formatIosTrialSubtext({
+    required String yearlyPrice,
+    required String currencySymbol,
+    required String weeklyAvg,
+  }) {
+    return '3 days free, then $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
+  }
+
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
 
