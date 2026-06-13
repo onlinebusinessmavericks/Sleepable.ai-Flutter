@@ -11,6 +11,7 @@ echo "    Project: $ROOT"
 
 # shellcheck source=ios_codesign_env.sh
 . "$ROOT/scripts/ios_codesign_env.sh"
+ios_codesign_prepare_build
 
 echo "==> Done."
 echo "    build/ -> ~/Library/Caches/SleepableFlutter/build"

@@ -3,7 +3,7 @@
 # - Strips com.apple.provenance from native-asset packages in pub-cache
 # - Redirects Flutter build/ output to ~/Library/Caches (outside Desktop)
 #
-# Runs automatically from: Xcode build phases, pod install, fix_ios_codesign.sh
+# Used automatically from: Xcode build phases, pod install, fix_ios_codesign.sh
 
 set -uo pipefail
 
@@ -33,45 +33,56 @@ log() {
   fi
 }
 
-log "iOS build env: ${ROOT}"
+# Symlink build/ to cache. Safe to call on every Xcode phase.
+ios_codesign_setup() {
+  log "iOS build env: ${ROOT}"
 
-for pkg in objective_c rive_common; do
-  for dir in "${PUB_CACHE}/${pkg}"-*; do
-    if [ -d "$dir" ]; then
-      strip_if_exists "$dir"
-    fi
+  for pkg in objective_c rive_common; do
+    for dir in "${PUB_CACHE}/${pkg}"-*; do
+      if [ -d "$dir" ]; then
+        strip_if_exists "$dir"
+      fi
+    done
   done
-done
 
-strip_if_exists "${ROOT}/.dart_tool"
+  strip_if_exists "${ROOT}/.dart_tool"
 
-mkdir -p "${CACHE_BUILD_DIR}"
-strip_if_exists "${CACHE_BUILD_DIR}"
+  mkdir -p "${CACHE_BUILD_DIR}"
+  strip_if_exists "${CACHE_BUILD_DIR}"
 
-if [ -L "${ROOT}/build" ]; then
-  log "build/ already symlinked to cache"
-elif [ -d "${ROOT}/build" ]; then
-  log "Moving build/ off Desktop -> ${CACHE_BUILD_DIR}"
-  if [ "$(ls -A "${ROOT}/build" 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
-    /bin/cp -R "${ROOT}/build/." "${CACHE_BUILD_DIR}/" 2>/dev/null || true
-    strip_if_exists "${CACHE_BUILD_DIR}"
+  if [ -L "${ROOT}/build" ]; then
+    log "build/ already symlinked to cache"
+  elif [ -d "${ROOT}/build" ]; then
+    log "Moving build/ off Desktop -> ${CACHE_BUILD_DIR}"
+    if [ "$(ls -A "${ROOT}/build" 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
+      /bin/cp -R "${ROOT}/build/." "${CACHE_BUILD_DIR}/" 2>/dev/null || true
+      strip_if_exists "${CACHE_BUILD_DIR}"
+    fi
+    rm -rf "${ROOT}/build"
+    ln -s "${CACHE_BUILD_DIR}" "${ROOT}/build"
+  elif [ ! -e "${ROOT}/build" ]; then
+    log "Linking build/ -> ${CACHE_BUILD_DIR}"
+    ln -s "${CACHE_BUILD_DIR}" "${ROOT}/build"
   fi
-  rm -rf "${ROOT}/build"
-  ln -s "${CACHE_BUILD_DIR}" "${ROOT}/build"
-elif [ ! -e "${ROOT}/build" ]; then
-  log "Linking build/ -> ${CACHE_BUILD_DIR}"
-  ln -s "${CACHE_BUILD_DIR}" "${ROOT}/build"
-fi
+}
 
-# Remove stale native_assets that may carry com.apple.provenance from Desktop builds.
-NATIVE_ASSETS_IOS="${CACHE_BUILD_DIR}/native_assets/ios"
-if [ -d "${NATIVE_ASSETS_IOS}" ]; then
+# Only run BEFORE flutter build (not before embed_and_thin).
+ios_codesign_prepare_build() {
+  ios_codesign_setup
+
+  NATIVE_ASSETS_IOS="${CACHE_BUILD_DIR}/native_assets/ios"
+  if [ ! -d "${NATIVE_ASSETS_IOS}" ]; then
+    return 0
+  fi
+
+  strip_if_exists "${NATIVE_ASSETS_IOS}"
+
+  # If Desktop-era provenance survives stripping, force a clean native-asset rebuild.
   if /usr/bin/xattr -lr "${NATIVE_ASSETS_IOS}" 2>/dev/null | grep -q "com.apple.provenance"; then
     log "Removing stale native_assets/ios (had com.apple.provenance)"
     rm -rf "${NATIVE_ASSETS_IOS}"
-  else
-    strip_if_exists "${NATIVE_ASSETS_IOS}"
   fi
-fi
+}
 
-strip_if_exists "${ROOT}/build/native_assets"
+# Default: setup only (never delete native_assets — embed phase needs them).
+ios_codesign_setup
