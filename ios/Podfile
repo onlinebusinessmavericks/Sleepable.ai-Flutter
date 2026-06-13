@@ -37,6 +37,13 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  # Keep Flutter build/ off Desktop so native asset code signing works (com.apple.provenance).
+  codesign_env = File.expand_path(File.join('..', 'scripts', 'ios_codesign_env.sh'), __dir__)
+  if File.exist?(codesign_env)
+    puts 'Running iOS codesign environment setup...'
+    system('bash', codesign_env)
+  end
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 

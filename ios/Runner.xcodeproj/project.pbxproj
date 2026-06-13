@@ -306,7 +306,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -d \"${SRCROOT}/../build/native_assets\" ]; then\n  /usr/bin/xattr -cr \"${SRCROOT}/../build/native_assets\" 2>/dev/null || true\nfi\nfor pkg in objective_c rive_common; do\n  for dir in \"${HOME}/.pub-cache/hosted/pub.dev/${pkg}\"-*; do\n    [ -d \"${dir}\" ] && /usr/bin/xattr -cr \"${dir}\" 2>/dev/null || true\n  done\ndone\n";
+			shellScript = "/bin/sh \"${SRCROOT}/../scripts/ios_codesign_env.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
@@ -323,7 +323,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "/bin/sh \"${SRCROOT}/../scripts/xcode_ios_build.sh\" embed_and_thin";
 		};
 		4C830291E7A0B9EEBD067924 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -377,7 +377,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+			shellScript = "/bin/sh \"${SRCROOT}/../scripts/xcode_ios_build.sh\" build\n";
 		};
 		EC7AC7B79C895E2F1FFA9263 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
