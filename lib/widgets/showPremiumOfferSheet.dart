@@ -925,35 +925,24 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       }
 
       // 2. Real-time Store Data & Currency Fetch
-      String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-      double storePrice = package.storeProduct.price;
+      String yearlyPrice = subController.getDisplayYearlyPrice(
+        spinData: spinData,
+        discountPackage: spinPackage,
+        standardPackage: standardPackage,
+        showOffer: showOffer,
+      );
+      String currencySymbol = subController.resolvePaywallCurrencySymbol(
+        package: package,
+        displayPrice: yearlyPrice,
+      );
+      double rawPrice = subController.getDisplayYearlyRawPrice(
+        spinData: spinData,
+        discountPackage: spinPackage,
+        standardPackage: standardPackage,
+        showOffer: showOffer,
+      );
 
-      // 3. Yearly Price Logic (Safe Dynamic Fallback)
-      String yearlyPrice = showOffer
-          ? (spinData?.discountedPrice ?? spinPackage?.storeProduct.priceString ?? package.storeProduct.priceString)
-          : package.storeProduct.priceString;
-
-      // 🔥 THE ABSOLUTE TESTFLIGHT BYPASS OVERRIDE LOCK:
-      // TestFlight par agar 'USD' bhi aa raha ho, lekin backend price me '₹' maujood hai,
-      // toh currencySymbol ko forcefully strictly '₹' par hard-lock kar do!
-      if (package.storeProduct.currencyCode == "INR" || yearlyPrice.contains("₹")) {
-        currencySymbol = "₹";
-      }
-
-      // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner aur symbol filter ke sath)
-      double rawPrice = storePrice;
-      if (showOffer) {
-        if (spinData?.discountedPrice != null) {
-          // 🔥 CRITICAL FIX: "2,800" me se comma hatakar pure formatting generate karega parsing ke liye
-          String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
-          rawPrice = double.tryParse(cleanPrice) ?? storePrice;
-        } else if (spinPackage != null) {
-          rawPrice = spinPackage.storeProduct.price;
-        }
-      }
-
-      // 5. Button Texts Configurations (Using hard-locked currencySymbol)
+      // 5. Button Texts Configurations
       final List<String> buttonTexts = [
         lang.btnTryFree,
         lang.btnGetForZero.replaceAll('{symbol}', currencySymbol), // Dynamic symbol string replacement
@@ -1913,21 +1902,19 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
       if (yearlyPackage == null) return const Center(child: CircularProgressIndicator());
 
-      // 2. Real-time Store Data & Dynamic Symbol Fetch
-      String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // 2. Real-time Store Data & Currency Fetch
+      String yearlyPriceText = subController.getDisplayYearlyPrice(
+        spinData: spinData,
+        discountPackage: spinPackage,
+        standardPackage: standardAnnual,
+        showOffer: showOffer,
+      );
+      String currencySymbol = subController.resolvePaywallCurrencySymbol(
+        package: yearlyPackage,
+        displayPrice: yearlyPriceText,
+      );
 
-      // 3. Pricing Logic (100% Dynamic)
-      String yearlyPriceText = showOffer
-          ? (spinData?.discountedPrice ?? spinPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString)
-          : yearlyPackage.storeProduct.priceString;
-
-      if (yearlyPackage.storeProduct.currencyCode == "INR" || yearlyPriceText.contains("₹")) {
-        currencySymbol = "₹";
-      }
-
-      double storeYearlyPrice = yearlyPackage.storeProduct.price;
-
-      // Weekly card price (Fallback to Store's weekly price string)
+      // Weekly card price from App Store
       String weeklyPriceText = weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString;
       String? weeklyOriginalPrice;
       String? yearlyOriginalPrice;
@@ -1940,16 +1927,12 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
         }
       }
 
-      // 4. 🎯 FOOLPROOF MATH EXTRACTION
-      double rawYearlyMath = storeYearlyPrice;
-      if (showOffer) {
-        if (spinData?.discountedPrice != null) {
-          String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-          rawYearlyMath = double.tryParse(cleanPrice) ?? storeYearlyPrice;
-        } else if (spinPackage != null) {
-          rawYearlyMath = spinPackage.storeProduct.price;
-        }
-      }
+      double rawYearlyMath = subController.getDisplayYearlyRawPrice(
+        spinData: spinData,
+        discountPackage: spinPackage,
+        standardPackage: standardAnnual,
+        showOffer: showOffer,
+      );
 
       String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
 
