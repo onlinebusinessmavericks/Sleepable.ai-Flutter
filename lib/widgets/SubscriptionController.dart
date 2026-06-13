@@ -117,6 +117,63 @@ class SubscriptionController extends GetxController {
     return '3 days free, then $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
   }
 
+  /// iOS: App Store prices only. Android: backend discounted_price first.
+  String getDisplayYearlyPrice({
+    required SpinData? spinData,
+    required Package? discountPackage,
+    required Package? standardPackage,
+    required bool showOffer,
+  }) {
+    if (!showOffer) {
+      return standardPackage?.storeProduct.priceString ?? '';
+    }
+    final storePrice = discountPackage?.storeProduct.priceString
+        ?? standardPackage?.storeProduct.priceString
+        ?? '';
+    if (Platform.isIOS) return storePrice;
+    return spinData?.discountedPrice ?? storePrice;
+  }
+
+  double getDisplayYearlyRawPrice({
+    required SpinData? spinData,
+    required Package? discountPackage,
+    required Package? standardPackage,
+    required bool showOffer,
+  }) {
+    if (!showOffer) {
+      return standardPackage?.storeProduct.price ?? 0;
+    }
+    if (Platform.isIOS) {
+      return discountPackage?.storeProduct.price
+          ?? standardPackage?.storeProduct.price
+          ?? 0;
+    }
+    if (spinData?.discountedPrice != null) {
+      final cleanPrice = spinData!.discountedPrice!
+          .replaceAll(',', '')
+          .replaceAll(RegExp(r'[^0-9.]'), '');
+      final parsed = double.tryParse(cleanPrice);
+      if (parsed != null) return parsed;
+    }
+    return discountPackage?.storeProduct.price
+        ?? standardPackage?.storeProduct.price
+        ?? 0;
+  }
+
+  String resolvePaywallCurrencySymbol({
+    required Package package,
+    required String displayPrice,
+  }) {
+    if (Platform.isIOS) {
+      return getCurrencySymbol(package.storeProduct.currencyCode);
+    }
+    String symbol = getCurrencySymbol(package.storeProduct.currencyCode);
+    if (package.storeProduct.currencyCode == "INR" || displayPrice.contains("₹")) {
+      symbol = "₹";
+    }
+    return symbol;
+  }
+
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
 
