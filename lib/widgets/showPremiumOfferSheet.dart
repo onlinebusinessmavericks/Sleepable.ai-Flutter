@@ -19,7 +19,47 @@ import 'package:spinning_wheel/spinner_wheel.dart';
 
 import '../data/services/api_sevices.dart';
 import '../localization/lang_extension.dart';
+import '../modules/settings/widget/webview.dart';
 import 'SubscriptionController.dart';
+
+const String _kPrivacyPolicyUrl = 'https://sleepable.ai/privacy.html';
+const String _kTermsOfUseUrl = 'https://sleepable.ai/terms.html';
+
+void _openPaywallLegalLink(BuildContext context, {required String title, required String url}) {
+  Get.to(() => WebViewScreen(title: title, url: url));
+}
+
+Widget buildIosSubscriptionLegalLinks(BuildContext context, {double fontSize = 11}) {
+  if (!Platform.isIOS) return const SizedBox.shrink();
+
+  final lang = context.lang;
+  final linkStyle = TextStyle(
+    color: Colors.white70,
+    fontSize: fontSize * SizeConfigs.textScale,
+    decoration: TextDecoration.underline,
+    decorationColor: Colors.white54,
+    height: 1.4,
+  );
+
+  return Padding(
+    padding: EdgeInsets.only(top: sh(8)),
+    child: Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () => _openPaywallLegalLink(context, title: lang.termsOfService, url: _kTermsOfUseUrl),
+          child: Text(lang.termsOfService, style: linkStyle),
+        ),
+        Text('  •  ', style: linkStyle.copyWith(decoration: TextDecoration.none)),
+        GestureDetector(
+          onTap: () => _openPaywallLegalLink(context, title: lang.privacyPolicy, url: _kPrivacyPolicyUrl),
+          child: Text(lang.privacyPolicy, style: linkStyle),
+        ),
+      ],
+    ),
+  );
+}
 
 showPremiumOfferSheet(BuildContext context) {
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
@@ -1150,6 +1190,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                               : "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
                           style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
                         ),
+                        buildIosSubscriptionLegalLinks(context),
                       ],
                     ),
                   ),
@@ -2093,6 +2134,8 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale),
                   ),
+
+                  buildIosSubscriptionLegalLinks(context, fontSize: 12),
 
                   SizedBox(height: sh(24)),
                 ],
