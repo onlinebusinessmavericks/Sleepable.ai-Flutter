@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'languages.dart';
 
 class LanguageDe extends BaseLanguage {
@@ -224,7 +226,9 @@ class LanguageDe extends BaseLanguage {
   @override
   String get noPaymentNow => 'Keine Zahlung jetzt!';
   @override
-  String get termsServicePrivacyPolicy => 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 7-tägigen kostenlosen Testphase wird Ihre Google-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die Google Play-Hilfe.';
+  String get termsServicePrivacyPolicy => Platform.isIOS
+      ? 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 7-tägigen kostenlosen Testphase wird Ihre Apple-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die App Store-Hilfe.'
+      : 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 7-tägigen kostenlosen Testphase wird Ihre Google-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die Google Play-Hilfe.';
 
 /// HOME
   @override
@@ -1545,9 +1549,9 @@ class LanguageDe extends BaseLanguage {
   @override
   String get termsApply => 'Es gelten die Nutzungsbedingungen.';
   @override
-  String get googleIdCharge => 'Ihre Google-ID wird belastet.';
+  String get googleIdCharge => Platform.isIOS ? 'Ihre Apple-ID wird belastet.' : 'Ihre Google-ID wird belastet.';
   @override
-  String get cancelStore => 'Jederzeit über den Play Store kündbar.';
+  String get cancelStore => Platform.isIOS ? 'Jederzeit über den App Store kündbar.' : 'Jederzeit über den Play Store kündbar.';
   @override
   String get btnTryFree => 'Kostenlos testen';
   @override

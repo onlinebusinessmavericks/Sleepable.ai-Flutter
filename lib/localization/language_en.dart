@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'languages.dart';
 
 class LanguageEn extends BaseLanguage {
@@ -245,8 +247,9 @@ class LanguageEn extends BaseLanguage {
   String get noPaymentNow => 'No Payment Now!';
 
   @override
-  String get termsServicePrivacyPolicy =>
-      "Terms of service & Privacy policy. Please NOTE: After your 7-day free trial, your Google ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or Google Play's";
+  String get termsServicePrivacyPolicy => Platform.isIOS
+      ? "Terms of service & Privacy policy. Please NOTE: After your 7-day free trial, your Apple ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or the App Store's"
+      : "Terms of service & Privacy policy. Please NOTE: After your 7-day free trial, your Google ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or Google Play's";
 
   /// HOME
   @override
@@ -2217,10 +2220,10 @@ class LanguageEn extends BaseLanguage {
   String get termsApply => 'Terms of service apply.';
 
   @override
-  String get googleIdCharge => 'Your Google ID will be charged';
+  String get googleIdCharge => Platform.isIOS ? 'Your Apple ID will be charged' : 'Your Google ID will be charged';
 
   @override
-  String get cancelStore => 'Cancel anytime via Play Store.';
+  String get cancelStore => Platform.isIOS ? 'Cancel anytime via the App Store.' : 'Cancel anytime via Play Store.';
 
   @override
   String get btnTryFree => 'Try for Free';

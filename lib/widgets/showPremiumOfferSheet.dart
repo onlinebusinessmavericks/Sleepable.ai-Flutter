@@ -543,7 +543,9 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                       slideFade(
                         fadeTitle,
                         Text(
-                          "Terms of service & Privacy policy. Please NOTE: Your Google ID payment method will be automatically charged $yearlyPrice per a year. Cancel the subscription at least 24 hours before the current subscription period to avoid being charged.",
+                          GetPlatform.isIOS
+                              ? "Terms of service & Privacy policy. Please NOTE: Your Apple ID payment method will be automatically charged $yearlyPrice per a year. Cancel the subscription at least 24 hours before the current subscription period to avoid being charged."
+                              : "Terms of service & Privacy policy. Please NOTE: Your Google ID payment method will be automatically charged $yearlyPrice per a year. Cancel the subscription at least 24 hours before the current subscription period to avoid being charged.",
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white70, fontSize: sp(10), height: 1.4),
                         ),

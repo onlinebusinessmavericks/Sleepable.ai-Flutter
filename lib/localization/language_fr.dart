@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'languages.dart';
 
 class LanguageFr extends BaseLanguage {
@@ -226,7 +228,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get noPaymentNow => 'Aucun paiement maintenant !';
   @override
-  String get termsServicePrivacyPolicy => "Conditions d'utilisation et politique de confidentialité. Veuillez noter : après votre essai gratuit de 7 jours, votre compte Google sera automatiquement débité pour un an. Vous pouvez annuler votre abonnement avant la fin de la période d'essai pour éviter d'être facturé. Si vous ne savez pas comment annuler ou gérer votre abonnement, veuillez consulter notre centre d'aide ou la page d'aide de Google Play.";
+  String get termsServicePrivacyPolicy => "Conditions d'utilisation et politique de confidentialité. Veuillez noter : après votre essai gratuit de 7 jours, votre identifiant Apple sera automatiquement débité pour un an. Vous pouvez annuler votre abonnement avant la fin de la période d'essai pour éviter d'être facturé. Si vous ne savez pas comment annuler ou gérer votre abonnement, veuillez consulter notre centre d'aide ou la page d'aide de l'App Store.";
 
 /// HOME
 
@@ -1583,9 +1585,9 @@ class LanguageFr extends BaseLanguage {
   @override
   String get termsApply => "'Des conditions d'utilisation s'appliquent.'";
   @override
-  String get googleIdCharge => 'Votre compte Google sera débité.';
+  String get googleIdCharge => Platform.isIOS ? 'Votre identifiant Apple sera débité.' : 'Votre compte Google sera débité.';
   @override
-  String get cancelStore => 'Annulation possible à tout moment via le Play Store.';
+  String get cancelStore => Platform.isIOS ? 'Annulation possible à tout moment via l\'App Store.' : 'Annulation possible à tout moment via le Play Store.';
   @override
   String get btnTryFree => 'Essai gratuit';
   @override

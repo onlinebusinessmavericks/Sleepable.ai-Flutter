@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'languages.dart';
 
 class LanguagePt extends BaseLanguage {
@@ -223,7 +225,9 @@ class LanguagePt extends BaseLanguage {
   @override
   String get noPaymentNow => 'Sem pagamento agora!';
   @override
-  String get termsServicePrivacyPolicy => 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 7 dias, sua forma de pagamento do Google será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a página do Google Play.';
+  String get termsServicePrivacyPolicy => Platform.isIOS
+      ? 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 7 dias, sua forma de pagamento da Apple será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a App Store.'
+      : 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 7 dias, sua forma de pagamento do Google será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a página do Google Play.';
 
 /// HOME
   @override
@@ -1546,9 +1550,9 @@ class LanguagePt extends BaseLanguage {
   @override
   String get termsApply => 'Aplicam-se os termos de serviço.';
   @override
-  String get googleIdCharge => 'Será feita a cobrança em sua conta do Google.';
+  String get googleIdCharge => Platform.isIOS ? 'Será feita a cobrança em sua conta da Apple.' : 'Será feita a cobrança em sua conta do Google.';
   @override
-  String get cancelStore => 'Cancele a qualquer momento pela Play Store.';
+  String get cancelStore => Platform.isIOS ? 'Cancele a qualquer momento pela App Store.' : 'Cancele a qualquer momento pela Play Store.';
   @override
   String get btnTryFree => 'Experimente grátis';
   @override

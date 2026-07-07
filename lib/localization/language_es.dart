@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'languages.dart';
 
 class LanguageEs extends BaseLanguage {
@@ -225,7 +227,9 @@ class LanguageEs extends BaseLanguage {
   @override
   String get noPaymentNow => '¡Sin pago ahora!';
   @override
-  String get termsServicePrivacyPolicy => 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 7 días, se le cobrará automáticamente un año a su método de pago de Google ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la página de Google Play.';
+  String get termsServicePrivacyPolicy => Platform.isIOS
+      ? 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 7 días, se le cobrará automáticamente un año a su método de pago de Apple ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la App Store.'
+      : 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 7 días, se le cobrará automáticamente un año a su método de pago de Google ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la página de Google Play.';
 
   /// HOME
   @override
@@ -1545,9 +1549,9 @@ class LanguageEs extends BaseLanguage {
   @override 
   String get termsApply => 'Se aplican los términos de servicio.';
   @override 
-  String get googleIdCharge => 'Se te cobrará por tu ID de Google.';
+  String get googleIdCharge => Platform.isIOS ? 'Se te cobrará por tu ID de Apple.' : 'Se te cobrará por tu ID de Google.';
   @override 
-  String get cancelStore => 'Cancela cuando quieras a través de Play Store.';
+  String get cancelStore => Platform.isIOS ? 'Cancela cuando quieras a través de la App Store.' : 'Cancela cuando quieras a través de Play Store.';
   @override 
   String get btnTryFree => 'Pruébalo gratis';
   @override 
