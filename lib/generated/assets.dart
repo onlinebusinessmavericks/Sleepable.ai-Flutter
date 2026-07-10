@@ -24,6 +24,12 @@ class Assets {
   static const String homePaywall4 = 'assets/images/home/paywall4.png';
   static const String homePaywall5 = 'assets/images/home/paywall5.png';
   static const String homePaywall6 = 'assets/images/home/paywall6.png';
+  static const String homePaywallIos1 = 'assets/images/home/1.png';
+  static const String homePaywallIos2 = 'assets/images/home/2.png';
+  static const String homePaywallIos3 = 'assets/images/home/3.png';
+  static const String homePaywallIos4 = 'assets/images/home/4.png';
+  static const String homePaywallIos5 = 'assets/images/home/5.png';
+  static const String homePaywallIos6 = 'assets/images/home/6.png';
   static const String homePaywellBackground = 'assets/images/home/paywell_background.png';
   static const String homePaywellBackground1 = 'assets/images/home/paywell_background1.png';
   static const String homeLock = 'assets/images/home/lock.png';

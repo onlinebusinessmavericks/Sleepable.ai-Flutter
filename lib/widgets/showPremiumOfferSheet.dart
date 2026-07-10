@@ -888,7 +888,10 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
   late Timer _carouselTimer;
   int _currentPage = 0;
 
-  final List<String> carouselImages = [Assets.homePaywall1, Assets.homePaywall2, Assets.homePaywall3, Assets.homePaywall4, Assets.homePaywall5, Assets.homePaywall6];
+  // iOS uses dedicated 1–6 mockups; Android keeps existing paywall1–6 assets.
+  final List<String> carouselImages = Platform.isIOS
+      ? [Assets.homePaywallIos1, Assets.homePaywallIos2, Assets.homePaywallIos3, Assets.homePaywallIos4, Assets.homePaywallIos5, Assets.homePaywallIos6]
+      : [Assets.homePaywall1, Assets.homePaywall2, Assets.homePaywall3, Assets.homePaywall4, Assets.homePaywall5, Assets.homePaywall6];
 
   final Map<int, Size> imageSizes = {5: Size(sw(850), sh(850))};
 
