@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
+import '../../../widgets/ai_consent_dialog.dart';
 import '../model/AIInsightsResponse.dart';
 import '../model/SnoringIntensityResponse.dart';
 import '../model/achievement_badges_response.dart';
@@ -296,6 +297,13 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   }
 
   Future<void> fetchAIInsights(String type, {String? date}) async {
+    // 🔒 Apple 5.1.1(i) / 5.1.2(i): sleep data is never sent to a third-party AI
+    // without user consent. Consent is granted via the DreamBot dialog or Settings.
+    if (!hasAiConsent()) {
+      aiInsightsList.clear();
+      return;
+    }
+
     try {
       isAIInsightsLoading.value = true;
 
@@ -520,6 +528,12 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   }
 
   Future<void> fetchRecommendations(String type, {String? date}) async {
+    // 🔒 Personalised recommendations are AI-generated, so consent is required.
+    if (!hasAiConsent()) {
+      recommendationList.clear();
+      return;
+    }
+
     try {
       isRecLoading.value = true;
       final response = await ProgressApis.getRecommendations(type: type, date: date);

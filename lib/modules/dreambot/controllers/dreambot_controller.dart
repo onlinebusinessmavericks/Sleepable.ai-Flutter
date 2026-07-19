@@ -7,6 +7,7 @@ import 'package:sleepable_ai/core/constants/colors.dart';
 
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
+import '../../../widgets/ai_consent_dialog.dart';
 import '../../progress/controllers/progress_controller.dart';
 import '../../progress/model/dream_list_response.dart';
 
@@ -28,6 +29,33 @@ class DreamBotController extends GetxController {
 
   int currentDreamId = 0;
   int userMessageCount = 0; // Tracks how many messages the user sent
+
+  bool _consentPromptOpen = false;
+
+  /// 🔒 Apple Guideline 5.1.1(i) / 5.1.2(i)
+  /// Explicit permission must be obtained BEFORE sending the user's personal data
+  /// (dream text, sleep stats) to a third-party AI provider.
+  /// Returns true once consent has been granted (either now or previously).
+  Future<bool> _requireAiConsent() async {
+    if (hasAiConsent()) return true;
+    if (_consentPromptOpen) return false; // a dialog is already open
+
+    _consentPromptOpen = true;
+    // Let the first frame finish; the Navigator is not ready during onInit.
+    await WidgetsBinding.instance.endOfFrame;
+
+    bool granted = false;
+    final ctx = Get.context;
+    if (ctx != null) granted = await ensureAiConsent(ctx);
+    _consentPromptOpen = false;
+
+    if (!granted) {
+      isFirstAnalyzeLoading.value = false;
+      isBotTyping.value = false;
+      welcomeMessage.value = aiConsentDeclinedMessage();
+    }
+    return granted;
+  }
 
   @override
   void onInit() {
@@ -67,6 +95,10 @@ class DreamBotController extends GetxController {
     }
   }
   void startNewDreamSession() async {
+    // 🔒 Consent is required before sending data to a third-party AI
+    // (Apple 5.1.1(i) / 5.1.2(i)).
+    if (!await _requireAiConsent()) return;
+
     try {
       // Don't clear if we already have messages (to avoid flickering)
       if (messages.isEmpty) {
@@ -132,6 +164,9 @@ class DreamBotController extends GetxController {
     String msg = userInput.value.trim();
     if (msg.isEmpty || currentDreamId == 0) return;
 
+    // 🔒 The dream text is sent to a third-party AI, so consent is required.
+    if (!await _requireAiConsent()) return;
+
     // Standard Chat UI update
     // We don't clear the list because index 0 is the Bot's welcome message
     messages.add({"isUser": true, "msg": msg});
@@ -178,6 +213,9 @@ class DreamBotController extends GetxController {
   }
 
   void runFinalAnalysis() async {
+    // 🔒 Dream analysis runs on a third-party AI, so consent is required.
+    if (!await _requireAiConsent()) return;
+
     try {
       isFirstAnalyzeLoading.value = true;
 

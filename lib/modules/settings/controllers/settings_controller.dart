@@ -10,6 +10,7 @@ import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/SubscriptionController.dart';
+import '../../../widgets/ai_consent_dialog.dart';
 import '../model/user_settings_model.dart';
 import '../widget/webview.dart';
 
@@ -61,6 +62,10 @@ class SettingsController extends GetxController {
         .join('&');
   }
   void onRestorePurchases() {}
+
+  /// 🔒 Apple 5.1.1(i) / 5.1.2(i): gives the user control to review, grant and
+  /// revoke AI data sharing.
+  void onAiDataSharing(BuildContext context) => showAiDataSettings(context);
 
 // Inside SettingsController
   void onPrivacyPolicy() {

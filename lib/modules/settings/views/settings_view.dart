@@ -1,6 +1,7 @@
 import 'package:sleepable_ai/core/utils/library.dart';
 
 import '../../../localization/lang_extension.dart';
+import '../../../widgets/ai_consent_dialog.dart';
 import '../../music/views/music_view.dart';
 import '../controllers/settings_controller.dart';
 import '../model/user_settings_model.dart';
@@ -62,6 +63,7 @@ class SettingsView extends GetView<SettingsController> {
               // _buildGroupItem(context, "Like us, Rate us", controller.onRateUs),
               _buildGroupItem(context,context.lang.emailSupport, controller.onEmailSupport),
               // _buildGroupItem(context, "Restore Purchases", controller.onRestorePurchases),
+              _buildGroupItem(context, aiDataSettingsLabel(), () => controller.onAiDataSharing(context)),
               _buildGroupItem(context, context.lang.privacyPolicy, controller.onPrivacyPolicy),
               _buildGroupItem(context, context.lang.termsOfService, controller.onTermsOfService),
               // _buildGroupItem(context, "Community Guidelines", controller.onCommunityGuidelines),
