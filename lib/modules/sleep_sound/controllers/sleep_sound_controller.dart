@@ -1506,7 +1506,7 @@ class SleepSoundController extends GetxController {
       isMixesLoading.value = true;
       final List<MixedSoundRecord> records = await SoundsApis.fetchSoundsMixedRecords();
 
-      // Store the objects directly—no manual mapping needed!
+      // Store the objects directly-no manual mapping needed!
       apiMixes.assignAll(records);
 
     } catch (e, stack) {
@@ -1605,7 +1605,7 @@ class SleepSoundController extends GetxController {
     final lang = context.lang;
     final mixName = mixNameController.text.trim();
     if (mixName.isEmpty) {
-      print("⚠️ Mix name is empty — skipping save.");
+      print("⚠️ Mix name is empty - skipping save.");
       return;
     }
 

@@ -122,8 +122,8 @@ class HeartBPMController extends GetxController {
 
     // Final Localized Message
     ageBasedMessage.value =
-    "$ageLabel $age — $rangeLabel: $min–$max $bpmUnit.\n"
-        "$yourBpmLabel: $bpm — $status";
+    "$ageLabel $age - $rangeLabel: $min–$max $bpmUnit.\n"
+        "$yourBpmLabel: $bpm - $status";
   }
 
   Future<void> initCamera() async {
@@ -248,7 +248,7 @@ class HeartBPMController extends GetxController {
     _redValues.clear();
     _timestamps.clear();
 
-    /// IMPORTANT — reset timer reference AFTER clearing progress
+    /// IMPORTANT - reset timer reference AFTER clearing progress
     _startTime = DateTime.now().millisecondsSinceEpoch;
 
     // countdown

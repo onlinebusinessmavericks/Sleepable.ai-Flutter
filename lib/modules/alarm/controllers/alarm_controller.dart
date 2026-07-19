@@ -596,13 +596,13 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   String getSelectedText(BuildContext context) {
     final lang = context.lang;
 
-    // CASE 1 — All selected
+    // CASE 1 - All selected
     if (selected.every((e) => e)) return lang.everyDay;
 
-    // CASE 2 — None selected
+    // CASE 2 - None selected
     if (selected.every((e) => !e)) return lang.noDaysSelected;
 
-    // CASE 3 — Some selected
+    // CASE 3 - Some selected
     List<String> list = [];
     final fullDays = getDaysFull(context); // Translated list yahan se milegi
 

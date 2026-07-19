@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wrapper for Flutter's xcode_backend.sh.
 # - "build": prepare env, run backend, strip xattrs on freshly built native assets
-# - "embed_and_thin": setup symlink only — do NOT delete native_assets
+# - "embed_and_thin": setup symlink only - do NOT delete native_assets
 
 set -euo pipefail
 

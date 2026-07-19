@@ -355,7 +355,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                       print("currentTab-------- ------${currentTab}");
                       print("filters-------- ------${filters}");
-                      // 👇 Add this line — after rebuild due to tab change, center the selected chip
+                      // 👇 Add this line - after rebuild due to tab change, center the selected chip
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _centerActiveChip();
                       });
@@ -1237,9 +1237,9 @@ class CustomPageScrollPhysics extends PageScrollPhysics {
 
   // 🧭 Make the swipe very sensitive
   @override
-  double get minFlingDistance => 5.0; // was 50 — much smaller
+  double get minFlingDistance => 5.0; // was 50 - much smaller
   @override
-  double get minFlingVelocity => 50.0; // was 250 — easier flick
+  double get minFlingVelocity => 50.0; // was 250 - easier flick
   @override
   double get maxFlingVelocity => 2000.0;
 

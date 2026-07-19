@@ -1500,7 +1500,7 @@ class LanguagePt extends BaseLanguage {
   @override
   String get luckySpinOffer => 'OFERTA DE GIRO DA SORTE APLICADA';
   @override
-  String get limitedPeriodOffer => 'OFERTA POR TEMPO LIMITADO — {discount}% DE DESCONTO';
+  String get limitedPeriodOffer => 'OFERTA POR TEMPO LIMITADO - {discount}% DE DESCONTO';
   @override
   String get specialDiscountApplied => 'DESCONTO ESPECIAL APLICADO';
   @override

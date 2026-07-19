@@ -1535,7 +1535,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get luckySpinOffer => 'OFFRE LUCKY SPIN APPLIQUÉE';
   @override
-  String get limitedPeriodOffer => 'OFFRE LIMITÉE — {discount}% DE RÉDUCTION';
+  String get limitedPeriodOffer => 'OFFRE LIMITÉE - {discount}% DE RÉDUCTION';
   @override
   String get specialDiscountApplied => 'REMISE SPÉCIALE APPLIQUÉE';
   @override

@@ -1499,7 +1499,7 @@ class LanguageDe extends BaseLanguage {
   @override
   String get luckySpinOffer => 'GLÜCKSRAD-ANGEBOT GELTEN';
   @override
-  String get limitedPeriodOffer => 'BEGRENZTES ANGEBOT — {discount}% RABATT';
+  String get limitedPeriodOffer => 'BEGRENZTES ANGEBOT - {discount}% RABATT';
   @override
   String get specialDiscountApplied => 'SONDERRABATT GELTEN';
   @override

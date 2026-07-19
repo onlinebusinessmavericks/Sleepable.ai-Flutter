@@ -84,5 +84,5 @@ ios_codesign_prepare_build() {
   fi
 }
 
-# Default: setup only (never delete native_assets — embed phase needs them).
+# Default: setup only (never delete native_assets - embed phase needs them).
 ios_codesign_setup
