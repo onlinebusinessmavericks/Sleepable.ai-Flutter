@@ -6,6 +6,7 @@ import 'package:http/http.dart';
 import 'package:nb_utils/nb_utils.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/shared_prefences.dart';
+import '../../widgets/ai_consent_dialog.dart';
 import 'api_end_point.dart';
 import 'api_sevices.dart';
 import 'common.dart';
@@ -219,6 +220,12 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
     try {
       // 1. Decode the actual body sent by Anshul's backend
       var body = jsonDecode(response.body);
+
+      // Apple Guideline 5.1.1(i) / 5.1.2(i): the backend refuses AI requests
+      // until the user consents. Tell the user and offer a jump to Settings.
+      if (body is Map && body['code'] == 'AI_CONSENT_REQUIRED') {
+        handleAiConsentRequired(body['message']?.toString());
+      }
 
       // 2. Throw the real message ("Free users can start 1 dream...")
       throw body['message'] ?? 'Access forbidden';

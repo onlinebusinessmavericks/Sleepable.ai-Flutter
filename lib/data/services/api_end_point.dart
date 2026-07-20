@@ -4,6 +4,8 @@ class APIEndPoints {
   static const String logOut = 'users/logout/';
   static const String deleteAccount = 'users/delete-account/';
   static const String updateFCMToken = 'users/update-fcm-token/';
+  /// AI data-sharing consent (Apple Guideline 5.1.1(i) / 5.1.2(i))
+  static const String aiConsent = 'users/ai-consent/';
   ///Home
   static const String homePage = "homepage/home-page";
 

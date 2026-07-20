@@ -467,6 +467,41 @@ class TrackerApis {
 
 /// CHAT---------------------------------------------------------------------------------------------------------------
 
+/// Server-side AI data-sharing consent (Apple Guideline 5.1.1(i) / 5.1.2(i)).
+///
+/// The backend refuses every AI request and skips all background AI processing
+/// unless this flag is true, so the app must keep it in sync with the user's
+/// choice.
+class AiConsentApis {
+  /// Returns the stored server-side flag, or null if the call failed.
+  static Future<bool?> getAiConsent() async {
+    try {
+      final res = await buildHttpResponse(endPoint: APIEndPoints.aiConsent, method: MethodType.get);
+      if (res != null && res['success'] == true && res['data'] != null) {
+        return res['data']['ai_consent'] == true;
+      }
+    } catch (e) {
+      log("AI consent fetch failed: $e");
+    }
+    return null;
+  }
+
+  /// Persists the user's choice on the server. Returns true when it succeeded.
+  static Future<bool> setAiConsent(bool value) async {
+    try {
+      final res = await buildHttpResponse(
+        endPoint: APIEndPoints.aiConsent,
+        method: MethodType.post,
+        request: {"ai_consent": value},
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      log("AI consent update failed: $e");
+      return false;
+    }
+  }
+}
+
 class ChatApis {
   static Future<ChatResponse> sendMessage({required String question, int? parentMessageId}) async {
     final payload = {"question": question, if (parentMessageId != null) "parent_message_id": parentMessageId};
