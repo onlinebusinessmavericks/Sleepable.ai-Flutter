@@ -217,22 +217,27 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
   // }
   // Inside your handleResponse function
   if (response.statusCode == 403) {
+    // Apple Guideline 5.1.1(i) / 5.1.2(i): the backend refuses AI requests until
+    // the user consents. That case must keep its own message, because callers
+    // treat a plain "Access forbidden" as the premium-limit error.
+    bool consentRequired = false;
+    String consentMessage = 'AI consent required';
     try {
-      // 1. Decode the actual body sent by Anshul's backend
       var body = jsonDecode(response.body);
-
-      // Apple Guideline 5.1.1(i) / 5.1.2(i): the backend refuses AI requests
-      // until the user consents. Tell the user and offer a jump to Settings.
       if (body is Map && body['code'] == 'AI_CONSENT_REQUIRED') {
-        handleAiConsentRequired(body['message']?.toString());
+        consentRequired = true;
+        consentMessage = body['message']?.toString() ?? consentMessage;
       }
-
-      // 2. Throw the real message ("Free users can start 1 dream...")
-      throw body['message'] ?? 'Access forbidden';
-    } catch (e) {
-      // Fallback if decoding fails
-      throw 'Access forbidden';
+    } catch (_) {
+      // Body was not JSON; fall through to the generic message below.
     }
+
+    if (consentRequired) {
+      handleAiConsentRequired(consentMessage);
+      throw consentMessage;
+    }
+
+    throw 'Access forbidden';
   }
   else if (response.statusCode == 429) {
     throw 'Too many requests';
