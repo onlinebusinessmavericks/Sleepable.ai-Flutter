@@ -67,6 +67,8 @@ ios_codesign_setup() {
 }
 
 # Only run BEFORE flutter build (not before embed_and_thin).
+# Do NOT delete native_assets/ios here — Xcode embed runs later in the same
+# archive and needs objective_c.framework. Full clean is build_ipa.sh only.
 ios_codesign_prepare_build() {
   ios_codesign_setup
 
@@ -76,12 +78,6 @@ ios_codesign_prepare_build() {
   fi
 
   strip_if_exists "${NATIVE_ASSETS_IOS}"
-
-  # If Desktop-era provenance survives stripping, force a clean native-asset rebuild.
-  if /usr/bin/xattr -lr "${NATIVE_ASSETS_IOS}" 2>/dev/null | grep -q "com.apple.provenance"; then
-    log "Removing stale native_assets/ios (had com.apple.provenance)"
-    rm -rf "${NATIVE_ASSETS_IOS}"
-  fi
 }
 
 # Default: setup only (never delete native_assets - embed phase needs them).

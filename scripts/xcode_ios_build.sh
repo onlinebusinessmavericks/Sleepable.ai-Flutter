@@ -15,6 +15,10 @@ if [ "$CMD" = "build" ]; then
   ios_codesign_prepare_build
 fi
 
+if [ "$CMD" = "embed_and_thin" ]; then
+  /bin/bash "${SCRIPT_DIR}/ensure_ios_native_assets.sh"
+fi
+
 /bin/sh "${FLUTTER_ROOT}/packages/flutter_tools/bin/xcode_backend.sh" "$@"
 
 if [ "$CMD" = "build" ]; then

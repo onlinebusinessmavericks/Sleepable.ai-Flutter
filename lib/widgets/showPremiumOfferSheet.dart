@@ -151,50 +151,17 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
                       if (package == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
-                      // 1. Dynamic Currency Symbol Configuration
+                      // Store-localized currency (Play Store country) — same approach as iOS
                       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-
-                      // 🔥 INSTANT TRIPLE-CHECK JUGAD (Tumhara Idea):
-                      // Agar Google/Apple store se currency INR bataye, toh strictly sign block karo
-                      if (package.storeProduct.currencyCode == "INR") {
-                        currencySymbol = "₹";
-                      }
-
                       double storePrice = package.storeProduct.price;
+                      String pricePerYear = package.storeProduct.priceString;
 
-                      // 2. Priority Backend Display Strings
-                      String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
-                      // 🔥 THE ABSOLUTE TESTFLIGHT OVERRIDE LOCK:
-                      // Agar Apple `USD` fenke, lekin backend price string me pehle se Rupee '₹' maujood ho,
-                      // toh currencySymbol ko forcefully '₹' par overwrite maro!
-                      if (package.storeProduct.currencyCode == "INR" || pricePerYear.contains("₹")) {
-                        currencySymbol = "₹";
-                      }
-                      print("💰 [Sheet 1] FINAL DISPLAY PRICE: $pricePerYear");
-
-                      // Strike Price Logic (Bina Double Symbol Glitch Ke)
-                      String strikePrice = showOffer
-                          ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}")
+                      // Strike: standard Play price when offer is on; else 1.5x estimate
+                      String strikePrice = showOffer && standardPackage != null
+                          ? standardPackage.storeProduct.priceString
                           : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-                      // 3. 🎯 FOOLPROOF MATH EXTRACTION (Comma mapping fix)
-                      double rawPriceForMath = storePrice;
-                      if (showOffer) {
-                        if (spinData?.discountedPrice != null) {
-                          // 🔥 CRITICAL FIX: Pehle string se comma (,) saaf karo, fir baki symbols udao
-                          String cleanPrice = spinData!.discountedPrice!
-                              .replaceAll(',', '') // 👈 Yeh sabse zaroori hai "2,800" ko "2800" karne ke liye
-                              .replaceAll(RegExp(r'[^0-9.]'), '');
-
-                          rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
-                        } else if (spinPackage != null) {
-                          rawPriceForMath = spinPackage.storeProduct.price;
-                        }
-                      }
-
-                      // Ab calculation 100% sahi numeric aayega
-                      String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
+                      String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
 
                       return Column(
                         children: [
@@ -380,43 +347,17 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
               return const Center(child: CircularProgressIndicator(color: Colors.white));
             }
 
-            // 2. Dynamic Store Data & Strict Currency Identifier Fix (Tumhara Idea)
+            // Store-localized currency (Play Store country) — same approach as iOS
             String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-
-            // 🔥 INR STRICT HARD-LOCK (Cross-connection bypass karne ke liye)
-            // if (package.storeProduct.currencyCode == "INR") {
-            //   currencySymbol = "₹";
-            // }
-            String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
-            // 🔥 THE ABSOLUTE TESTFLIGHT OVERRIDE LOCK:
-            // Agar Apple `USD` fenke, lekin backend price string me pehle se Rupee '₹' maujood ho,
-            // toh currencySymbol ko forcefully '₹' par overwrite maro!
-            if (package.storeProduct.currencyCode == "INR" || pricePerYear.contains("₹")) {
-              currencySymbol = "₹";
-            }
             double storePrice = package.storeProduct.price;
+            String pricePerYear = package.storeProduct.priceString;
+            String yearlyPrice = pricePerYear;
 
-            // 3. Yearly Price Logic (Safe Dynamic Fallback)
-            String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+            String strikePrice = showOffer && standardPackage != null
+                ? standardPackage.storeProduct.priceString
+                : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-            // Strike price mapping (Calculated based on Store Price if backend missing)
-            String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
-
-            // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner ke sath)
-            double rawPriceForMath = storePrice;
-            if (showOffer) {
-              if (spinData?.discountedPrice != null) {
-                // 🔥 CRITICAL: "2,800" mein se comma hatana mandatory hai, varna parse nahi hoga
-                String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
-                rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
-              } else if (spinPackage != null) {
-                rawPriceForMath = spinPackage.storeProduct.price;
-              }
-            }
-
-            String weeklyPrice = (rawPriceForMath / 52).toStringAsFixed(2);
+            String weeklyPrice = (storePrice / 52).toStringAsFixed(2);
             return Column(
               children: [
                 SizedBox(height: sh(16)),
@@ -687,41 +628,17 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
         return const Center(child: CircularProgressIndicator(color: Colors.white));
       }
 
-      // 2. Real-time Store Data (Strict Dynamic Symbol & INR Overwrite - Tumhara Idea)
+      // Store-localized currency (Play Store country) — same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-
-      // 🔥 INR STRICT HARD-LOCK (Bypass Sandbox Region Glitch)
-      String pricePerYear = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
-      // 🔥 THE ABSOLUTE TESTFLIGHT OVERRIDE LOCK:
-      // Agar Apple `USD` fenke, lekin backend price string me pehle se Rupee '₹' maujood ho,
-      // toh currencySymbol ko forcefully '₹' par overwrite maro!
-      if (package.storeProduct.currencyCode == "INR" || pricePerYear.contains("₹")) {
-        currencySymbol = "₹";
-      }
-
       double storePrice = package.storeProduct.price;
+      String pricePerYear = package.storeProduct.priceString;
+      String yearlyPrice = pricePerYear;
 
-      // 3. Yearly Price Logic
-      String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
+      String strikePrice = showOffer && standardPackage != null
+          ? standardPackage.storeProduct.priceString
+          : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-      // 4. Strike Price Logic (Calculated based on Store Price if backend missing)
-      String strikePrice = showOffer ? (spinData?.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
-
-      // 5. Weekly Math (Safe Extraction with Comma Cleaner)
-      double rawPriceForMath = storePrice;
-      if (showOffer) {
-        if (spinData?.discountedPrice != null) {
-          // 🔥 CRITICAL: Backend ki string "₹2,800" me se comma hatana zaroori hai parsing ke liye
-          String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
-          rawPriceForMath = double.tryParse(cleanPrice) ?? storePrice;
-        } else if (spinPackage != null) {
-          rawPriceForMath = spinPackage.storeProduct.price;
-        }
-      }
-
-      String pricePerWeek = (rawPriceForMath / 52).toStringAsFixed(2);
+      String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
@@ -1405,50 +1322,28 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
       if (yearlyPackage == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
 
-      // Dynamic Store Info
+      // Store-localized currency (Play Store country) — same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
-
-      // 🔥 DYNAMIC PRICE LOGIC (No Hardcoding)
-      // Agar backend formatted price bhej raha hai toh wo, warna Store ki original priceString
-      String yearlyDisplayPrice = showOffer ? (spinData.discountedPrice ?? yearlyPackage.storeProduct.priceString) : yearlyPackage.storeProduct.priceString;
-
-      // 🔥 THE ABSOLUTE TESTFLIGHT OVERRIDE BYPASS:
-      // Agar Apple sandbox glitch ke karan currency code 'USD' de, lekin backend price string me
-      // pehle se Rupee '₹' maujood ho (jaise "₹2,800"), toh currencySymbol ko forcefully '₹' par lock karo!
-      if (yearlyPackage.storeProduct.currencyCode == "INR" || yearlyDisplayPrice.contains("₹")) {
-        currencySymbol = "₹";
-      }
-
+      String yearlyDisplayPrice = yearlyPackage.storeProduct.priceString;
       double storePrice = yearlyPackage.storeProduct.price;
 
-      // Strike price: Backend string ya fir Store price ka 1.5x calculate karein (Using locked symbol)
-      String strikePrice = showOffer ? (spinData.originalPrice ?? "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}") : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+      String strikePrice = showOffer && standardPackage != null
+          ? standardPackage.storeProduct.priceString
+          : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
 
-      // Daily calculation ke liye raw price extraction (With Comma Cleaner)
       double discountedYearlyRaw = storePrice;
-      if (showOffer) {
-        if (spinData?.discountedPrice != null) {
-          // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
-          String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
-          discountedYearlyRaw = double.tryParse(cleanPrice) ?? storePrice;
-        } else if (spinPackage != null) {
-          discountedYearlyRaw = spinPackage.storeProduct.price;
-        }
-      }
 
       double actualDaily = discountedYearlyRaw / 365;
       String finalDailyPriceDisplay;
 
-      if (yearlyPackage.storeProduct.currencyCode == "INR" || yearlyDisplayPrice.contains("₹")) {
-        // ₹7.77 Lucky number formatting (Sirf India ke liye)
+      if (yearlyPackage.storeProduct.currencyCode.toUpperCase() == "INR") {
+        // ₹7.77 Lucky number formatting (India Play storefront only)
         if (actualDaily >= 7.0 && actualDaily <= 8.5) {
           finalDailyPriceDisplay = "7.77";
         } else {
           finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
         }
       } else {
-        // America ya Global ke liye actual localized digits
         finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
       }
 
@@ -1750,7 +1645,6 @@ class FreeTrialReminderScreen extends StatelessWidget {
           final spinData = subController.spinInfo.value;
           // Ensure this condition is same in all sheets:
           bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
-          final spinPackage = subController.spinYearlyPackage.value;
 
           // 1. Determine Package
           final package = showOffer
@@ -1761,35 +1655,11 @@ class FreeTrialReminderScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator(color: Colors.white));
           }
 
-          // 2. Real-time Store Data & Dynamic Symbol Fetch
+          // Store-localized currency (Play Store country) — same approach as iOS
           String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-
-          // 3. Yearly Price Logic (Safe Dynamic Fallback)
-          String yearlyPrice = showOffer ? (spinData?.discountedPrice ?? package.storeProduct.priceString) : package.storeProduct.priceString;
-
-          // 🔥 THE ABSOLUTE TESTFLIGHT OVERRIDE BYPASS (Tumhara Idea):
-          // Agar Apple Sandbox glitch ke karan 'USD' code throw kare, lekin backend price string me
-          // pehle se Rupee '₹' maujood ho (jaise "₹2,800"), toh currencySymbol ko forcefully '₹' par lock karo!
-          if (package.storeProduct.currencyCode == "INR" || yearlyPrice.contains("₹")) {
-            currencySymbol = "₹";
-          }
-
+          String yearlyPrice = package.storeProduct.priceString;
           double storePrice = package.storeProduct.price;
-
-          // 4. 🎯 FOOLPROOF MATH EXTRACTION (Comma cleaner aur symbol filter ke sath)
-          double rawPriceMath = storePrice;
-          if (showOffer) {
-            if (spinData?.discountedPrice != null) {
-              // 🔥 CRITICAL FIX: Pehle "2,800" me se comma hatana zaroori hai parsing ke liye
-              String cleanPrice = spinData!.discountedPrice!.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), '');
-
-              rawPriceMath = double.tryParse(cleanPrice) ?? storePrice;
-            } else if (spinPackage != null) {
-              rawPriceMath = spinPackage.storeProduct.price;
-            }
-          }
-
-          String weeklyPrice = (rawPriceMath / 52).toStringAsFixed(2);
+          String weeklyPrice = (storePrice / 52).toStringAsFixed(2);
           return PopScope(
             canPop: false, // 👈 Physical back button ko block karein
             onPopInvokedWithResult: (didPop, result) async {

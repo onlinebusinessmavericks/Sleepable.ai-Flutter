@@ -6,7 +6,8 @@ plugins {
 }
 
 import java.util.Properties
-        import java.io.FileInputStream
+import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -38,16 +39,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = "21"
-    }
-
     defaultConfig {
         applicationId = "com.sleepableai.sleepableai"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.0.14"
+        versionCode = 17
+        versionName = "1.0.16"
         multiDexEnabled = true
 
         ndk {
@@ -103,6 +100,12 @@ android {
             // Restrict to 64-bit for better 16KB compatibility
             abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 

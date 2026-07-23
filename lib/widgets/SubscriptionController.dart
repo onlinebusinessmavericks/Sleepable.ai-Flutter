@@ -117,7 +117,7 @@ class SubscriptionController extends GetxController {
     return '3 days free, then $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
   }
 
-  /// iOS: App Store prices only. Android: backend discounted_price first.
+  /// Store-localized yearly price (App Store / Play Store). Same for iOS & Android.
   String getDisplayYearlyPrice({
     required SpinData? spinData,
     required Package? discountPackage,
@@ -130,8 +130,9 @@ class SubscriptionController extends GetxController {
     final storePrice = discountPackage?.storeProduct.priceString
         ?? standardPackage?.storeProduct.priceString
         ?? '';
-    if (Platform.isIOS) return storePrice;
-    return spinData?.discountedPrice ?? storePrice;
+    if (storePrice.isNotEmpty) return storePrice;
+    // Last resort only if offerings failed to load
+    return spinData?.discountedPrice ?? '';
   }
 
   double getDisplayYearlyRawPrice({
@@ -143,11 +144,11 @@ class SubscriptionController extends GetxController {
     if (!showOffer) {
       return standardPackage?.storeProduct.price ?? 0;
     }
-    if (Platform.isIOS) {
-      return discountPackage?.storeProduct.price
-          ?? standardPackage?.storeProduct.price
-          ?? 0;
-    }
+    final storePrice = discountPackage?.storeProduct.price
+        ?? standardPackage?.storeProduct.price
+        ?? 0;
+    if (storePrice > 0) return storePrice;
+    // Last resort only if offerings failed to load
     if (spinData?.discountedPrice != null) {
       final cleanPrice = spinData!.discountedPrice!
           .replaceAll(',', '')
@@ -155,23 +156,16 @@ class SubscriptionController extends GetxController {
       final parsed = double.tryParse(cleanPrice);
       if (parsed != null) return parsed;
     }
-    return discountPackage?.storeProduct.price
-        ?? standardPackage?.storeProduct.price
-        ?? 0;
+    return 0;
   }
 
+  /// Currency symbol from store product currencyCode (Play / App Store country).
   String resolvePaywallCurrencySymbol({
     required Package package,
     required String displayPrice,
   }) {
-    if (Platform.isIOS) {
-      return getCurrencySymbol(package.storeProduct.currencyCode);
-    }
-    String symbol = getCurrencySymbol(package.storeProduct.currencyCode);
-    if (package.storeProduct.currencyCode == "INR" || displayPrice.contains("₹")) {
-      symbol = "₹";
-    }
-    return symbol;
+    // displayPrice kept for call-site compatibility; symbol is always from store.
+    return getCurrencySymbol(package.storeProduct.currencyCode);
   }
 
   static Future<void> init() async {

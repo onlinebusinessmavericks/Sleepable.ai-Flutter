@@ -40,7 +40,8 @@ subprojects {
             defaultConfig {
                 // Ensure minSdk is consistent
                 minSdkVersion(24)
-                targetSdkVersion(35) // Play Store targets usually 34 or 35
+                // Google Play requires target API 36+ from Aug 31, 2026
+                targetSdkVersion(36)
             }
         }
     }
