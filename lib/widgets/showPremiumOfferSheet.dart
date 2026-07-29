@@ -916,7 +916,10 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       String weeklyAvg = (rawPrice / 52).toStringAsFixed(2);
 
       final currentTextIndex = _currentPage % buttonTexts.length;
-      String currentButtonText = buttonTexts[currentTextIndex];
+      // Apple Guideline 3.1.2(c): the rotating "Get for {symbol}0.00" label made a
+      // $0.00 price more conspicuous than the billed amount. iOS uses one stable,
+      // neutral label; Android keeps the rotating marketing labels.
+      String currentButtonText = Platform.isIOS ? lang.startFreeTrial : buttonTexts[currentTextIndex];
       return PopScope(
         canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
@@ -966,7 +969,9 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                     fadeTitle,
                     Column(
                       children: [
-                        if (showOffer)
+                        // Apple Guideline 3.1.2(c): no prominent discount banner in the
+                        // iOS purchase flow. Android keeps its "Lucky Spin" badge.
+                        if (showOffer && !Platform.isIOS)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             margin: EdgeInsets.only(bottom: sh(10)),
@@ -1101,17 +1106,29 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           ),
                         ),
                         SizedBox(height: sh(12)),
-                        Text(
-                          Platform.isIOS
-                              ? subController.formatIosYearlyPriceLine(
-                                  prefix: context.lang.just,
-                                  yearlyPrice: yearlyPrice,
-                                  currencySymbol: currencySymbol,
-                                  weeklyAvg: weeklyAvg,
-                                )
-                              : "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
-                          style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
-                        ),
+                        if (Platform.isIOS) ...[
+                          // Apple Guideline 3.1.2(c): billed amount is the most
+                          // conspicuous pricing element; the trial is subordinate.
+                          Text(
+                            "$yearlyPrice / ${context.lang.year}",
+                            textAlign: TextAlign.center,
+                            style: textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontSize: 24 * SizeConfigs.textScale,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: sh(2)),
+                          Text(
+                            "3-day free trial, then $yearlyPrice per year ($currencySymbol$weeklyAvg / ${context.lang.week}). Cancel anytime.",
+                            textAlign: TextAlign.center,
+                            style: textTheme.bodySmall?.copyWith(color: Colors.white54, fontSize: 11 * SizeConfigs.textScale),
+                          ),
+                        ] else
+                          Text(
+                            "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
+                            style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
+                          ),
                         buildIosSubscriptionLegalLinks(context),
                       ],
                     ),
@@ -1899,19 +1916,10 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     ),
                   ),
 
-                  if (showOffer && Platform.isIOS)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      margin: EdgeInsets.only(bottom: sh(8)),
-                      decoration: BoxDecoration(
-                        color: AppColors.starFillColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        lang.limitedPeriodOffer.replaceAll('{discount}', '${subController.paywallDiscountPercent}'),
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10),
-                      ),
-                    ),
+                  // Apple Guideline 3.1.2(c): the prominent "50% OFF" discount banner
+                  // was removed from this purchase flow — it made the introductory
+                  // offer more conspicuous than the billed amount. It was already
+                  // iOS-only here, so Android's flow is unaffected.
 
                   const Spacer(flex: 1),
 
@@ -2004,11 +2012,33 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
                   SizedBox(height: sh(12)),
 
-                  Text(
-                    bottomSubText,
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale),
-                  ),
+                  if (Platform.isIOS) ...[
+                    // Apple Guideline 3.1.2(c): the total billed amount must be the
+                    // MOST clear and conspicuous pricing element. It is shown largest
+                    // here; the free trial and per-week breakdown are subordinate.
+                    Text(
+                      isYearly ? "$yearlyPriceText / ${lang.year}" : "$weeklyPriceText / ${lang.week}",
+                      textAlign: TextAlign.center,
+                      style: textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: 30 * SizeConfigs.textScale,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: sh(4)),
+                    Text(
+                      isYearly
+                          ? "3-day free trial, then $yearlyPriceText per year ($currencySymbol$weeklyAvgFromYearly / ${lang.week}). Cancel anytime."
+                          : "Billed $weeklyPriceText per week. Cancel anytime.",
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodySmall?.copyWith(color: Colors.white54, fontSize: 12 * SizeConfigs.textScale),
+                    ),
+                  ] else
+                    Text(
+                      bottomSubText,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodyMedium?.copyWith(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale),
+                    ),
 
                   buildIosSubscriptionLegalLinks(context, fontSize: 12),
 
@@ -2174,9 +2204,14 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
           if (badge != null)
             Positioned(
               top: -sh(10),
+              // Apple Guideline 3.1.2(c): the free-trial badge must stay subordinate
+              // to the billed amount, so it is muted (not bright orange) on iOS.
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFFF6A342), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                  color: Platform.isIOS ? Colors.white24 : const Color(0xFFF6A342),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Text(
                   badge,
                   style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
