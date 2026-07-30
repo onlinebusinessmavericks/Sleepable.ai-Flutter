@@ -1299,8 +1299,9 @@ class ProgressScreen extends GetView<ProgressController> {
                     // Check karein ki spin ho chuka hai ya nahi
                     final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
-                    if (hasAlreadySpun) {
+                    if (hasAlreadySpun && !GetPlatform.isIOS) {
                       // ✅ Spin ho chuka hai -> Discounted Sheet
+                      // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) -> Sheet 4.
                       showPremiumOfferSheet6(Get.context!);
                     } else {
                       // ❌ Spin nahi hua -> Normal Paywall

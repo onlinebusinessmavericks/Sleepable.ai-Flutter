@@ -91,6 +91,12 @@ Widget buildIosSubscriptionLegalLinks(BuildContext context, {double fontSize = 1
   );
 }
 
+/// On iOS the paywall gained a prominent billed-amount block and legal text, so
+/// on shorter iPhones the content can exceed the screen. Wrap it in a scroll
+/// view for iOS only; Android keeps its original fixed (Spacer-based) layout.
+Widget _iosScrollablePaywall(Widget column) =>
+    Platform.isIOS ? SingleChildScrollView(child: column) : column;
+
 showPremiumOfferSheet(BuildContext context) {
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen());
@@ -1933,7 +1939,8 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
           body: SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: pad(24)),
-              child: Column(
+              child: _iosScrollablePaywall(Column(
+                mainAxisSize: Platform.isIOS ? MainAxisSize.min : MainAxisSize.max,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: sh(36)),
@@ -1954,7 +1961,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   // offer more conspicuous than the billed amount. It was already
                   // iOS-only here, so Android's flow is unaffected.
 
-                  const Spacer(flex: 1),
+                  Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
                   Text(
                     mainTitle,
@@ -1962,12 +1969,12 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     style: textTheme.headlineMedium?.copyWith(color: Colors.white, fontSize: 28 * SizeConfigs.textScale, fontWeight: FontWeight.w900),
                   ),
 
-                  const Spacer(flex: 1),
+                  Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
                   // CENTER CONTENT (Timeline vs Features)
                   AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: isYearly ? _buildTimeline(textTheme) : _buildFeaturesList(textTheme)),
 
-                  const Spacer(flex: 1),
+                  Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
                   // 4. PLAN SELECTION CARDS
                   Row(
@@ -2086,7 +2093,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
 
                   SizedBox(height: sh(24)),
                 ],
-              ),
+              )),
             ),
           ),
         ),
