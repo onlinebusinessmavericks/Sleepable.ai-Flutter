@@ -61,7 +61,13 @@ class SettingsController extends GetxController {
     '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
-  void onRestorePurchases() {}
+  /// Apple Guideline 3.1.1: restore an existing subscription.
+  void onRestorePurchases() {
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : Get.put(SubscriptionController());
+    sub.restorePurchases();
+  }
 
   /// 🔒 Apple 5.1.1(i) / 5.1.2(i): gives the user control to review, grant and
   /// revoke AI data sharing.

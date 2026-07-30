@@ -275,6 +275,42 @@ class SubscriptionController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// Apple Guideline 3.1.1: users must be able to restore a subscription they
+  /// already own (after reinstalling or on a new device). Wired to the "Restore
+  /// Purchases" button in Settings and on the iOS paywall.
+  Future<void> restorePurchases() async {
+    if (!isConfigured) {
+      toast("Store not available on this device");
+      return;
+    }
+    try {
+      isLoading.value = true;
+      final CustomerInfo customerInfo = await Purchases.restorePurchases();
+      final bool active = customerInfo.entitlements.all['pro']?.isActive ?? false;
+
+      if (active) {
+        isPremium.value = true;
+        await getBackendSubscriptionStatus();
+        if (Get.isRegistered<SleepSoundController>()) {
+          final soundCtrl = Get.find<SleepSoundController>();
+          soundCtrl.soundsBySubCategory.clear();
+          soundCtrl.refreshCurrentTabSilently();
+        }
+        toast("Purchases restored. Premium is active.");
+        Get.until((route) => Get.isOverlaysClosed);
+        Get.offAllNamed(Routes.dashboard);
+      } else {
+        toast("No active subscription found to restore.");
+      }
+    } on PlatformException catch (e) {
+      toast("Restore failed: ${e.message}");
+    } catch (e) {
+      toast("Restore failed. Please try again.");
+    } finally {
+      isLoading.value = false;
+    }
+  }
   // 2. Spin Wheel API (Check Status)
   Future<void> checkSpinStatus() async {
     try {

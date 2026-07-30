@@ -41,23 +41,53 @@ Widget buildIosSubscriptionLegalLinks(BuildContext context, {double fontSize = 1
     height: 1.4,
   );
 
-  return Padding(
-    padding: EdgeInsets.only(top: sh(8)),
-    child: Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: () => _openPaywallLegalLink(context, title: lang.termsOfService, url: _kTermsOfUseUrl),
-          child: Text(lang.termsOfService, style: linkStyle),
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // Apple Guideline 3.1.2: disclose that the subscription auto-renews and how
+      // to cancel, directly in the purchase flow.
+      Padding(
+        padding: EdgeInsets.only(top: sh(6)),
+        child: Text(
+          "Auto-renews unless canceled at least 24 hours before the period ends. Cancel anytime in App Store settings.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white38,
+            fontSize: (fontSize - 1) * SizeConfigs.textScale,
+            height: 1.3,
+          ),
         ),
-        Text('  •  ', style: linkStyle.copyWith(decoration: TextDecoration.none)),
-        GestureDetector(
-          onTap: () => _openPaywallLegalLink(context, title: lang.privacyPolicy, url: _kPrivacyPolicyUrl),
-          child: Text(lang.privacyPolicy, style: linkStyle),
+      ),
+      Padding(
+        padding: EdgeInsets.only(top: sh(6)),
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => _openPaywallLegalLink(context, title: lang.termsOfService, url: _kTermsOfUseUrl),
+              child: Text(lang.termsOfService, style: linkStyle),
+            ),
+            Text('  •  ', style: linkStyle.copyWith(decoration: TextDecoration.none)),
+            GestureDetector(
+              onTap: () => _openPaywallLegalLink(context, title: lang.privacyPolicy, url: _kPrivacyPolicyUrl),
+              child: Text(lang.privacyPolicy, style: linkStyle),
+            ),
+            Text('  •  ', style: linkStyle.copyWith(decoration: TextDecoration.none)),
+            // Apple Guideline 3.1.1: restore an existing subscription.
+            GestureDetector(
+              onTap: () {
+                final sub = Get.isRegistered<SubscriptionController>()
+                    ? Get.find<SubscriptionController>()
+                    : Get.put(SubscriptionController());
+                sub.restorePurchases();
+              },
+              child: Text("Restore Purchases", style: linkStyle),
+            ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
@@ -1872,7 +1902,10 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       final bool isYearly = (selectedPlanIndex == 1);
       final lang = context.lang;
 
-      final String mainTitle = isYearly ? lang.startTrialToContinue : lang.unlockSleepableTitle;
+      // Apple Guideline 3.1.2(c): on iOS keep a neutral heading (no big "FREE trial"
+      // promotion) so the billed amount stays the most conspicuous element.
+      // Android keeps its original trial-forward title.
+      final String mainTitle = (isYearly && !Platform.isIOS) ? lang.startTrialToContinue : lang.unlockSleepableTitle;
       final String buttonText = isYearly ? lang.startFreeTrial : lang.startJourney;
 
       final String bottomSubText = isYearly
@@ -1965,13 +1998,22 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   SizedBox(height: sh(24)),
 
                   // 5. STATUS TEXT
+                  // Apple Guideline 3.1.2(c): on iOS use a neutral "cancel anytime"
+                  // line instead of "No Payment Due Now", so the free trial is not
+                  // emphasised over the billed amount. Android keeps its wording.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: isYearly ? const Color(0xFFF6A342) : Colors.white, size: 22),
+                      Icon(
+                        Icons.check_circle,
+                        color: (isYearly && !Platform.isIOS) ? const Color(0xFFF6A342) : Colors.white,
+                        size: 22,
+                      ),
                       SizedBox(width: sw(8)),
                       Text(
-                        isYearly ? context.lang.noPaymentDue : context.lang.noCommitment,
+                        Platform.isIOS
+                            ? context.lang.noCommitment
+                            : (isYearly ? context.lang.noPaymentDue : context.lang.noCommitment),
                         style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
                       ),
                     ],
