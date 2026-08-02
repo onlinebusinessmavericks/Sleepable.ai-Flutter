@@ -1257,12 +1257,28 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
     final double wheelSize = (size.width * 0.85).clamp(250.0, 400.0);
     final lang = context.lang;
     return PopScope(
-      canPop: false, // User spin ke beech mein back nahi kar sakta
+      canPop: false,
+      // Back is blocked only while the wheel is actually spinning. Without this
+      // handler the screen had no exit at all: if the spin call failed, the user
+      // was stuck on "Connection error" with a dead back button.
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _isSpinning) return;
+        Get.back();
+      },
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
           child: Column(
             children: [
+              // Always give the user a way out (disabled mid-spin).
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54, size: 28),
+                  onPressed: _isSpinning ? null : () => Get.back(),
+                ),
+              ),
+
               const Spacer(flex: 1),
 
               AnimatedSwitcher(
