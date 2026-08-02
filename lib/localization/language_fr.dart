@@ -214,7 +214,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get getUnlimitedAccessSleepSoundsSleepAnalysisSnoreRecordingSmartAlarm => "Accédez en illimité à tous les sons pour dormir, ainsi qu'à l'analyse du sommeil, à l'enregistrement des ronflements et à l'alarme intelligente.";
   @override
-  String get month => 'MOIS';
+  String get month => 'Mois';
   @override
   String get mo => 'mo';
   @override
@@ -807,7 +807,7 @@ class LanguageFr extends BaseLanguage {
   // @override
   // String get Key => 'Valeur';
   @override
-  String get today => "'Aujourd'hui'";
+  String get today => "Aujourd'hui";
   @override
   String get week => 'Semaine';
   // @override

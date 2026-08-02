@@ -226,7 +226,7 @@ class LanguageEn extends BaseLanguage {
   String get getUnlimitedAccessSleepSoundsSleepAnalysisSnoreRecordingSmartAlarm => 'Get unlimited access to all sleep sounds, as well as sleep analysis, snore recording, smart alarm.';
 
   @override
-  String get month => 'MONTH';
+  String get month => 'Month';
 
   @override
   String get mo => 'mo';

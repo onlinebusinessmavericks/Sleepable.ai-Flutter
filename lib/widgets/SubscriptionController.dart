@@ -34,7 +34,9 @@ class SubscriptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    isPremium.value = false;
+    // Start from the cached value so a paying user is not shown the free/paywall
+    // state for the second or two the network sync takes.
+    isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -72,8 +74,8 @@ class SubscriptionController extends GetxController {
 
 // SubscriptionController.dart mein isse update karein
   Future<void> updatePremiumStatus(bool status, {bool isFromBackend = false}) async {
-    // Blocking accidental downgrade
-    status= false;
+    // Blocking accidental downgrade: only the backend may turn premium off, so a
+    // slow/failed RevenueCat lookup cannot lock a paying user out.
     if (isPremium.value == true && status == false && !isFromBackend) {
       print("🛡️ Blocking accidental downgrade");
       return;

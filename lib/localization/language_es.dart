@@ -213,7 +213,7 @@ class LanguageEs extends BaseLanguage {
   @override
   String get getUnlimitedAccessSleepSoundsSleepAnalysisSnoreRecordingSmartAlarm => 'Obtenga acceso ilimitado a todos los sonidos del sueño, así como análisis del sueño, grabación de ronquidos y alarma inteligente.';
   @override
-  String get month => 'MES';
+  String get month => 'Mes';
   @override
   String get mo => 'mes';
   @override

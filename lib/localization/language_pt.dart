@@ -211,7 +211,7 @@ class LanguagePt extends BaseLanguage {
   @override
   String get getUnlimitedAccessSleepSoundsSleepAnalysisSnoreRecordingSmartAlarm => 'Obtenha acesso ilimitado a todos os sons para dormir, além de análise do sono, gravação de ronco e alarme inteligente.';
   @override
-  String get month => 'MÊS';
+  String get month => 'Mês';
   @override
   String get mo => 'mo';
   @override
