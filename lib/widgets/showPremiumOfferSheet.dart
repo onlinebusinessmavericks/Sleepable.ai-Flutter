@@ -192,10 +192,12 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       double storePrice = package.storeProduct.price;
                       String pricePerYear = package.storeProduct.priceString;
 
-                      // Strike: standard Play price when offer is on; else 1.5x estimate
-                      String strikePrice = showOffer && standardPackage != null
+                      // Strike-through only against the real standard plan price.
+                      // Never fabricate one (the old 1.5x estimate showed a price
+                      // that was never actually charged).
+                      final String? strikePrice = showOffer && standardPackage != null
                           ? standardPackage.storeProduct.priceString
-                          : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+                          : null;
 
                       String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
 
@@ -241,10 +243,11 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                   "${context.lang.total} $pricePerYear/${context.lang.year}",
                                   style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: sp(16)),
                                 ),
-                                Text(
-                                  "($strikePrice/${context.lang.year})",
-                                  style: TextStyle(color: Colors.white54, fontSize: sp(14), decoration: TextDecoration.lineThrough),
-                                ),
+                                if (strikePrice != null)
+                                  Text(
+                                    "($strikePrice/${context.lang.year})",
+                                    style: TextStyle(color: Colors.white54, fontSize: sp(14), decoration: TextDecoration.lineThrough),
+                                  ),
                               ],
                             ),
                           ),
@@ -389,9 +392,11 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
             String pricePerYear = package.storeProduct.priceString;
             String yearlyPrice = pricePerYear;
 
-            String strikePrice = showOffer && standardPackage != null
+            // Strike-through only against the real standard plan price; never a
+            // fabricated 1.5x estimate.
+            final String? strikePrice = showOffer && standardPackage != null
                 ? standardPackage.storeProduct.priceString
-                : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+                : null;
 
             String weeklyPrice = (storePrice / 52).toStringAsFixed(2);
             return Column(
@@ -459,17 +464,23 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                                 text: TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: "Total $yearlyPrice/year (",
+                                      text: "Total $yearlyPrice/year",
                                       style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w600),
                                     ),
-                                    TextSpan(
-                                      text: showOffer ? "$strikePrice/year" : "$currencySymbol$strikePrice/year",
-                                      style: TextStyle(color: Colors.white70, fontSize: sp(16), decoration: TextDecoration.lineThrough),
-                                    ),
-                                    TextSpan(
-                                      text: ")",
-                                      style: TextStyle(color: Colors.white, fontSize: sp(16)),
-                                    ),
+                                    if (strikePrice != null) ...[
+                                      TextSpan(
+                                        text: " (",
+                                        style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w600),
+                                      ),
+                                      TextSpan(
+                                        text: "$strikePrice/year",
+                                        style: TextStyle(color: Colors.white70, fontSize: sp(16), decoration: TextDecoration.lineThrough),
+                                      ),
+                                      TextSpan(
+                                        text: ")",
+                                        style: TextStyle(color: Colors.white, fontSize: sp(16)),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -670,9 +681,11 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
       String pricePerYear = package.storeProduct.priceString;
       String yearlyPrice = pricePerYear;
 
-      String strikePrice = showOffer && standardPackage != null
+      // Strike-through only against the real standard plan price; never a
+      // fabricated 1.5x estimate.
+      final String? strikePrice = showOffer && standardPackage != null
           ? standardPackage.storeProduct.priceString
-          : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+          : null;
 
       String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
       return Scaffold(
@@ -737,28 +750,30 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                   TextSpan(
                                     children: [
                                       TextSpan(
-                                        text: "${context.lang.total} $yearlyPrice/${context.lang.year} (",
+                                        text: "${context.lang.total} $yearlyPrice/${context.lang.year}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                       ),
-                                      TextSpan(
-                                        // text: "$currency$strikePrice/year",
-                                        text: showOffer ? "$strikePrice/${context.lang.year}" : "$currencySymbol$strikePrice/${context.lang.year}",
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          // Thoda fade colour strike ke liye accha lagta hai
-                                          fontSize: sp(16),
-                                          fontWeight: FontWeight.w500,
-                                          decoration: TextDecoration.lineThrough,
-                                          // 👈 Ye line lagayega
-                                          decorationColor: Colors.white,
-                                          // Line ka color
-                                          decorationThickness: 2, // Line ki motai
+                                      if (strikePrice != null) ...[
+                                        TextSpan(
+                                          text: " (",
+                                          style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                         ),
-                                      ),
-                                      TextSpan(
-                                        text: ")",
-                                        style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
-                                      ),
+                                        TextSpan(
+                                          text: "$strikePrice/${context.lang.year}",
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: sp(16),
+                                            fontWeight: FontWeight.w500,
+                                            decoration: TextDecoration.lineThrough,
+                                            decorationColor: Colors.white,
+                                            decorationThickness: 2,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: ")",
+                                          style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                   textAlign: TextAlign.center,
@@ -1380,9 +1395,11 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       String yearlyDisplayPrice = yearlyPackage.storeProduct.priceString;
       double storePrice = yearlyPackage.storeProduct.price;
 
-      String strikePrice = showOffer && standardPackage != null
+      // Strike-through only against the real standard plan price; never a
+      // fabricated 1.5x estimate.
+      final String? strikePrice = showOffer && standardPackage != null
           ? standardPackage.storeProduct.priceString
-          : "$currencySymbol${(storePrice * 1.5).toStringAsFixed(2)}";
+          : null;
 
       double discountedYearlyRaw = storePrice;
 
@@ -1454,23 +1471,24 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    strikePrice,
-                                    style: TextStyle(
-                                      fontSize: 30,
-                                      letterSpacing: 2.5,
-                                      decoration: TextDecoration.lineThrough,
-                                      decorationColor: Colors.red,
-                                      decorationThickness: 1.5,
-                                      fontWeight: FontWeight.w900,
-                                      foreground: Paint()
-                                        ..style = PaintingStyle.fill
-                                        ..strokeWidth = 1.5
-                                        ..color = Colors.white38,
+                                  if (strikePrice != null) ...[
+                                    Text(
+                                      strikePrice,
+                                      style: TextStyle(
+                                        fontSize: 30,
+                                        letterSpacing: 2.5,
+                                        decoration: TextDecoration.lineThrough,
+                                        decorationColor: Colors.red,
+                                        decorationThickness: 1.5,
+                                        fontWeight: FontWeight.w900,
+                                        foreground: Paint()
+                                          ..style = PaintingStyle.fill
+                                          ..strokeWidth = 1.5
+                                          ..color = Colors.white38,
+                                      ),
                                     ),
-                                  ),
-
-                                  const SizedBox(width: 30), // Space between prices
+                                    const SizedBox(width: 30), // Space between prices
+                                  ],
 
                                   RichText(
                                     textAlign: TextAlign.center,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -24,6 +25,7 @@ class SubscriptionController extends GetxController {
   RxBool isPremium = false.obs;
   RxBool isLoading = false.obs;
   static const String PREM_KEY = "is_user_premium_cache";
+  static const String SPIN_CACHE_KEY = "spin_status_cache";
   Rx<SpinData?> spinInfo = Rx<SpinData?>(null);
   // RxBool isReady = false.obs;
   RxBool isInitialSyncDone = false.obs;
@@ -314,17 +316,42 @@ class SubscriptionController extends GetxController {
     }
   }
   // 2. Spin Wheel API (Check Status)
-  Future<void> checkSpinStatus() async {
-    try {
-      final response = await buildHttpResponse(
-          endPoint: APIEndPoints.spinWheel,
-          method: MethodType.get
-      );
-      if (response['success']) {
-        spinInfo.value = SpinData.fromJson(response['data']);
+  //
+  // A user who already won a discount must never be shown the full price just
+  // because this call failed. So retry a few times, and fall back to the last
+  // known status from disk instead of silently leaving spinInfo null.
+  Future<void> checkSpinStatus({int retries = 2}) async {
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final response = await buildHttpResponse(
+            endPoint: APIEndPoints.spinWheel,
+            method: MethodType.get
+        );
+        if (response['success']) {
+          final data = SpinData.fromJson(response['data']);
+          spinInfo.value = data;
+          await setValue(SPIN_CACHE_KEY, jsonEncode(data.toJson()));
+          return;
+        }
+      } catch (e) {
+        log("Spin Status attempt ${attempt + 1} failed: $e");
       }
+      if (attempt < retries) {
+        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
+      }
+    }
+    _restoreSpinStatusFromCache();
+  }
+
+  void _restoreSpinStatusFromCache() {
+    if (spinInfo.value != null) return;
+    final cached = getStringAsync(SPIN_CACHE_KEY);
+    if (cached.isEmpty) return;
+    try {
+      spinInfo.value = SpinData.fromJson(jsonDecode(cached));
+      log("Spin status restored from cache");
     } catch (e) {
-      log("Spin Status Error: $e");
+      log("Spin cache restore failed: $e");
     }
   }
 
@@ -347,6 +374,9 @@ class SubscriptionController extends GetxController {
 
         // 3. Rx variable mein assign karein
         spinInfo.value = data;
+        // Persist the win so a later failed status call cannot revert the user
+        // to the full price.
+        await setValue(SPIN_CACHE_KEY, jsonEncode(data.toJson()));
 
         // 4. 🔥 Turant UI update trigger karein (RevenueCat se pehle)
         update();

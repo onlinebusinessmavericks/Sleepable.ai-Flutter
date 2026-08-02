@@ -27,4 +27,15 @@ class SpinData {
       message: json['message']?.toString(),
     );
   }
+
+  /// Cached on device so a failed status call cannot drop a user who already
+  /// won a discount back to the full price.
+  Map<String, dynamic> toJson() => {
+        'already_spun': alreadySpun,
+        'coupon_code': couponCode,
+        'discount_pct': discountPct,
+        'original_price': originalPrice,
+        'discounted_price': discountedPrice,
+        'message': message,
+      };
 }
