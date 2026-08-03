@@ -53,7 +53,25 @@ class SubscriptionController extends GetxController {
       // Re-identify on every launch: a user who logged in before this build (or
       // before RevenueCat finished configuring) would otherwise stay anonymous.
       final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
-      if (storedUuid.isNotEmpty) await identifyUser(storedUuid);
+      if (storedUuid.isNotEmpty) {
+        await identifyUser(storedUuid);
+      } else {
+        // Anyone already logged in when this build ships never passed through
+        // the login path, and will not log in again. Recover their uuid from the
+        // cached profile so they do not stay anonymous forever.
+        final cachedProfile = getStringAsync(AppSharedPreferenceKeys.currentUserData);
+        if (cachedProfile.isNotEmpty) {
+          try {
+            final uuid = (jsonDecode(cachedProfile)['uuid'] ?? '').toString();
+            print("🔑 [RC] Recovered uuid from cached profile: '$uuid'");
+            if (uuid.isNotEmpty) await identifyUser(uuid);
+          } catch (e) {
+            print("❌ [RC] Could not read uuid from cached profile: $e");
+          }
+        } else {
+          print("⚠️ [RC] No stored uuid and no cached profile - user stays anonymous");
+        }
+      }
 
       await Purchases.invalidateCustomerInfoCache();
       isLoading.value = true;
