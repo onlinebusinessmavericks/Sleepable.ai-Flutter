@@ -213,16 +213,33 @@ class SubscriptionController extends GetxController {
   /// no one to attach them to. Must be the UUID from the backend profile - not
   /// an email or a generated id.
   Future<void> identifyUser(String uuid) async {
-    if (uuid.isEmpty) return;
+    // Logged in full: identification failing silently is hard to tell apart
+    // from the code path never running at all.
+    print("🔑 [RC] identifyUser(uuid='$uuid') configured=$isConfigured");
+
+    if (uuid.isEmpty) {
+      print("⚠️ [RC] Empty uuid - skipping identify (check the backend field is 'uuid', not 'id')");
+      return;
+    }
     // Persist first and unconditionally: if RevenueCat has not finished
     // configuring yet, initData() re-identifies from this value on next launch.
     await setValue(AppSharedPreferenceKeys.userUuid, uuid);
-    if (!isConfigured) return;
+
+    if (!isConfigured) {
+      print("⚠️ [RC] Not configured yet - will re-identify on next launch");
+      return;
+    }
     try {
-      await Purchases.logIn(uuid);
-      print("✅ [RC] Identified as $uuid");
+      final result = await Purchases.logIn(uuid);
+      print("✅ [RC] logIn ok -> ${result.customerInfo.originalAppUserId} created=${result.created}");
+    } catch (e, st) {
+      print("❌ [RC] logIn FAILED for $uuid -> $e");
+      print("$st");
+    }
+    try {
+      print("🆔 [RC] appUserID now = ${await Purchases.appUserID}");
     } catch (e) {
-      print("❌ [RC] logIn failed for $uuid: $e");
+      print("❌ [RC] appUserID read failed: $e");
     }
   }
 
