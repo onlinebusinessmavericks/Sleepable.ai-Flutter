@@ -59,8 +59,13 @@ class SubscriptionController extends GetxController {
       await fetchStoreProducts();
 
       // ✅ STEP 2: Ab status check karein
+      //
+      // Premium access is decided by our backend alone. Some users are granted
+      // premium from the admin panel without ever making a store purchase, and
+      // RevenueCat has no record of those — asking it would lock them out even
+      // though the profile shows PRO. RevenueCat is used to make purchases, not
+      // to grant access.
       print("📡 [DEBUG] Checking Premium Status...");
-      await checkPremiumStatus();
       await getBackendSubscriptionStatus();
 
       await checkSpinStatus();
@@ -355,7 +360,10 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  Future<void> performSpin() async {
+  /// Returns null when the spin succeeded, otherwise the reason to show the
+  /// user. The backend sends a real explanation (e.g. "You have already used
+  /// your spin.") which must not be reported as a connection error.
+  Future<String?> performSpin() async {
     try {
       isLoading.value = true;
       print("🚀 [Spin] Starting Spin API Call...");
@@ -389,9 +397,15 @@ class SubscriptionController extends GetxController {
         await fetchStoreProducts();
 
         print("✅ [Spin] Full Sync Done");
+        return null;
       }
+      return response['message']?.toString();
     } catch (e) {
       print("❌ [Spin] Error: $e");
+      // buildHttpResponse throws the backend's own message for a 4xx, so pass
+      // that through rather than calling every failure a connection error.
+      final reason = e.toString().replaceFirst('Exception:', '').trim();
+      return reason.isEmpty ? null : reason;
     } finally {
       isLoading.value = false;
       update();
@@ -419,18 +433,28 @@ class SubscriptionController extends GetxController {
   }
 
   // 6. Get Status from Backend
-  Future<void> getBackendSubscriptionStatus() async {
-    try {
-      final response = await buildHttpResponse(
-          endPoint: APIEndPoints.subscriptionStatus,
-          method: MethodType.get
-      );
-      if (response['success']) {
-        bool backendStatus = response['data']['is_premium'] ?? false;
-        updatePremiumStatus(backendStatus, isFromBackend: true);
+  /// The single source of truth for premium access.
+  ///
+  /// Retries before giving up: a failed call must not lock a paying or
+  /// admin-granted user out, so on total failure the cached value is kept.
+  Future<void> getBackendSubscriptionStatus({int retries = 2}) async {
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final response = await buildHttpResponse(
+            endPoint: APIEndPoints.subscriptionStatus,
+            method: MethodType.get
+        );
+        if (response['success']) {
+          bool backendStatus = response['data']['is_premium'] ?? false;
+          await updatePremiumStatus(backendStatus, isFromBackend: true);
+          return;
+        }
+      } catch (e) {
+        log("Backend subscription check attempt ${attempt + 1} failed: $e");
       }
-    } catch (e) {
-      log("Backend check failed: $e");
+      if (attempt < retries) {
+        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
+      }
     }
   }
 

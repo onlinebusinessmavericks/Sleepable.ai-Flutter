@@ -1235,16 +1235,17 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
     });
 
     // 1. Backend API Call
-    await subController.performSpin();
+    final error = await subController.performSpin();
 
-    if (subController.spinInfo.value != null) {
+    if (error == null && subController.spinInfo.value != null) {
       // 2. Wheel Start
       controller.startSpin();
     } else {
       setState(() {
         _isSpinning = false;
-        _statusText = "${lang?.connectionError}\n${lang?.tryAgainLater}";
-        // _statusText = "Connection error.\nTry again later.";
+        // Show the backend's reason (e.g. "You have already used your spin.")
+        // instead of blaming the network for every failure.
+        _statusText = error ?? "${lang?.connectionError}\n${lang?.tryAgainLater}";
       });
     }
   }

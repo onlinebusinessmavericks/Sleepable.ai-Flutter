@@ -204,11 +204,16 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     if (Get.arguments != null && Get.arguments['show_paywall'] == true) {
       _showInitialPaywall();
     }
-    else if (!subController.isPremium.value && !Platform.isIOS) {
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!isClosed) {
-          showRotatingPremiumSheet(Get.context!);
+    else if (!Platform.isIOS) {
+      Future.delayed(const Duration(seconds: 1), () async {
+        if (isClosed) return;
+        // Re-check after the launch sync: premium status is fetched
+        // asynchronously, so it may still have been unknown when onReady ran.
+        if (await _isPremiumAfterSync(subController)) {
+          _checkAndShowRatingDialog();
+          return;
         }
+        if (!isClosed) showRotatingPremiumSheet(Get.context!);
       });
     }
     // 4. Priority 3: Rating Dialog (Sirf Premium users ya tab jab Paywall skip ho jaye)
@@ -221,12 +226,31 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     });
   }
+  /// Premium status is fetched asynchronously at launch, so waits briefly for
+  /// that sync before answering. Without this a paying or admin-granted user
+  /// gets an upsell on app open.
+  Future<bool> _isPremiumAfterSync(SubscriptionController sub) async {
+    if (!sub.isInitialSyncDone.value) {
+      await sub.isInitialSyncDone.stream
+          .firstWhere((done) => done)
+          .timeout(const Duration(seconds: 6), onTimeout: () => true);
+    }
+    return sub.isPremium.value;
+  }
+
   // Helper 1: Paywall Handler
   void _showInitialPaywall() {
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () async {
       if (isClosed) return;
 
       final subController = Get.find<SubscriptionController>();
+
+      // Never upsell someone who already has premium.
+      if (await _isPremiumAfterSync(subController)) {
+        if (Get.arguments != null) Get.arguments['show_paywall'] = false;
+        return;
+      }
+      if (isClosed) return;
 
       if (Platform.isIOS) {
         showPremiumOfferSheet4(Get.context!);
