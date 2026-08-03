@@ -50,6 +50,11 @@ class SubscriptionController extends GetxController {
 
   Future<void> initData() async {
     try {
+      // Re-identify on every launch: a user who logged in before this build (or
+      // before RevenueCat finished configuring) would otherwise stay anonymous.
+      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+      if (storedUuid.isNotEmpty) await identifyUser(storedUuid);
+
       await Purchases.invalidateCustomerInfoCache();
       isLoading.value = true;
       print("🔄 [DEBUG] initData started...");
@@ -198,6 +203,39 @@ class SubscriptionController extends GetxController {
     } catch (e) {
       isConfigured = false;
       print("❌ RevenueCat Configuration Error: $e");
+    }
+  }
+
+  /// Tells RevenueCat which backend user this is.
+  ///
+  /// Without this RevenueCat creates an anonymous customer, so purchases and
+  /// admin-granted entitlements never reach our user record and the webhook has
+  /// no one to attach them to. Must be the UUID from the backend profile - not
+  /// an email or a generated id.
+  Future<void> identifyUser(String uuid) async {
+    if (uuid.isEmpty) return;
+    // Persist first and unconditionally: if RevenueCat has not finished
+    // configuring yet, initData() re-identifies from this value on next launch.
+    await setValue(AppSharedPreferenceKeys.userUuid, uuid);
+    if (!isConfigured) return;
+    try {
+      await Purchases.logIn(uuid);
+      print("✅ [RC] Identified as $uuid");
+    } catch (e) {
+      print("❌ [RC] logIn failed for $uuid: $e");
+    }
+  }
+
+  /// Detaches RevenueCat from this user on logout so the next account does not
+  /// inherit the previous customer's entitlements.
+  Future<void> resetUser() async {
+    await removeKey(AppSharedPreferenceKeys.userUuid);
+    if (!isConfigured) return;
+    try {
+      await Purchases.logOut();
+      print("✅ [RC] Logged out");
+    } catch (e) {
+      print("❌ [RC] logOut failed: $e");
     }
   }
 

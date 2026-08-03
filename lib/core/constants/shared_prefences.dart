@@ -13,6 +13,9 @@ class AppSharedPreferenceKeys {
   // ===================== AUTH / TOKEN =====================
 
   static const String apiToken = 'api_token';
+  /// Backend user UUID. RevenueCat is identified with this so purchases and
+  /// admin-granted entitlements land on the right customer.
+  static const String userUuid = 'user_uuid';
   static const String refreshToken = 'refresh_token';
   static const String loginDateTime = 'login_date_time';
   static const String userLoginType = 'user_login_type'; // google / apple / email

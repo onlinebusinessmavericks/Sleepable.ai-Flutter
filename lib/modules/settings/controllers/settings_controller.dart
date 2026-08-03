@@ -187,6 +187,9 @@ class SettingsController extends GetxController {
       if (Get.isRegistered<SubscriptionController>()) {
         final subCtrl = Get.find<SubscriptionController>();
         subCtrl.isPremium.value = false; // Local value reset
+        // Detach RevenueCat so the next account does not inherit this
+        // customer's entitlements.
+        await subCtrl.resetUser();
       }
 
       // 5. 🔥 Clear ALL Sensitive Local Storage

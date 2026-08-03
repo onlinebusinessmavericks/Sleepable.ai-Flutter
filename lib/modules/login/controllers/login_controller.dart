@@ -189,6 +189,10 @@ class LoginController extends BaseController {
             ? Get.find<SubscriptionController>()
             : Get.put(SubscriptionController(), permanent: true);
 
+        // Identify RevenueCat with our backend UUID before anything touches
+        // purchases, otherwise the customer stays anonymous.
+        await subController.identifyUser(response.data.uuid);
+
         // Pehle Login response se update karein
         bool loginPremiumStatus = response.data.isPremium;
         await subController.updatePremiumStatus(loginPremiumStatus, isFromBackend: true);
@@ -471,6 +475,10 @@ class LoginController extends BaseController {
       final subController = Get.isRegistered<SubscriptionController>()
           ? Get.find<SubscriptionController>()
           : Get.put(SubscriptionController(), permanent: true);
+
+      // Identify RevenueCat with our backend UUID before anything touches
+      // purchases, otherwise the customer stays anonymous.
+      await subController.identifyUser(targetData.uuid ?? '');
 
       // Backend response se immediate premium status sync karein
       bool loginPremiumStatus = targetData.isPremium ?? false;
