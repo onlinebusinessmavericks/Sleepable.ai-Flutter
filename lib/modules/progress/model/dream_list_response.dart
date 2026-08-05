@@ -41,6 +41,10 @@ class DreamData {
   final String guidance;
   final List<String> actionSteps;
   final List<DreamScene> scenes;
+
+  /// True while the backend is still generating the dream images. The text is
+  /// returned immediately; scenes/image fill in about a minute later.
+  final bool imagesPending;
   // final int inputTokens;
   // final int outputTokens;
 
@@ -63,6 +67,7 @@ class DreamData {
     required this.guidance,
     required this.actionSteps,
     required this.scenes,
+    this.imagesPending = false,
     // required this.inputTokens,
     // required this.outputTokens,
     required this.chatHistory,
@@ -105,6 +110,7 @@ class DreamData {
             .map((x) => DreamScene.fromJson(x)),
       )
           : <DreamScene>[],
+      imagesPending: json['images_pending'] ?? false,
       // inputTokens: json['input_tokens'] ?? 0,
       // outputTokens: json['output_tokens'] ?? 0,
 

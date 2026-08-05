@@ -762,6 +762,11 @@ class SleepSoundController extends GetxController {
     });
 
     musicPlayer.playerStateStream.listen((state) async {
+      // Long tracks are 20-25 MB, so buffering is visible on slower networks.
+      // Surface it instead of letting the UI look frozen.
+      isBuffering.value = state.processingState == ProcessingState.loading ||
+          state.processingState == ProcessingState.buffering;
+
       if (_isToggling || state.processingState == ProcessingState.buffering) return;
 
       // Update Play/Pause UI
@@ -1415,6 +1420,10 @@ class SleepSoundController extends GetxController {
 
   // RxBool isRunning = false.obs;
   RxBool isPaused = false.obs; // ✅ new: pause/resume support
+
+  /// True while the track is still buffering. Long sleep tracks are 20-25 MB,
+  /// so without this the player looks stuck before playback starts.
+  RxBool isBuffering = false.obs;
 
   Timer? _timer;
   final TextEditingController mixNameController = TextEditingController(text: "Mix0");

@@ -3,7 +3,15 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/theme/text_theme.dart';
+import '../../sleep_sound/controllers/sleep_sound_controller.dart';
 import '../controllers/music_controller.dart';
+
+/// The music player itself lives on SleepSoundController, so read its buffering
+/// state from there. Returns false if that controller is not registered.
+bool _isBufferingNow() {
+  if (!Get.isRegistered<SleepSoundController>()) return false;
+  return Get.find<SleepSoundController>().isBuffering.value;
+}
 
 class MusicView extends GetView<MusicController> {
   const MusicView({super.key});
@@ -128,7 +136,18 @@ class MusicView extends GetView<MusicController> {
                             onTap: controller.togglePlay,
                             child: Padding(
                               padding: EdgeInsets.all(16 * SizeConfigs.paddingScale),
-                              child: Icon(controller.isPlaying.value ? Icons.pause : Icons.play_arrow, color: AppColors.backgroundColor, size: 32 * SizeConfigs.paddingScale),
+                              // Long tracks are 20-25 MB; show buffering instead of
+                              // a play icon that looks like nothing happened.
+                              child: _isBufferingNow()
+                                  ? SizedBox(
+                                      width: 32 * SizeConfigs.paddingScale,
+                                      height: 32 * SizeConfigs.paddingScale,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: AppColors.backgroundColor,
+                                      ),
+                                    )
+                                  : Icon(controller.isPlaying.value ? Icons.pause : Icons.play_arrow, color: AppColors.backgroundColor, size: 32 * SizeConfigs.paddingScale),
                             ),
                           ),
                         ),

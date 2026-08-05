@@ -49,11 +49,23 @@ Map<String, String> buildHeaderTokens({bool isAuthRequired = true}) {
 
   header[HttpHeaders.contentTypeHeader] = 'application/json';
   header[HttpHeaders.acceptHeader] = 'application/json';
-  // final String currentLanguageCode = getStringAsync("selected_language_code", defaultValue: "en");
-  // // header[HttpHeaders.acceptLanguageHeader] = currentLanguageCode;
-  // header['language'] = currentLanguageCode;
+  header['X-App-Language'] = currentAppLanguageCode();
 
   return header;
+}
+
+/// Language the UI is currently showing.
+///
+/// Sent on every request as X-App-Language so sound names, category names and
+/// AI responses come back in the same language as the UI. The backend gives
+/// this header priority over the stored profile language, so it stays correct
+/// even when the profile sync failed.
+String currentAppLanguageCode() {
+  // 'language_code' is always written (including on first launch from the
+  // device locale); 'selected_language_code' only on an explicit change.
+  String code = getStringAsync('language_code');
+  if (code.isEmpty) code = getStringAsync('selected_language_code');
+  return code.isEmpty ? 'en' : code;
 }
 
 Uri buildBaseUrl(String endPoint) {
