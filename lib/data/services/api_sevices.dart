@@ -603,6 +603,21 @@ class ProgressApis {
     return DreamListResponse.fromJson(response);
   }
 
+  /// Re-reads a dream. Used to poll for the generated images, which the analyze
+  /// call returns as `images_pending` and fills in roughly a minute later.
+  static Future<DreamListResponse> getDreamById(int dreamId) async {
+    final response = await buildHttpResponse(
+      endPoint: "progress/dreambot/$dreamId/",
+      method: MethodType.get,
+    );
+
+    if (response != null && response['data'] is Map<String, dynamic>) {
+      response['data'] = [response['data']];
+    }
+
+    return DreamListResponse.fromJson(response);
+  }
+
   // static Future<SleepAudioResponse> getSleepAudioRecordings({required String dataType, String? date}) async {
   //   final response = await buildHttpResponse(
   //     // 🔥 Changed from 'sleep-audio-list/' to 'sleep-recorder'

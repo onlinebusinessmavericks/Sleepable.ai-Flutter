@@ -255,11 +255,18 @@ class DreamBotController extends GetxController {
           "actionSteps": d.actionSteps,
           "scenes": d.scenes,
           "date": d.createdAt,
-          "image": d.image.startsWith('http') ? d.image : "https://api.sleepable.ai${d.image}",
+          "image": _absoluteImageUrl(d.image),
           "chatHistory": d.chatHistory,
+          "imagesPending": d.imagesPending,
         });
 
         canAnalyze.value = false;
+
+        // The text is ready now; the images are still being generated, so keep
+        // checking in the background and fill them in when they land.
+        if (d.imagesPending) {
+          _pollForDreamImages(d.dreamId != 0 ? d.dreamId : currentDreamId, messages.length - 1);
+        }
 
         if (Get.isRegistered<ProgressController>()) {
           Get.find<ProgressController>().fetchMyDreams();
@@ -272,6 +279,50 @@ class DreamBotController extends GetxController {
       scrollToBottom();
     }
   }
+  String _absoluteImageUrl(String path) {
+    if (path.isEmpty) return "";
+    return path.startsWith('http') ? path : "https://api.sleepable.ai$path";
+  }
+
+  /// Dream images are generated after the analysis text is returned (~50s), so
+  /// re-read the dream a few times and update the card in place once they exist.
+  Future<void> _pollForDreamImages(int dreamId, int messageIndex) async {
+    if (dreamId == 0) return;
+
+    for (int attempt = 0; attempt < 5; attempt++) {
+      await Future.delayed(const Duration(seconds: 15));
+      if (isClosed) return;
+
+      try {
+        final res = await ProgressApis.getDreamById(dreamId);
+        if (!res.success || res.data.isEmpty) continue;
+
+        final d = res.data.first;
+        final bool ready = d.scenes.isNotEmpty || d.image.isNotEmpty;
+        if (!ready && d.imagesPending) continue;
+
+        if (messageIndex < 0 || messageIndex >= messages.length) return;
+        final updated = Map<String, dynamic>.from(messages[messageIndex]);
+        updated["scenes"] = d.scenes;
+        updated["image"] = _absoluteImageUrl(d.image);
+        updated["imagesPending"] = false;
+        messages[messageIndex] = updated;
+        messages.refresh();
+        return;
+      } catch (e) {
+        debugPrint("Dream image poll attempt ${attempt + 1} failed: $e");
+      }
+    }
+
+    // Gave up waiting: stop showing the loader rather than spinning forever.
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+      final updated = Map<String, dynamic>.from(messages[messageIndex]);
+      updated["imagesPending"] = false;
+      messages[messageIndex] = updated;
+      messages.refresh();
+    }
+  }
+
   void _loadOldDreamFromHistory(int id) async {
     isFirstTime.value = false; // Switch to chat view immediately
     try {

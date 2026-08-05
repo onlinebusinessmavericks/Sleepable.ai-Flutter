@@ -294,6 +294,29 @@ class DreamBotScreen extends GetView<DreamBotController> {
               height: 220,
               fit: BoxFit.cover,
             )
+                : msg["imagesPending"] == true
+                // The analysis text arrives first; images are generated in the
+                // background and swapped in when ready.
+                ? Container(
+              height: 220,
+              width: double.infinity,
+              color: Colors.white10,
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white54),
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    "Creating your dream visuals...",
+                    style: TextStyle(color: Colors.white54, fontSize: 14),
+                  ),
+                ],
+              ),
+            )
                 : Container(
               height: 220,
               width: double.infinity,

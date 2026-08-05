@@ -1225,6 +1225,10 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
     WheelSegment(Get.context?.lang.noLuck ?? 'No Luck', 0, color: Colors.white, probability: 0.0),
   ];
 
+  /// The backend rejects a second spin, so offer the won discount instead of a
+  /// spin the user cannot use.
+  bool get _alreadySpun => subController.spinInfo.value?.alreadySpun == true;
+
   void _spinWheel() async {
     final lang = Get.context?.lang;
     if (_isSpinning) return;
@@ -1339,18 +1343,19 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
                       ),
                       onPressed: () {
-                        if (!_isSpinning && !_hasWon) {
-                          _spinWheel();
-                        } else if (_hasWon) {
-                          // Sheet 5 close karke Sheet 6 open karein
+                        // Someone who already used their spin can only claim the
+                        // discount they won; spinning again just returns a 400.
+                        if (_hasWon || _alreadySpun) {
                           Get.back();
                           showPremiumOfferSheet6(context);
+                        } else if (!_isSpinning) {
+                          _spinWheel();
                         }
                       },
                       child: subController.isLoading.value
                           ? const CircularProgressIndicator(color: Colors.black)
                           : Text(
-                              _isSpinning ? lang.spinning : (_hasWon ? lang.claimDiscount : lang.spinNow),
+                              _isSpinning ? lang.spinning : ((_hasWon || _alreadySpun) ? lang.claimDiscount : lang.spinNow),
                               // Text(
                               //         _isSpinning ? "SPINNING..." : (_hasWon ? "CLAIM DISCOUNT" : "Spin Now"),
                               style: textTheme.titleLarge?.copyWith(color: Colors.black, fontSize: 18 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
