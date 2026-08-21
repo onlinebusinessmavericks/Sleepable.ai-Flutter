@@ -46,10 +46,6 @@
     </array>
     <key>LSRequiresIPhoneOS</key>
     <true/>
-    <key>UIDeviceFamily</key>
-    <array>
-        <integer>1</integer>
-    </array>
 
     <key>NSCameraUsageDescription</key>
     <string>Sleepable AI needs camera access to detect movement during sleep for better analysis.</string>
@@ -104,6 +100,11 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+       <string>UIInterfaceOrientationPortrait</string>
+       <string>UIInterfaceOrientationPortraitUpsideDown</string>
     </array>
 </dict>
 </plist>
