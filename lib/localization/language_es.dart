@@ -932,6 +932,10 @@ class LanguageEs extends BaseLanguage {
   String get proInsightsPrompt => 'No se encontraron resultados. Obtén información personalizada sobre tu sueño con Sleepable Premium ✨';
   @override 
   String get noInsightsToday => 'No se encontraron datos relevantes para hoy.';
+  @override
+  String get noInsightsWeek => 'No se encontraron datos para esta semana.';
+  @override
+  String get noInsightsMonth => 'No se encontraron datos para este mes.';
   @override 
   String get settings => 'Ajustes';
   @override 
@@ -1782,7 +1786,7 @@ class LanguageEs extends BaseLanguage {
   @override
   String get relaxYourBody => 'Relaja tu cuerpo';
   @override
-  String get unknownArtist => 'Artista desconocido';
+  String get unknownArtist => 'Sleepable AI';
   @override
   String get spinToUnlockAn => 'Gira para desbloquear un';
   @override

@@ -304,6 +304,9 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                             GestureDetector(
                               onTap: () {
                                 Get.back();
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  controller.navigateToAddMusic();
+                                });
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -428,8 +431,9 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                         ],
                       ),
                       Obx(() {
-                        // Check if current mix is already saved
-                        final alreadySaved = controller.savedMixes.any((mix) {
+                        // Check if current mix is already saved (local or API)
+                        final alreadySaved = controller.resolvePlayingMixId() != null ||
+                            controller.savedMixes.any((mix) {
                           final savedSounds = List<int>.from(mix['sounds'] ?? <int>[]);
                           final savedMusic = List<int>.from(mix['music'] ?? <int>[]);
 
@@ -478,10 +482,23 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                                         backgroundColor: Colors.pinkAccent,
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       ),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         Navigator.pop(context);
 
-                                        // Remove mix safely using IDs
+                                        final mixId = controller.resolvePlayingMixId();
+                                        if (mixId != null) {
+                                          final ok = await controller.deleteMix(mixId);
+                                          if (ok) {
+                                            Get.snackbar(
+                                              "Removed",
+                                              "Mix deleted",
+                                              snackPosition: SnackPosition.BOTTOM,
+                                            );
+                                          }
+                                          return;
+                                        }
+
+                                        // Fallback: local-only mixes
                                         controller.savedMixes.removeWhere((mix) {
                                           final savedSounds = List<int>.from(mix['sounds'] ?? <int>[]);
                                           final savedMusic = List<int>.from(mix['music'] ?? <int>[]);

@@ -488,9 +488,12 @@ class SubscriptionController extends GetxController {
   // 5. Backend Verification API
   Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon) async {
     try {
+      // Backend VerifyPurchaseView expects `app_user_id` (RevenueCat customer id /
+      // user uuid). Keep `purchase_token` as a legacy alias for older servers.
       final payload = {
         "product_id": productId,
-        "purchase_token": token, // Isme google ka purchase token jayega
+        "app_user_id": token,
+        "purchase_token": token,
         "coupon_code": coupon ?? ""
       };
 

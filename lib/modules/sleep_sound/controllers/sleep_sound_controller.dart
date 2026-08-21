@@ -17,7 +17,10 @@ import '../../../data/services/api_sevices.dart';
 import '../../../data/services/network_utils.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/SubscriptionController.dart';
+import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../alarm/controllers/alarm_controller.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../model/SoundItem.dart';
 import '../model/sound_category_model.dart';
@@ -110,6 +113,27 @@ class SleepSoundController extends GetxController {
     }
   }
 
+  void _syncFavoriteState(int soundId, bool value) {
+    for (final item in playingMusic) {
+      if (item.id == soundId) item.isFavorite = value;
+    }
+    for (final item in playingSounds) {
+      if (item.id == soundId) item.isFavorite = value;
+    }
+    playingMusic.refresh();
+    playingSounds.refresh();
+  }
+
+  /// Look up favorite state from catalog (Home often hardcodes false).
+  bool lookupFavorite(int soundId) {
+    for (final list in soundsBySubCategory.values) {
+      for (final item in list) {
+        if (item.id == soundId) return item.isFavorite ?? false;
+      }
+    }
+    return false;
+  }
+
   Future<void> toggleLike(SoundItem sound, String categorySlug, String subCategorySlug) async {
     final bool originalState = sound.isFavorite ?? false;
     final bool newState = !originalState;
@@ -124,6 +148,10 @@ class SleepSoundController extends GetxController {
           }
         }
       });
+
+      // Also sync the tapped instance + currently playing lists (player heart)
+      sound.isFavorite = newState;
+      _syncFavoriteState(sound.id, newState);
 
       // 2. Immediate Removal: If in Favorites tab and un-liked, remove it
       if (isFavoritesTab && newState == false) {
@@ -151,6 +179,8 @@ class SleepSoundController extends GetxController {
           }
         }
       });
+      sound.isFavorite = originalState;
+      _syncFavoriteState(sound.id, originalState);
 
       // If we were in favorites and un-liked, we might need to re-fetch to restore the item
       if (isFavoritesTab) {
@@ -690,9 +720,39 @@ class SleepSoundController extends GetxController {
 
   final isAnyPlayerVisible = false.obs;
 
+  bool get isUserPremium => subController.isPremium.value;
+
+  bool isTrackLockedForUser(SoundItem sound) =>
+      sound.isPremium == true && !isUserPremium;
+
+  /// Non-pro rotation: free tracks only (used by next/prev / auto-advance).
+  List<SoundItem> get freePlaylist =>
+      activePlaylist.where((s) => s.isPremium != true).toList();
+
+  void presentPremiumPaywall() {
+    final context = Get.context;
+    if (context == null) return;
+    final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
+    if (hasAlreadySpun) {
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().showRotatingPremiumSheet(context);
+      } else {
+        showPremiumOfferSheet6(context);
+      }
+    } else {
+      showPremiumOfferSheet4(context);
+    }
+  }
+
   Future<void> toggleMusic(SoundItem music) async {
     final int musicId = music.id;
     bool isSameMusic = playingMusic.any((m) => m.id == musicId);
+
+    // Premium gate: non-pro cannot start paid tracks (stop of same track still allowed)
+    if (!isSameMusic && isTrackLockedForUser(music)) {
+      presentPremiumPaywall();
+      return;
+    }
 
     // 1. UPDATE UI STATE INSTANTLY (0ms Delay)
     _isToggling = true; // Lock the listener
@@ -810,9 +870,10 @@ class SleepSoundController extends GetxController {
 
     const int steps = 20;
     final stepTime = duration.inMilliseconds ~/ steps;
+    final double startVol = musicPlayer.volume.clamp(0.0, 1.0);
 
     for (int i = 0; i <= steps; i++) {
-      final volume = 1 - (i / steps);
+      final volume = startVol * (1 - (i / steps));
       await musicPlayer.setVolume(volume);
       await Future.delayed(Duration(milliseconds: stepTime));
     }
@@ -1008,6 +1069,9 @@ class SleepSoundController extends GetxController {
     );
   }
   // Inside SleepSoundController
+  /// Bumped when UI should jump to Music (e.g. "Add Music" from mix sheet).
+  final RxInt musicNavRequest = 0.obs;
+
   void setJumpArguments({required String jumpTab, required String jumpFilter}) {
     // 1. Update Category
     selectedCategorySlug.value = jumpTab;
@@ -1022,6 +1086,15 @@ class SleepSoundController extends GetxController {
 
     // 3. Refresh Data
     onSoundTabVisible();
+  }
+
+  /// Close mix sheet → Sounds tab → Music category (keeps playing sounds).
+  Future<void> navigateToAddMusic() async {
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().changeTab(1);
+    }
+    setJumpArguments(jumpTab: "music", jumpFilter: "__all__");
+    musicNavRequest.value++;
   }
   Future<void> syncVolumesAndLoop() async {
     // 1. Initial Check
@@ -1192,22 +1265,26 @@ class SleepSoundController extends GetxController {
         return;
       }
 
-      // 3. FADE OUT LOGIC (With Safety check)
+      // 3. FADE OUT LOGIC — from each player's CURRENT volume → 0 (no spike)
       if (!isPaused.value && activePlayers.isNotEmpty) {
-        const int steps = 12; // Steps kam rakhein taaki hang na ho
+        const int steps = 12;
         final int stepDelay = duration.inMilliseconds ~/ steps;
 
+        // Snapshot starting volumes so we never jump up to 1.0
+        final Map<AudioPlayer, double> startVolumes = {
+          for (final p in activePlayers) p: p.volume.clamp(0.0, 1.0),
+        };
+
         for (int i = steps; i >= 0; i--) {
-          // 🔥 Essential Guard: Agar cleanup ke beech mein kuch crash ho toh loop break ho jaye
           if (activePlayers.isEmpty) break;
 
-          final double fadePercentage = i / steps;
+          final double t = i / steps; // 1.0 → 0.0
 
-          // try-catch inside loop taaki ek player fail ho toh dusra chalta rahe
           try {
             for (var p in activePlayers) {
               if (p.processingState != ProcessingState.idle) {
-                p.setVolume(fadePercentage).catchError((_) => null);
+                final start = startVolumes[p] ?? p.volume;
+                p.setVolume(start * t).catchError((_) => null);
               }
             }
           } catch (_) {}
@@ -1286,6 +1363,7 @@ class SleepSoundController extends GetxController {
     isPaused.value = false;
     isRunning.value = false;
     isAnyPlayerVisible.value = false; // Reset the visibility lock for future plays
+    activeApiMixId.value = null;
 
     debugPrint("✅ State and UI reset complete.");
   }
@@ -1507,6 +1585,8 @@ class SleepSoundController extends GetxController {
 
   final RxList<MixedSoundRecord> apiMixes = <MixedSoundRecord>[].obs;
   final RxBool isMixesLoading = false.obs;
+  /// Currently playing mix from Your Mixes (API). Used by Remove / Unlike.
+  final RxnInt activeApiMixId = RxnInt();
 
   Future<void> fetchMixes() async {
     if (isMixesLoading.value) return;
@@ -1524,12 +1604,86 @@ class SleepSoundController extends GetxController {
       isMixesLoading.value = false;
     }
   }
+
+  Future<bool> deleteMix(int mixId) async {
+    try {
+      final response = await SoundsApis.soundsMixedDelete(mixId: mixId);
+      if (response.success != true) {
+        Get.snackbar("Error", response.message.isNotEmpty ? response.message : "Could not delete mix");
+        return false;
+      }
+      apiMixes.removeWhere((m) => m.id == mixId);
+      apiMixes.refresh();
+      savedMixes.removeWhere((m) => m['apiId'] == mixId);
+      savedMixes.refresh();
+      if (activeApiMixId.value == mixId) {
+        activeApiMixId.value = null;
+      }
+      return true;
+    } catch (e) {
+      debugPrint("❌ deleteMix Error: $e");
+      Get.snackbar("Error", "Could not delete mix");
+      return false;
+    }
+  }
+
+  Future<bool> renameMix(int mixId, String newTitle) async {
+    final title = newTitle.trim();
+    if (title.isEmpty) return false;
+    try {
+      final response = await SoundsApis.soundsMixedUpdate(
+        mixId: mixId,
+        request: {"title": title},
+      );
+      if (response.success != true) {
+        Get.snackbar("Error", response.message.isNotEmpty ? response.message : "Could not rename mix");
+        return false;
+      }
+      final idx = apiMixes.indexWhere((m) => m.id == mixId);
+      if (idx != -1) {
+        final old = apiMixes[idx];
+        apiMixes[idx] = MixedSoundRecord(
+          id: old.id,
+          title: title,
+          description: old.description,
+          sounds: old.sounds,
+          isPublic: old.isPublic,
+          createdAt: old.createdAt,
+        );
+        apiMixes.refresh();
+      }
+      return true;
+    } catch (e) {
+      debugPrint("❌ renameMix Error: $e");
+      Get.snackbar("Error", "Could not rename mix");
+      return false;
+    }
+  }
+
+  /// Resolve mix id for the currently playing combination (API mix or matched by sounds).
+  int? resolvePlayingMixId() {
+    if (activeApiMixId.value != null) return activeApiMixId.value;
+    final currentIds = {
+      ...playingSounds.map((e) => e.id),
+      ...playingMusic.map((e) => e.id),
+    };
+    for (final mix in apiMixes) {
+      final mixIds = mix.sounds.map((s) => s.id).toSet();
+      if (mixIds.length == currentIds.length && mixIds.containsAll(currentIds)) {
+        return mix.id;
+      }
+    }
+    return null;
+  }
+
   Future<void> restoreMixFromApi(MixedSoundRecord mix) async {
     try {
       debugPrint("🔄 Restoring Full Mix: ${mix.title}");
+      activeApiMixId.value = mix.id;
 
       // 1. Stop everything currently playing
       await fadeOutAndStopAll(reason: StopReason.systemCleanup);
+      activeApiMixId.value = mix.id; // restore after clearState may wipe it
 
       // Clear lists to ensure a clean slate
       playingSounds.clear();
@@ -1703,17 +1857,22 @@ class SleepSoundController extends GetxController {
       final request = {
         'title': mixName,
         'sound_ids': [...playingSounds.map((item) => item.id), ...playingMusic.map((item) => item.id)],
-        'description': [...playingSounds.map((item) => item.name), ...playingMusic.map((item) => item.name)],
+        'description': [...playingSounds.map((item) => item.name), ...playingMusic.map((item) => item.name)].join(', '),
       };
 
       print("🌐 Server request payload: $request");
 
-      // 🔹 Uncomment this to call API
       final response = await SoundsApis.soundsMixedCreate(request: request);
       if (response.success) {
+        final createdId = (response.data is Map) ? response.data['id'] as int? : null;
+        if (createdId != null) {
+          mixData['apiId'] = createdId;
+          activeApiMixId.value = createdId;
+          savedMixes.refresh();
+        }
+        await fetchMixes();
         Get.snackbar(
           lang.mixSaved,
-          // "Mix Saved",
           response.message,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green.withOpacity(0.9),
@@ -1948,20 +2107,34 @@ class SleepSoundController extends GetxController {
     return activePlaylist.indexWhere((m) => m.id == playingMusic.first.id);
   }
 
-  /// ⏭ Unified Skip Next
+  /// ⏭ Unified Skip Next (non-pro: free tracks only)
   Future<void> skipNext() async {
-    final list = activePlaylist;
-    if (list.isEmpty) return;
-    int index = currentActiveIndex;
+    final list = isUserPremium ? activePlaylist : freePlaylist;
+    if (list.isEmpty) {
+      if (!isUserPremium && activePlaylist.any((s) => s.isPremium == true)) {
+        presentPremiumPaywall();
+      }
+      return;
+    }
+    int index = playingMusic.isEmpty
+        ? -1
+        : list.indexWhere((m) => m.id == playingMusic.first.id);
     int nextIndex = (index == -1 || index >= list.length - 1) ? 0 : index + 1;
     await toggleMusic(list[nextIndex]);
   }
 
-  /// ⏮ Unified Skip Previous
+  /// ⏮ Unified Skip Previous (non-pro: free tracks only)
   Future<void> skipPrevious() async {
-    final list = activePlaylist;
-    if (list.isEmpty) return;
-    int index = currentActiveIndex;
+    final list = isUserPremium ? activePlaylist : freePlaylist;
+    if (list.isEmpty) {
+      if (!isUserPremium && activePlaylist.any((s) => s.isPremium == true)) {
+        presentPremiumPaywall();
+      }
+      return;
+    }
+    int index = playingMusic.isEmpty
+        ? -1
+        : list.indexWhere((m) => m.id == playingMusic.first.id);
     int prevIndex = (index <= 0) ? list.length - 1 : index - 1;
     await toggleMusic(list[prevIndex]);
   }
@@ -2126,7 +2299,7 @@ class SleepSoundController extends GetxController {
 
     final alarmCtrl = Get.isRegistered<AlarmController>()
         ? Get.find<AlarmController>()
-        : Get.put(AlarmController());
+        : Get.put(AlarmController(), permanent: true);
 
 
 

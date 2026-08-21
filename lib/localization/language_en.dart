@@ -1293,6 +1293,10 @@ class LanguageEn extends BaseLanguage {
 
   @override
   String get noInsightsToday => 'No insights found for today.';
+  @override
+  String get noInsightsWeek => 'No insights found for this week.';
+  @override
+  String get noInsightsMonth => 'No insights found for this month.';
 
   @override
   String get settings => 'Settings';
@@ -2500,7 +2504,7 @@ class LanguageEn extends BaseLanguage {
   @override
   String get relaxYourBody => 'Relax Your Body';
   @override
-  String get unknownArtist => 'Unknown Artist';
+  String get unknownArtist => 'Sleepable AI';
   @override
   String get spinToUnlockAn => 'Spin to unlock an';
   @override

@@ -88,6 +88,7 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
             child: Obx(() {
               // 🔥 Uses the dynamic list we created above
               final list = controller.activePlaylist;
+              final isPro = controller.isUserPremium;
 
               if (list.isEmpty) {
                 return  Center(
@@ -109,6 +110,7 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
                       final sound = list[index];
                       final bool isCurrent = controller.playingMusic.any((m) => m.id == sound.id);
                       final bool isPlayingIcon = isCurrent && !controller.isPaused.value;
+                      final bool isLocked = !isPro && sound.isPremium == true;
 
                       return Container(
                         margin: EdgeInsets.symmetric(vertical: 6 * SizeConfigs.paddingScale, horizontal: 4 * SizeConfigs.paddingScale),
@@ -118,7 +120,13 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
                           border: isCurrent ? Border.all(color: Colors.blueAccent.withOpacity(0.5), width: 1) : null,
                         ),
                         child: ListTile(
-                          onTap: () => controller.toggleMusic(sound),
+                          onTap: () {
+                            if (isLocked) {
+                              controller.presentPremiumPaywall();
+                              return;
+                            }
+                            controller.toggleMusic(sound);
+                          },
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: CachedImageWidget(url: sound.image, height: 45 * SizeConfigs.paddingScale, width: 45 * SizeConfigs.paddingScale, fit: BoxFit.cover),
@@ -130,21 +138,26 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
                             ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: isCurrent ? Colors.blueAccent : Colors.white, fontSize: 14 * SizeConfigs.textScale),
                           ),
                           subtitle: Text(
-                            sound.artist?.name ?? (sound.categoryName.toLowerCase() == "story" ? context.lang.storyteller : context.lang.relaxingMelody),
+                            sound.artist?.name ??
+                                (sound.categoryName.toLowerCase() == "story"
+                                    ? context.lang.storyteller
+                                    : context.lang.relaxingMelody),
                             style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w400, color: Colors.white70, fontSize: 12 * SizeConfigs.textScale),
                           ),
-                          trailing: Material(
-                            color: isCurrent ? Colors.blueAccent : Colors.white.withOpacity(0.1),
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => controller.toggleMusic(sound),
-                              child: Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Icon(isPlayingIcon ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 24 * SizeConfigs.paddingScale),
-                              ),
-                            ),
-                          ),
+                          trailing: isLocked
+                              ? const Icon(Icons.lock_rounded, color: Colors.white70, size: 22)
+                              : Material(
+                                  color: isCurrent ? Colors.blueAccent : Colors.white.withOpacity(0.1),
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: () => controller.toggleMusic(sound),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(isPlayingIcon ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 24 * SizeConfigs.paddingScale),
+                                    ),
+                                  ),
+                                ),
                         ),
                       );
                     }),

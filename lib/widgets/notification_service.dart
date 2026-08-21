@@ -13,10 +13,14 @@ import 'package:sleepable_ai/routes/app_pages.dart';
 import '../core/constants/shared_prefences.dart';
 import '../data/services/api_sevices.dart';
 import '../modules/sleep_sound/controllers/sleep_sound_controller.dart';
+import '../modules/sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+
+  /// Set by AlarmController — avoids circular import.
+  static void Function()? onAlarmRingNotificationTap;
 
   static Future<void> init() async {
     dev.log("🔔 NotificationService: Initializing...");
@@ -69,9 +73,59 @@ class NotificationService {
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) => handleRedirect(message.data));
 
+    // Cold-start: stash the destination immediately (no 2s delay).
+    // BootUpController consumes pendingDashboardTab so it does not overwrite
+    // Progress with Home after the splash video.
     RemoteMessage? initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
-      Future.delayed(const Duration(seconds: 2), () => handleRedirect(initialMessage.data));
+      await stashPendingRedirect(initialMessage.data);
+      // Apply once routes are ready — short delay only for GetMaterialApp mount
+      Future.delayed(const Duration(milliseconds: 400), () {
+        handleRedirect(initialMessage.data);
+      });
+    } else {
+      // Avoid a stale tab from a killed cold-start opening Progress on next launch
+      await setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
+    }
+  }
+
+  /// Persist tab intent before Boot navigates to dashboard (avoids Home → Progress flash).
+  static Future<void> stashPendingRedirect(Map<String, dynamic> data) async {
+    final type = (data['type'] ?? data['notification_type'] ?? '').toString().toLowerCase();
+    final tab = _tabIndexForType(type);
+    if (tab != null) {
+      await setValue(AppSharedPreferenceKeys.pendingDashboardTab, tab);
+      dev.log("📌 Stashed pending dashboard tab: $tab for type=$type");
+    }
+  }
+
+  static int? _tabIndexForType(String type) {
+    switch (type) {
+      case 'caffeine_cutoff':
+      case 'streak_risk':
+      case 'inactivity_alert':
+      case 'streak_milestone':
+        return 0;
+      case 'windup_alert':
+        return 1;
+      case 'weekly_summary':
+      case 'first_sleep_tracked':
+      case 'morning_summary':
+      case 'sleep_report':
+      case 'sleep_report_ready':
+      case 'dream_milestone':
+        return 2;
+      case 'bedtime_reminder':
+      case 'milestone_7':
+      case 'milestone_25':
+      case 'milestone_50':
+      case 'milestone_100':
+      case 'milestone_200':
+      case 'milestone_365':
+      case 'badge_unlocked':
+        return 3;
+      default:
+        return null;
     }
   }
 
@@ -164,6 +218,47 @@ class NotificationService {
     );
   }
 
+  /// Full-screen style cue when snooze/alarm fires while app is backgrounded.
+  static Future<void> showAlarmRingNotification({String title = 'Wake-up Alarm', String body = 'Tap to open'}) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'alarm_channel',
+      'Alarms',
+      channelDescription: 'Wake-up and snooze alarms',
+      importance: Importance.max,
+      priority: Priority.max,
+      category: AndroidNotificationCategory.alarm,
+      fullScreenIntent: true,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      ongoing: true,
+      autoCancel: true,
+    );
+
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      ),
+    );
+
+    await _localNotifications.show(
+      id: 9001,
+      title: title,
+      body: body,
+      notificationDetails: platformDetails,
+      payload: jsonEncode({'type': 'alarm_ring'}),
+    );
+  }
+
+  static Future<void> cancelAlarmRingNotification() async {
+    try {
+      await _localNotifications.cancel(id: 9001);
+    } catch (_) {}
+  }
+
   static void handleRedirect(Map<String, dynamic> data) {
     dev.log("🚀 NOTIFICATION DATA RECEIVED: $data");
 
@@ -176,12 +271,19 @@ class NotificationService {
     dev.log("📍 Notification Type: [$type]");
 
     switch (type) {
+      case 'alarm_ring':
+        try {
+          onAlarmRingNotificationTap?.call();
+        } catch (e) {
+          dev.log("alarm_ring redirect error: $e");
+        }
+        break;
+
     // --- HOME SCREEN (Tab 0) ---
       case 'caffeine_cutoff':
       case 'streak_risk':
       case 'inactivity_alert':
       case 'streak_milestone':
-      case 'morning_summary':
         _switchToTab(0);
         break;
 
@@ -190,9 +292,12 @@ class NotificationService {
         _switchToTab(1);
         break;
 
-    // --- PROGRESS SCREEN (Tab 2) ---
+    // --- PROGRESS SCREEN (Tab 2) — sleep report / summaries ---
       case 'weekly_summary':
       case 'first_sleep_tracked':
+      case 'morning_summary':
+      case 'sleep_report':
+      case 'sleep_report_ready':
         _switchToTab(2);
         break;
 
@@ -236,18 +341,38 @@ class NotificationService {
     }
   }
   /// Helper function to switch tabs safely with the Bottom Bar visible
+  static bool _isSwitchingTab = false;
   static void _switchToTab(int index) {
-    if (Get.currentRoute == Routes.dashboard) {
-      Get.find<DashboardController>().changeTab(index);
-    } else {
-      // Navigates to Dashboard and passes the index as an argument
-      Get.offAllNamed(Routes.dashboard, arguments: index);
-
-      // Safety delay for cases where the controller needs to re-initialize
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (Get.isRegistered<DashboardController>()) {
+    if (_isSwitchingTab) return;
+    _isSwitchingTab = true;
+    try {
+      // During Wake/Quit exit, never remount dashboard (fixes Home double-pop
+      // when bedtime_reminder / sleep_report arrives mid-navigation).
+      if (TrackerExitGuard.shouldSuppressDashboardRemount) {
+        setValue(AppSharedPreferenceKeys.pendingDashboardTab, index);
+        if (Get.isRegistered<DashboardController>() && Get.currentRoute == Routes.dashboard) {
           Get.find<DashboardController>().changeTab(index);
+          setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
+        } else {
+          dev.log("⏳ Suppress remount — stashed tab $index during tracker exit");
         }
+        return;
+      }
+
+      setValue(AppSharedPreferenceKeys.pendingDashboardTab, index);
+
+      if (Get.isRegistered<DashboardController>() && Get.currentRoute == Routes.dashboard) {
+        Get.find<DashboardController>().changeTab(index);
+        setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
+      } else if (Get.currentRoute == Routes.bootUp || Get.currentRoute == '/' || Get.currentRoute.isEmpty) {
+        dev.log("⏳ Waiting for BootUp to open dashboard tab $index");
+      } else {
+        Get.offAllNamed(Routes.dashboard, arguments: index);
+        setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
+      }
+    } finally {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isSwitchingTab = false;
       });
     }
   }

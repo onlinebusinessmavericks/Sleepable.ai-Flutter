@@ -54,6 +54,18 @@ class _SleepSoundViewState extends State<SleepSoundView> {
       });
     });
     ever(controller.selectedSubCategorySlug, (_) => _centerActiveChip());
+    // Jump to Music when "Add Music" is pressed from the mix sheet
+    ever(controller.musicNavRequest, (_) async {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await controller.fetchSubCategories("music");
+        final filters = controller.getCurrentFilters("music");
+        final firstFilterSlug = filters.isNotEmpty ? filters.first.slug : SleepSoundController.allSubSlug;
+        if (firstFilterSlug != SleepSoundController.allSubSlug) {
+          controller.selectedSubCategorySlug.value = firstFilterSlug;
+        }
+        jumpToTab("music", filter: firstFilterSlug);
+      });
+    });
     // ever(controller.selectedCategorySlug, (_) => _centerActiveTab());
     final args = Get.arguments as Map<String, dynamic>?;
 

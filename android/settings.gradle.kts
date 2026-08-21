@@ -17,6 +17,21 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    // Force every Flutter plugin onto the same Kotlin Gradle Plugin,
+    // including legacy ids like "kotlin-android".
+    resolutionStrategy {
+        eachPlugin {
+            val id = requested.id.id
+            if (id.startsWith("org.jetbrains.kotlin") ||
+                id == "kotlin-android" ||
+                id == "kotlin" ||
+                id == "kotlin-kapt"
+            ) {
+                useVersion("2.3.10")
+            }
+        }
+    }
 }
 
 plugins {

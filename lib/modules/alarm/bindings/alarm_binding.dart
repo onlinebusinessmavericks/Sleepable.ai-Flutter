@@ -5,6 +5,9 @@ import '../controllers/alarm_controller.dart';
 class AlarmBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<AlarmController>(() => AlarmController());
+    // Must stay alive across Get.offAllNamed(dashboard) so snooze timers survive.
+    if (!Get.isRegistered<AlarmController>()) {
+      Get.put(AlarmController(), permanent: true);
+    }
   }
 }

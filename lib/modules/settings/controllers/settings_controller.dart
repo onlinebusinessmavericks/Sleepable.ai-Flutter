@@ -91,7 +91,21 @@ class SettingsController extends GetxController {
 
   void onCommunityGuidelines() {}
 
-  void onManageSubscription() {}
+  void onManageSubscription() async {
+    try {
+      final Uri url;
+      if (GetPlatform.isIOS) {
+        url = Uri.parse('https://apps.apple.com/account/subscriptions');
+      } else if (GetPlatform.isAndroid) {
+        url = Uri.parse('https://play.google.com/store/account/subscriptions');
+      } else {
+        url = Uri.parse('https://sleepable.ai');
+      }
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      Get.snackbar("Error", "Could not open subscription management");
+    }
+  }
 
   void onSignIn() {
     Get.offAllNamed(Routes.login);
@@ -180,8 +194,10 @@ class SettingsController extends GetxController {
       // Optional: If you use Firebase, sign out from there too
       // await FirebaseAuth.instance.signOut();
 
-      final token = getStringAsync(AppSharedPreferenceKeys.apiToken);
-      final request = {"fcm_token": token};
+      final token = getStringAsync(AppSharedPreferenceKeys.fcmToken);
+      final request = {
+        if (token.isNotEmpty) "fcm_token": token,
+      };
 
       final CommonResponse response = await AuthServiceApis.logOut(request: request);
       if (Get.isRegistered<SubscriptionController>()) {

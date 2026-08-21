@@ -54,4 +54,11 @@ class AppSharedPreferenceKeys {
 
   // ===================== TRACKER =====================
   static const String isSleepTrackingActive = "is_sleep_tracking_active";
+
+  /// Tab index to open on next dashboard load (set by cold-start notification).
+  /// Consumed once by BootUpController / NotificationService.
+  static const String pendingDashboardTab = "pending_dashboard_tab";
+
+  /// Epoch ms when a snooze should re-ring (survives route clears / brief background).
+  static const String snoozeFireAtMs = "alarm_snooze_fire_at_ms";
 }

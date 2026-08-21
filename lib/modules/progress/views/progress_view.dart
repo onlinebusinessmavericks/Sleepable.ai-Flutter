@@ -482,33 +482,65 @@ class ProgressScreen extends GetView<ProgressController> {
                       ),
                     ),
 
-                    // Hours Labels
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10, top: 20, right: 20),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 60,
-                            child: Text(
-                              context.lang.hoursLabel,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white38, fontSize: 10.5 * SizeConfigs.textScale, fontWeight: FontWeight.w400),
-                            ),
-                          ),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: labels.map((h) => SizedBox(
-                                width: 20,
-                                child: Center(
-                                  child: Marquee(
-                                    child: Text(h, style: const TextStyle(color: Colors.white24, fontSize: 12, fontWeight: FontWeight.bold)),
+                    // Hours Labels (-45° when crowded, e.g. monthly Jan–Dec)
+                    Builder(
+                      builder: (context) {
+                        final bool rotateLabels = labels.length >= 8;
+                        return Padding(
+                          padding: EdgeInsets.only(left: 10, top: 20, right: 20, bottom: rotateLabels ? 12 : 0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 60,
+                                child: Text(
+                                  context.lang.hoursLabel,
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white38, fontSize: 10.5 * SizeConfigs.textScale, fontWeight: FontWeight.w400),
+                                ),
+                              ),
+                              Expanded(
+                                child: SizedBox(
+                                  height: rotateLabels ? 42 : 20,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: labels.map((h) {
+                                      final labelText = Text(
+                                        h,
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        overflow: TextOverflow.visible,
+                                        style: TextStyle(
+                                          color: Colors.white24,
+                                          fontSize: rotateLabels ? 10 : 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      );
+
+                                      if (!rotateLabels) {
+                                        return SizedBox(
+                                          width: 20,
+                                          child: Center(child: Marquee(child: labelText)),
+                                        );
+                                      }
+
+                                      return Expanded(
+                                        child: Align(
+                                          alignment: Alignment.topCenter,
+                                          child: Transform.rotate(
+                                            angle: -45 * 3.1415926535 / 180, // -45° best balance
+                                            alignment: Alignment.center,
+                                            child: labelText,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                 ),
-                              )).toList(),
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 30),
@@ -1268,16 +1300,27 @@ class ProgressScreen extends GetView<ProgressController> {
     final controller = Get.find<ProgressController>();
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
-    // 1. Calculate Times
+    // Timeline uses wall-clock duration (uploaded as wall_clock_seconds) when available
     DateTime? startDt = item.recordedAt;
     DateTime? endDt = startDt?.add(Duration(seconds: item.durationSeconds ?? 0));
 
-    // Helper to format time (e.g., 10:30 PM)
+    // Prefer API-formatted local time when present (avoids TZ display drift)
     String formatTime(DateTime? dt) {
+      if (item.recordedTime != null && item.recordedTime!.isNotEmpty && dt == startDt) {
+        return item.recordedTime!;
+      }
       if (dt == null) return "--:--";
       final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
       final minute = dt.minute.toString().padLeft(2, '0');
       final period = dt.hour >= 12 ? "PM" : "AM";
+      return "$hour:$minute $period";
+    }
+
+    String formatEndTime() {
+      if (endDt == null) return "--:--";
+      final hour = endDt.hour > 12 ? endDt.hour - 12 : (endDt.hour == 0 ? 12 : endDt.hour);
+      final minute = endDt.minute.toString().padLeft(2, '0');
+      final period = endDt.hour >= 12 ? "PM" : "AM";
       return "$hour:$minute $period";
     }
 
@@ -1345,30 +1388,75 @@ class ProgressScreen extends GetView<ProgressController> {
                     ),
                     const SizedBox(height: 6),
 
-                    // Progress Bar
+                    // Seekable progress bar
                     Obx(() {
-                      bool isActive = controller.playingUrl.value == audioUrl;
+                      final bool isActive = controller.playingUrl.value == audioUrl;
+                      final bool canSeek = subController.isPremium.value && audioUrl.isNotEmpty;
                       double progress = 0.0;
                       if (isActive && controller.totalDuration.value.inMilliseconds > 0) {
-                        progress = (controller.currentPosition.value.inMilliseconds / controller.totalDuration.value.inMilliseconds).clamp(0.0, 1.0);
+                        progress = (controller.currentPosition.value.inMilliseconds /
+                                controller.totalDuration.value.inMilliseconds)
+                            .clamp(0.0, 1.0);
                       }
 
-                      return Stack(
+                      return Column(
                         children: [
-                          Container(
-                            height: 4,
-                            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(2)),
+                          SliderTheme(
+                            data: SliderTheme.of(Get.context!).copyWith(
+                              trackHeight: 4,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                              activeTrackColor: isActive ? const Color(0xFF1E90FF) : Colors.white24,
+                              inactiveTrackColor: Colors.white10,
+                              thumbColor: canSeek
+                                  ? (isActive ? const Color(0xFF1E90FF) : Colors.white54)
+                                  : Colors.transparent,
+                              disabledActiveTrackColor: Colors.white24,
+                              disabledInactiveTrackColor: Colors.white10,
+                            ),
+                            child: Slider(
+                              value: progress,
+                              min: 0,
+                              max: 1,
+                              onChanged: canSeek
+                                  ? (v) {
+                                      // Optimistic UI while seeking
+                                      if (isActive && controller.totalDuration.value.inMilliseconds > 0) {
+                                        controller.currentPosition.value = Duration(
+                                          milliseconds: (controller.totalDuration.value.inMilliseconds * v)
+                                              .round(),
+                                        );
+                                      }
+                                    }
+                                  : null,
+                              onChangeEnd: canSeek
+                                  ? (v) => controller.seekAudio(audioUrl, v)
+                                  : null,
+                            ),
                           ),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                height: 4,
-                                width: constraints.maxWidth * progress,
-                                decoration: BoxDecoration(color: isActive ? const Color(0xFF1E90FF) : Colors.transparent, borderRadius: BorderRadius.circular(2)),
-                              );
-                            },
-                          ),
+                          if (isActive)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    controller.formatDuration(
+                                      controller.currentPosition.value.inSeconds,
+                                    ),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10),
+                                  ),
+                                  Text(
+                                    controller.formatDuration(
+                                      controller.totalDuration.value.inSeconds > 0
+                                          ? controller.totalDuration.value.inSeconds
+                                          : (item.durationSeconds ?? 0),
+                                    ),
+                                    style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       );
                     }),
@@ -1379,7 +1467,7 @@ class ProgressScreen extends GetView<ProgressController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(formatTime(startDt), style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-                        Text(formatTime(endDt), style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+                        Text(formatEndTime(), style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
                       ],
                     ),
                   ],
@@ -2133,7 +2221,7 @@ Widget _legend(BuildContext context, String label, String val, Color color) => C
                 label.toUpperCase(), // Uppercase for a technical, clean look
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white38, fontSize: 9 * SizeConfigs.textScale, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                style: TextStyle(color: Colors.white38, fontSize: 7.5 * SizeConfigs.textScale, fontWeight: FontWeight.bold, letterSpacing: 0.3),
               ),
             ),
           ),

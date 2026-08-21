@@ -124,6 +124,26 @@ class AuthServiceApis {
     );
     return CommonResponse.fromJson(responseMap);
   }
+
+  static Future<CommonResponse> forgotPassword({required Map<String, dynamic> request}) async {
+    final responseMap = await buildHttpResponse(
+      endPoint: APIEndPoints.forgotPassword,
+      request: request,
+      method: MethodType.post,
+      allowTokenRefresh: false,
+    );
+    return CommonResponse.fromJson(responseMap);
+  }
+
+  static Future<CommonResponse> resetPassword({required Map<String, dynamic> request}) async {
+    final responseMap = await buildHttpResponse(
+      endPoint: APIEndPoints.resetPassword,
+      request: request,
+      method: MethodType.post,
+      allowTokenRefresh: false,
+    );
+    return CommonResponse.fromJson(responseMap);
+  }
 }
 
 /// HOME---------------------------------------------------------------------------------------------------------------
@@ -204,6 +224,26 @@ class SoundsApis {
     final mixedListResponse = SoundsMixedListResponse.fromJson(response);
 
     return mixedListResponse.data?.records ?? [];
+  }
+
+  static Future<CommonResponse> soundsMixedDelete({required int mixId}) async {
+    final response = await buildHttpResponse(
+      endPoint: '${APIEndPoints.soundsMixedDetail}$mixId/',
+      method: MethodType.delete,
+    );
+    return CommonResponse.fromJson(response);
+  }
+
+  static Future<CommonResponse> soundsMixedUpdate({
+    required int mixId,
+    required Map request,
+  }) async {
+    final response = await buildHttpResponse(
+      endPoint: '${APIEndPoints.soundsMixedDetail}$mixId/',
+      request: request,
+      method: MethodType.put,
+    );
+    return CommonResponse.fromJson(response);
   }
 
   // // In your SoundsApis class
@@ -445,13 +485,27 @@ class TrackerApis {
   }
 
   /// 🎙 Upload Sleep Tracker Audio
-  static Future<CommonResponse> uploadTrackerAudio({required int sleepTrackerId, required File audioFile, required String recordedAt}) async {
-    final fields = {
-      "sleep_tracker_id": sleepTrackerId,
-      "recorded_at": recordedAt, // format: yyyy-MM-dd HH:mm
+  static Future<CommonResponse> uploadTrackerAudio({
+    required int sleepTrackerId,
+    required File audioFile,
+    required String recordedAt,
+    int? wallClockSeconds,
+  }) async {
+    final fields = <String, String>{
+      "sleep_tracker_id": sleepTrackerId.toString(),
+      "recorded_at": recordedAt, // ISO-8601 with offset preferred
     };
+    if (wallClockSeconds != null && wallClockSeconds > 0) {
+      fields["wall_clock_seconds"] = wallClockSeconds.toString();
+    }
 
-    final response = await buildMultipartHttpResponse(endPoint: APIEndPoints.uploadTrackerAudio, fields: fields, file: audioFile, fileKey: "audio_file", method: MethodType.post);
+    final response = await buildMultipartHttpResponse(
+      endPoint: APIEndPoints.uploadTrackerAudio,
+      fields: fields,
+      file: audioFile,
+      fileKey: "audio_file",
+      method: MethodType.post,
+    );
 
     return CommonResponse.fromJson(response);
   }

@@ -95,6 +95,13 @@ class ProfileController extends GetxController {
 
         // Update the date objects based on what the API sent
         _syncDatesWithApi();
+        completedDates.assignAll(
+          streakCalendar
+              .where((d) => d.hasSleep)
+              .map((d) => DateTime.tryParse(d.date))
+              .whereType<DateTime>()
+              .toList(),
+        );
       }
     } catch (e) {
       print("Error fetching streak: $e");
@@ -325,10 +332,8 @@ class ProfileController extends GetxController {
   });
   // Inside your GetxController:
 // A list of dates where the user successfully tracked their sleep/habit
-  RxList<DateTime> completedDates = <DateTime>[
-    DateTime.now().subtract(const Duration(days: 1)), // Yesterday (mock data)
-    DateTime.now().subtract(const Duration(days: 2)), // 2 Days ago (mock data)
-  ].obs;
+  // Live streak days come from streakCalendar / API — no mock completed dates.
+  RxList<DateTime> completedDates = <DateTime>[].obs;
   // String formatTime(String? time) {
   //   if (time == null || time.isEmpty) return "--";
   //   return time.substring(0, 5); // "07:00:00" → "07:00"

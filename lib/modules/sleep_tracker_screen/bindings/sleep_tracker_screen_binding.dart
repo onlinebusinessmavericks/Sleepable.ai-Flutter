@@ -8,6 +8,11 @@ import '../controllers/sleep_tracker_screen_controller.dart';
 class SleepTrackerBinding extends Bindings {
   @override
   void dependencies() {
-    Get.put<SleepTrackerController>(SleepTrackerController());//, permanent: true
+    // Permanent so Wake/Quit can finish cleanup after Get.offAllNamed(dashboard)
+    // removes the sleep-tracker route (otherwise stop API / FGS teardown is skipped).
+    if (!Get.isRegistered<SleepTrackerController>()) {
+      Get.put<SleepTrackerController>(SleepTrackerController(), permanent: true);
+    }
   }
 }
+

@@ -66,6 +66,7 @@ class SettingsView extends GetView<SettingsController> {
               _buildGroupItem(context, aiDataSettingsLabel(), () => controller.onAiDataSharing(context)),
               // Apple Guideline 3.1.1: subscribers must be able to restore purchases.
               _buildGroupItem(context, "Restore Purchases", controller.onRestorePurchases),
+              _buildGroupItem(context, "Manage Subscription", controller.onManageSubscription),
               _buildGroupItem(context, context.lang.privacyPolicy, controller.onPrivacyPolicy),
               _buildGroupItem(context, context.lang.termsOfService, controller.onTermsOfService),
               // _buildGroupItem(context, "Community Guidelines", controller.onCommunityGuidelines),

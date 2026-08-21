@@ -1,5 +1,8 @@
+import 'package:share_plus/share_plus.dart';
+
 import '../../../core/utils/library.dart';
 import '../../../widgets/cached_image_widget.dart';
+import '../controllers/sleep_sound_controller.dart';
 import '../model/sounds_mixed_list_model.dart';
 
 class ApiMixCard extends StatelessWidget {
@@ -93,7 +96,9 @@ class ApiMixCard extends StatelessWidget {
     );
   }
 }
+
 void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
+  final controller = Get.find<SleepSoundController>();
   Get.bottomSheet(
     Container(
       decoration: const BoxDecoration(
@@ -130,15 +135,55 @@ void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
                 icon: Icons.favorite,
                 label: "Unlike",
                 color: Colors.pinkAccent,
-                onTap: () {
+                onTap: () async {
                   Get.back();
-                  // 2. Updated to use mix.id instead of mix['id']
-                  // controller.unlikeMix(mix.id);
+                  final ok = await controller.deleteMix(mix.id);
+                  if (ok) {
+                    Get.snackbar("Removed", "Mix deleted", snackPosition: SnackPosition.BOTTOM);
+                  }
                 }),
             const Divider(color: Colors.white10),
-            _buildOption(context, icon: Icons.edit_outlined, label: "Rename", onTap: () {}),
+            _buildOption(context, icon: Icons.edit_outlined, label: "Rename", onTap: () async {
+              Get.back();
+              final renameCtrl = TextEditingController(text: mix.title);
+              final newTitle = await Get.dialog<String>(
+                AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  title: const Text("Rename Mix", style: TextStyle(color: Colors.white)),
+                  content: TextField(
+                    controller: renameCtrl,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: "Mix name",
+                      hintStyle: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
+                    TextButton(
+                      onPressed: () => Get.back(result: renameCtrl.text.trim()),
+                      child: const Text("Save"),
+                    ),
+                  ],
+                ),
+              );
+              if (newTitle != null && newTitle.isNotEmpty && newTitle != mix.title) {
+                final ok = await controller.renameMix(mix.id, newTitle);
+                if (ok) {
+                  Get.snackbar("Renamed", "Mix updated", snackPosition: SnackPosition.BOTTOM);
+                }
+              }
+            }),
             const Divider(color: Colors.white10),
-            _buildOption(context, icon: Icons.share_outlined, label: "Share", onTap: () {}),
+            _buildOption(context, icon: Icons.share_outlined, label: "Share", onTap: () async {
+              Get.back();
+              final soundNames = mix.sounds.map((s) => s.name).join(', ');
+              await Share.share(
+                'Check out my Sleepable AI mix "$name"${soundNames.isNotEmpty ? ': $soundNames' : ''}',
+                subject: 'Sleepable AI Mix',
+              );
+            }),
             const SizedBox(height: 20),
           ],
         ),
@@ -148,6 +193,7 @@ void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
     backgroundColor: Colors.transparent,
   );
 }
+
 /// 🔸 Helper Widget
 Widget _buildOption(BuildContext context, {required IconData icon, required String label, VoidCallback? onTap, Color? color}) {
   return InkWell(
@@ -163,7 +209,6 @@ Widget _buildOption(BuildContext context, {required IconData icon, required Stri
             label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
           ),
-          // style: const TextStyle(color: Colors.white, fontSize: 15)),
         ],
       ),
     ),

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +7,6 @@ import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/ai_consent_dialog.dart';
 import '../../progress/controllers/progress_controller.dart';
-import '../../progress/model/dream_list_response.dart';
 
 class DreamBotController extends GetxController {
 
@@ -31,6 +28,8 @@ class DreamBotController extends GetxController {
   int userMessageCount = 0; // Tracks how many messages the user sent
 
   bool _consentPromptOpen = false;
+  bool _sessionStartInFlight = false;
+  bool _sessionStarted = false;
 
   /// 🔒 Apple Guideline 5.1.1(i) / 5.1.2(i)
   /// Explicit permission must be obtained BEFORE sending the user's personal data
@@ -74,11 +73,7 @@ class DreamBotController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // If we don't have an ID and we aren't viewing history, FORCE start.
-    if (currentDreamId == 0 && !Get.parameters.containsKey("dreamId")) {
-      debugPrint("🚀 Triggering Session Start from onReady");
-      startNewDreamSession();
-    }
+    // Do not start a second session — onInit already handles it.
   }
   String formatDreamDate(String? rawDate) {
     if (rawDate == null || rawDate.isEmpty) return "";
@@ -95,9 +90,17 @@ class DreamBotController extends GetxController {
     }
   }
   void startNewDreamSession() async {
+    if (_sessionStartInFlight || (_sessionStarted && currentDreamId > 0)) {
+      debugPrint("⏭ Skipping duplicate DreamBot session start");
+      return;
+    }
+    _sessionStartInFlight = true;
     // 🔒 Consent is required before sending data to a third-party AI
     // (Apple 5.1.1(i) / 5.1.2(i)).
-    if (!await _requireAiConsent()) return;
+    if (!await _requireAiConsent()) {
+      _sessionStartInFlight = false;
+      return;
+    }
 
     try {
       // Don't clear if we already have messages (to avoid flickering)
@@ -110,6 +113,7 @@ class DreamBotController extends GetxController {
 
       if (res != null && res['success'] == true) {
         currentDreamId = res['data']['dream_id'];
+        _sessionStarted = true;
         String botWelcome = res['data']['welcome_message'];
 
         // Update the dynamic welcome message for the "Big Input Box"
@@ -138,6 +142,7 @@ class DreamBotController extends GetxController {
       welcomeMessage.value = rawError;
     } finally {
       isFirstAnalyzeLoading.value = false;
+      _sessionStartInFlight = false;
     }
   }
 
@@ -215,68 +220,60 @@ class DreamBotController extends GetxController {
   void runFinalAnalysis() async {
     // 🔒 Dream analysis runs on a third-party AI, so consent is required.
     if (!await _requireAiConsent()) return;
+    if (currentDreamId <= 0) {
+      _showToast("Dream session not ready yet. Please wait a moment.");
+      return;
+    }
 
     try {
       isFirstAnalyzeLoading.value = true;
 
-      // 🔥 THE FIX: Find the last message sent by the System (isUser == false)
-      String lastSystemMessage = "";
-
-      // Filter out user messages and previous result cards
-      final systemMessages = messages.where(
-              (m) => m["isUser"] == false && m["isDreamResult"] != true
-      );
-
-      if (systemMessages.isNotEmpty) {
-        lastSystemMessage = systemMessages.last["msg"].toString();
-      } else {
-        lastSystemMessage = Get.context?.lang.pleaseAnalyzeDream ?? "Please analyze this dream."; // Fallback just in case
+      // Use the session finalize endpoint (full conversation + 3 scenes),
+      // not the legacy one-shot analyze-dream path.
+      final res = await ProgressApis.finalizeDreamAnalysis(currentDreamId);
+      if (res['success'] != true || res['data'] is! Map) {
+        _showToast(res['message']?.toString() ?? "Analysis failed");
+        return;
       }
 
-      // Send the final system response to the analyze API
-      final response = await ProgressApis.getDreamAnalysis(
-        description: lastSystemMessage,
-        dreamId: currentDreamId,
-      );
+      final Map<String, dynamic> d = Map<String, dynamic>.from(res['data']);
+      final int dreamId = (d['dream_id'] as num?)?.toInt() ?? currentDreamId;
+      final bool imagesPending = d['images_pending'] == true;
+      final String imagePath = (d['image_url'] ?? d['image'] ?? '').toString();
 
-      if (response.success && response.data.isNotEmpty) {
-        final DreamData d = response.data.first;
+      messages.add({
+        "isUser": false,
+        "isDreamResult": true,
+        "title": d['title']?.toString() ?? "",
+        "summary": d['summary']?.toString() ?? "",
+        "emotion": d['emotion']?.toString() ?? "",
+        "keywords": d['keywords'] is List ? List.from(d['keywords']) : <dynamic>[],
+        "manifestation": d['manifestation_message']?.toString() ?? "",
+        "interpretation": d['interpretation']?.toString() ?? "",
+        "guidance": d['guidance']?.toString() ?? "",
+        "actionSteps": d['action_steps'] is List ? List.from(d['action_steps']) : <dynamic>[],
+        "scenes": d['scenes'] is List ? List.from(d['scenes']) : <dynamic>[],
+        "date": d['created_at']?.toString() ?? "",
+        "image": _absoluteImageUrl(imagePath),
+        "chatHistory": d['chat_history'],
+        "imagesPending": imagesPending,
+      });
 
-        messages.add({
-          "isUser": false,
-          "isDreamResult": true,
-          "title": d.title,
-          "summary": d.summary,
-          "emotion": d.emotion,
-          "keywords": d.keywords,
-          "manifestation": d.manifestationMessage,
-          "interpretation": d.interpretation,
-          "guidance": d.guidance,
-          "actionSteps": d.actionSteps,
-          "scenes": d.scenes,
-          "date": d.createdAt,
-          "image": _absoluteImageUrl(d.image),
-          "chatHistory": d.chatHistory,
-          "imagesPending": d.imagesPending,
-        });
+      canAnalyze.value = false;
 
-        canAnalyze.value = false;
+      if (imagesPending) {
+        _pollForDreamImages(dreamId, messages.length - 1);
+      }
 
-        // The text is ready now; the images are still being generated, so keep
-        // checking in the background and fill them in when they land.
-        if (d.imagesPending) {
-          _pollForDreamImages(d.dreamId != 0 ? d.dreamId : currentDreamId, messages.length - 1);
-        }
-
-        if (Get.isRegistered<ProgressController>()) {
-          Get.find<ProgressController>().fetchMyDreams();
-        }
+      if (Get.isRegistered<ProgressController>()) {
+        Get.find<ProgressController>().fetchMyDreams();
       }
     } catch (e) {
       debugPrint("Analysis Error: $e");
     } finally {
       isFirstAnalyzeLoading.value = false;
-      scrollToBottom();
+      // Show analysis result from the top (image/summary first), not Action Steps at bottom
+      scrollToTop();
     }
   }
   String _absoluteImageUrl(String path) {
@@ -381,6 +378,21 @@ class DreamBotController extends GetxController {
     });
   }
 
+  /// After dream analysis, open the result from the top (not Guidance/Action Steps).
+  void scrollToTop() {
+    void jump() {
+      if (scrollController.hasClients) {
+        scrollController.jumpTo(0);
+      }
+    }
+
+    // Wait for the tall result card to layout, then pin to top.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      jump();
+      Future.delayed(const Duration(milliseconds: 150), jump);
+    });
+  }
+
   void resetForEditing() async {
     messages.clear();
     isFirstTime.value = true;
@@ -388,6 +400,9 @@ class DreamBotController extends GetxController {
     isTyping.value = false;
     userInput.value = "";
     textController.clear();
+    currentDreamId = 0;
+    _sessionStarted = false;
+    _sessionStartInFlight = false;
     startNewDreamSession();
     focusNode.requestFocus();
   }

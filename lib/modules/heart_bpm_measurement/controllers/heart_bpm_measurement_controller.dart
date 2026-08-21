@@ -10,6 +10,7 @@ import '../../alarm/controllers/alarm_controller.dart';
 import '../../music/views/music_view.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
+import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 
 class HeartBpmMeasurementController extends GetxController {
   Timer? _timer;
@@ -122,6 +123,7 @@ class HeartBpmMeasurementController extends GetxController {
       if (response.success == true) {
         await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
+        TrackerExitGuard.resetForNewSession();
 
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
@@ -132,6 +134,9 @@ class HeartBpmMeasurementController extends GetxController {
         final sleepTrackerCtrl = Get.isRegistered<SleepTrackerController>()
             ? Get.find<SleepTrackerController>()
             : Get.put(SleepTrackerController(), permanent: true);
+
+        // Re-arm wakelock/listeners if this permanent controller was released after last Wake
+        await sleepTrackerCtrl.armSessionResources();
 
         // ==========================================
         // ⚡ STEP 2: ISOLATED BACKGROUND SERVICE TRIGGER

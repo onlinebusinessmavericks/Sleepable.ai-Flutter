@@ -18,7 +18,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Obx(
@@ -128,17 +128,24 @@ class DreamBotScreen extends GetView<DreamBotController> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔥 THE DYNAMIC WELCOME MESSAGE FROM API
-                Text(
-                  controller.welcomeMessage.value,
-                  // style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 18 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.white,
-                      fontSize: 15 * SizeConfigs.textScale,
-                      fontWeight: FontWeight.w600
+                // Welcome text shrinks/scrolls when keyboard reduces height
+                Flexible(
+                  flex: 0,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: constraints.maxHeight * 0.35),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        controller.welcomeMessage.value,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppColors.white,
+                              fontSize: 15 * SizeConfigs.textScale,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // THE INPUT FIELD
                 Expanded(
@@ -156,7 +163,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: context.lang.typeYourResponseHere,//"Type your response here...",
+                      hintText: context.lang.typeYourResponseHere, //"Type your response here...",
                       hintStyle: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white60, fontSize: 14 * SizeConfigs.textScale),
                       contentPadding: EdgeInsets.zero,
                     ),
@@ -179,12 +186,11 @@ class DreamBotScreen extends GetView<DreamBotController> {
       final subController = Get.isRegistered<SubscriptionController>()
           ? Get.find<SubscriptionController>()
           : Get.put(SubscriptionController());
+      // Scaffold already resizes for keyboard (resizeToAvoidBottomInset).
+      // Do NOT add viewInsets.bottom here — that double-counts and crushes the layout.
       return AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.only(
-          left: 18, right: 18, top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 10,
-        ),
+        padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 10),
         child: Container(
           // 🔥 Gradient logic yahan handle hogi
           decoration: BoxDecoration(
@@ -714,9 +720,8 @@ class DreamBotScreen extends GetView<DreamBotController> {
 
   // ---------------- BOTTOM CHAT INPUT ----------------
   Widget _bottomChatInput(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
+    // Scaffold resizeToAvoidBottomInset already lifts this above the keyboard.
+    return Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         decoration: BoxDecoration(color: Colors.black.withOpacity(0.2)),
         child: Row(
@@ -766,7 +771,6 @@ class DreamBotScreen extends GetView<DreamBotController> {
             ),
           ],
         ),
-      ),
     );
   }
 

@@ -933,6 +933,10 @@ class LanguageDe extends BaseLanguage {
   @override
   String get noInsightsToday => 'Für heute wurden keine Erkenntnisse gefunden.';
   @override
+  String get noInsightsWeek => 'Für diese Woche wurden keine Erkenntnisse gefunden.';
+  @override
+  String get noInsightsMonth => 'Für diesen Monat wurden keine Erkenntnisse gefunden.';
+  @override
   String get settings => 'Einstellungen';
   @override
   String get support => 'Unterstützung';
@@ -1781,7 +1785,7 @@ class LanguageDe extends BaseLanguage {
   @override
   String get relaxYourBody => 'Entspanne deinen Körper';
   @override
-  String get unknownArtist => 'Unbekannter Künstler';
+  String get unknownArtist => 'Sleepable AI';
   @override
   String get spinToUnlockAn => 'Drehe, um ein';
   @override

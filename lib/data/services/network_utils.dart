@@ -102,7 +102,7 @@ Future<dynamic> buildHttpResponse({
     if (method == MethodType.post) {
       response = await post(url, body: jsonEncode(request), headers: headers)
           .timeout(timeoutDuration);
-    } else if (method == MethodType.put) {
+    } else if (method == MethodType.put || method == MethodType.patch) {
       response = await put(url, body: jsonEncode(request), headers: headers)
           .timeout(timeoutDuration);
     } else if (method == MethodType.delete) {

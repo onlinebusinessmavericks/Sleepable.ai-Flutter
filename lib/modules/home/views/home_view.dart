@@ -1173,7 +1173,9 @@ class HomeScreen extends GetView<HomeController> {
                               isPremium: item.isPremium,
 
                               // 🔥 The missing/extra parameters cleanly formatted:
-                              isFavorite: false,
+                              isFavorite: Get.isRegistered<SleepSoundController>()
+                                  ? Get.find<SleepSoundController>().lookupFavorite(item.id)
+                                  : false,
                               isNew: item.isNew,
                               // Map directly from HomeSoundItem
                               subcategory: item.subcategory ?? "",
@@ -1392,7 +1394,9 @@ class HomeScreen extends GetView<HomeController> {
                                 subcategoryName: item.subcategory ?? "",
                                 duration: item.duration,
                                 isPremium: item.isPremium,
-                                isFavorite: false,
+                                isFavorite: Get.isRegistered<SleepSoundController>()
+                                  ? Get.find<SleepSoundController>().lookupFavorite(item.id)
+                                  : false,
                                 isNew: item.isNew,
                                 subcategory: item.subcategory ?? "",
                                 slug: '',
@@ -1704,7 +1708,9 @@ class HomeScreen extends GetView<HomeController> {
                                   subcategoryName: item.subcategory ?? "",
                                   duration: item.duration,
                                   isPremium: item.isPremium,
-                                  isFavorite: false,
+                                  isFavorite: Get.isRegistered<SleepSoundController>()
+                                  ? Get.find<SleepSoundController>().lookupFavorite(item.id)
+                                  : false,
                                   isNew: item.isNew,
                                   subcategory: item.subcategory ?? "",
                                   slug: '',
@@ -1910,7 +1916,9 @@ class HomeScreen extends GetView<HomeController> {
                                   subcategoryName: item.subcategory ?? "",
                                   duration: item.duration,
                                   isPremium: item.isPremium,
-                                  isFavorite: false,
+                                  isFavorite: Get.isRegistered<SleepSoundController>()
+                                  ? Get.find<SleepSoundController>().lookupFavorite(item.id)
+                                  : false,
                                   isNew: item.isNew,
                                   subcategory: item.subcategory ?? "",
                                   slug: '',
@@ -2117,7 +2125,9 @@ class HomeScreen extends GetView<HomeController> {
                                   subcategoryName: item.subcategory ?? "",
                                   duration: item.duration,
                                   isPremium: item.isPremium,
-                                  isFavorite: false,
+                                  isFavorite: Get.isRegistered<SleepSoundController>()
+                                  ? Get.find<SleepSoundController>().lookupFavorite(item.id)
+                                  : false,
                                   isNew: item.isNew,
                                   subcategory: item.subcategory ?? "",
                                   slug: '',

@@ -19,8 +19,10 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
+import '../../../routes/app_pages.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
+import 'tracker_exit_guard.dart';
 import 'package:battery_plus/battery_plus.dart';
 enum TrackerState { idle, musicPlaying, silenceRecording }
 @pragma('vm:entry-point')
@@ -115,17 +117,36 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   RxBool isCharging = false.obs;
   RxInt batteryLevel = 100.obs;
   RxBool showBatteryWarning = false.obs;
+  void Function(Object)? _taskDataCallback;
+  bool _taskDataCallbackAttached = false;
+  bool _lifecycleObserverAttached = false;
+
   // ===================== INIT =====================
   @override
   void onInit() {
     super.onInit();
+    _ensureTaskDataCallback();
     _initController();
-    FlutterForegroundTask.addTaskDataCallback((data) {
-      print("📥 DATA RECEIVED: $data"); // Ye print aana chahiye agar button dabta hai
+  }
+
+  void _ensureTaskDataCallback() {
+    if (_taskDataCallbackAttached) return;
+    _taskDataCallback = (data) {
+      print("📥 DATA RECEIVED: $data");
       if (data == 'stop_service') {
         forceQuitFromNotification();
       }
-    });
+    };
+    FlutterForegroundTask.addTaskDataCallback(_taskDataCallback!);
+    _taskDataCallbackAttached = true;
+  }
+
+  void _detachTaskDataCallback() {
+    if (!_taskDataCallbackAttached || _taskDataCallback == null) return;
+    try {
+      FlutterForegroundTask.removeTaskDataCallback(_taskDataCallback!);
+    } catch (_) {}
+    _taskDataCallbackAttached = false;
   }
   Future<void> triggerInstantBackgroundService() async {
     // toast("🔍 Step 1: Requesting Permissions...");
@@ -143,17 +164,26 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   }
   Future<void> _initController() async {
     final lang = Get.context!.lang;
+    // New tracking session — re-attach resources
+    _ensureTaskDataCallback();
+    if (!_lifecycleObserverAttached) {
+      WidgetsBinding.instance.addObserver(this);
+      _lifecycleObserverAttached = true;
+    }
+
     await _checkPermissions();
     await _configureAudioSession();
 
     // 🚀 CALL IT HERE
     _initService();
     await _startNoiseMeter();
+    await _batteryStateSubscription?.cancel();
+    _batteryStateSubscription = null;
     _initBatteryListener();
-    WidgetsBinding.instance.addObserver(this);
     WakelockPlus.enable();
 
     _updateTime();
+    _clockTimer?.cancel();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
 
     _startIntro();
@@ -475,7 +505,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     _amplitudeTimer?.cancel();
     print("🎤 [TRACKER] Amplitude Monitor Started.");
 
-    _amplitudeTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) async {
+    _amplitudeTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) async {
 
       // Safety check prints
       if (trackerState.value == TrackerState.idle || !isRecording.value) {
@@ -552,35 +582,56 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
 
   @override
   void onClose() async {
-    // ScreenBrightness().resetScreenBrightness();
-    _batteryStateSubscription?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    _mappingTimer?.cancel(); // 🟢 Stop logging when the controller dies
-    _accelSub?.cancel();
-    // 🟢 1. Kill the state first to block the re-record loop
-    trackerState.value = TrackerState.idle;
-
-    // 🟢 2. Explicitly stop the Foreground Service
-    // await FlutterForegroundTask.stopService();
-
-    // 🟢 3. Cancel all timers and subscriptions
-    _dimTimer?.cancel();
-    _noiseSub?.cancel();
-    _noiseSub = null;
-    _noiseStarted = false;
-    _amplitudeTimer?.cancel();
-    _silenceTimer?.cancel();
-    _maxRecordTimer?.cancel();
-    _uiDbTimer?.cancel();
-    _clockTimer?.cancel();
-
-    WakelockPlus.disable();
-
-    if (isRecording.value) {
-      await recorder.stop();
-    }
-    await recorder.dispose();
+    await releasePostSessionResources();
+    try {
+      if (isRecording.value) {
+        await recorder.stop();
+      }
+      await recorder.dispose();
+    } catch (_) {}
     super.onClose();
+  }
+
+  /// Release CPU/battery leftovers that permanent controller would otherwise keep
+  /// after Wake/Quit (wakelock, battery stream, FGS callback, lifecycle observer).
+  Future<void> releasePostSessionResources() async {
+    try {
+      trackerState.value = TrackerState.idle;
+
+      _dimTimer?.cancel();
+      _idleDimTimer?.cancel();
+      _mappingTimer?.cancel();
+      _amplitudeTimer?.cancel();
+      _silenceTimer?.cancel();
+      _maxRecordTimer?.cancel();
+      _uiDbTimer?.cancel();
+      _clockTimer?.cancel();
+
+      await _noiseSub?.cancel();
+      _noiseSub = null;
+      _noiseStarted = false;
+      await _accelSub?.cancel();
+      _accelSub = null;
+
+      await _batteryStateSubscription?.cancel();
+      _batteryStateSubscription = null;
+
+      _detachTaskDataCallback();
+
+      if (_lifecycleObserverAttached) {
+        WidgetsBinding.instance.removeObserver(this);
+        _lifecycleObserverAttached = false;
+      }
+
+      nightNoiseMap.clear();
+      nightMotionMap.clear();
+
+      try {
+        await WakelockPlus.disable();
+      } catch (_) {}
+    } catch (e) {
+      debugPrint("releasePostSessionResources error: $e");
+    }
   }
 
   Color getDbColor(double db) {
@@ -711,24 +762,22 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   Future<void> forceQuitFromNotification() async {
     debugPrint("🚨 Notification Stop Triggered: Running Cleanup...");
 
-    // 1. Same logic jo _handleSetReminder mein hai (minus navigation)
-    // Hum reminder default time par set kar denge ya skip karenge
+    // Do NOT force-enable sleepReminders here — that caused an immediate
+    // bedtime reminder after quit, then another Home navigation.
+    await clearLocalTrackingFlags();
 
-    if (Get.isRegistered<ProfileController>()) {
-      final profileCtrl = Get.find<ProfileController>();
-      // Default settings update (bin context ke)
-      profileCtrl.updateSettings(
-        customNewData: profileCtrl.settings.value?.copyWith(
-          sleepReminders: true,
-        ),
-      );
+    TrackerExitGuard.beginExitNavigation();
+    Get.offAllNamed(Routes.dashboard);
+
+    try {
+      await performCleanup(this).timeout(const Duration(seconds: 12), onTimeout: () {});
+    } catch (e) {
+      debugPrint("forceQuit cleanup error: $e");
+      await emergencyStopOrphanTracker();
+    } finally {
+      TrackerExitGuard.endExitNavigation();
+      unawaited(TrackerExitGuard.showRatingOnceAfterExit());
     }
-
-    // 2. Run your existing cleanup
-    await performCleanup(this);
-
-    // 3. App ko wapas Dashboard par le jayein
-    Get.offAllNamed('/dashboard');
   }
 
   // 3. Updated stopRecording for the 15-min re-record flow
@@ -762,7 +811,10 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       _uploadInBackground(path);
     } catch (e) {
       debugPrint("❌ Background Stop Error: $e");
-      await _startNoiseMeter();
+      // Never restart meters during Wake/Quit cleanup (idle).
+      if (trackerState.value == TrackerState.silenceRecording) {
+        await _startNoiseMeter();
+      }
     }
   }
 
@@ -800,7 +852,8 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   Future<void> _uploadInBackground(String path) async {
     final file = File(path);
     final now = DateTime.now();
-    final duration = now.difference(eventStartTime ?? now);
+    final start = eventStartTime ?? now;
+    final duration = now.difference(start);
 
     // 1. Validation: Skip and delete if the clip is too short (garbage data)
     if (duration < minRecordDuration) {
@@ -813,15 +866,14 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       final prefs = await SharedPreferences.getInstance();
       final int savedSleepTrackerId = prefs.getInt('sleep_tracker_id') ?? 0;
 
-      // Format the time correctly for the backend
-      final recordedAt = DateFormat('yyyy-MM-dd HH:mm:ss').format(eventStartTime ?? now);
+      // ISO-8601 with timezone offset so server does not treat local as UTC
+      final recordedAt = _formatRecordedAtWithOffset(start);
+      final wallClockSeconds = duration.inSeconds.clamp(1, maxRecordDuration.inSeconds);
 
-      // 2. Gather all environment Metadata
       final soundController = Get.find<SleepSoundController>();
       bool isAnythingPlayingInApp = soundController.playingSounds.isNotEmpty ||
           soundController.playingMusic.isNotEmpty;
 
-      // Logic to tell the backend AI if it should filter out background noise
       bool isMusicLikely = isAnythingPlayingInApp || (_baselineDb > 40.0);
 
       final Map<String, dynamic> extraData = {
@@ -831,60 +883,199 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
         "active_media_type": soundController.playingMusic.isNotEmpty
             ? soundController.playingMusic.first.categoryName
             : "None",
-        "clip_duration_seconds": duration.inSeconds,
+        "clip_duration_seconds": wallClockSeconds,
       };
 
-      debugPrint("📤 Uploading Sleep Data: $extraData");
+      debugPrint("📤 Uploading Sleep Data: $extraData recordedAt=$recordedAt");
 
-      // 3. Execute Upload
-      // Note: Ensure TrackerApis.uploadTrackerAudio is updated to accept 'extraData'
       await TrackerApis.uploadTrackerAudio(
         sleepTrackerId: savedSleepTrackerId,
         audioFile: file,
         recordedAt: recordedAt,
-        // extraData: extraData,
+        wallClockSeconds: wallClockSeconds,
       );
 
-      debugPrint("✅ Upload Successful for: $recordedAt");
+      debugPrint("✅ Upload Successful for: $recordedAt (${wallClockSeconds}s wall)");
     } catch (e) {
-      // Log the error but don't crash the background service
       debugPrint("❌ Background Upload Failed: $e");
     } finally {
-      // 4. 🟢 CRITICAL: Always delete the file from the cache after the attempt
-      // This prevents the user's phone storage from filling up with .wav files
       if (await file.exists()) {
         await file.delete();
         debugPrint("🗑️ Cache Cleared: Temporary file removed.");
       }
     }
   }
-  Future<void> performCleanup(SleepTrackerController sleepController) async {
+
+  /// Local wall time with numeric offset, e.g. 2026-08-14T02:15:30+05:30
+  String _formatRecordedAtWithOffset(DateTime dt) {
+    final local = dt.isUtc ? dt.toLocal() : dt;
+    final offset = local.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final oh = offset.inHours.abs().toString().padLeft(2, '0');
+    final om = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+    final stamp = DateFormat('yyyy-MM-ddTHH:mm:ss').format(local);
+    return '$stamp$sign$oh:$om';
+  }
+  /// Re-attach wakelock / battery / FGS callback after a previous Wake release
+  /// when starting another night on the permanent controller.
+  Future<void> armSessionResources() async {
+    _ensureTaskDataCallback();
+    if (!_lifecycleObserverAttached) {
+      WidgetsBinding.instance.addObserver(this);
+      _lifecycleObserverAttached = true;
+    }
+    if (_batteryStateSubscription == null) {
+      _initBatteryListener();
+    }
     try {
-      // 1. Stop recording audio/sensors
-      await stopRecording();
+      await WakelockPlus.enable();
+    } catch (_) {}
+  }
+
+  /// When alarm rings: stop the sleep session immediately so AI "wake time"
+  /// = alarm ring time even if the user never taps Wake.
+  Future<void> finalizeSessionAtAlarmRing() async {
+    try {
+      await prepareForAlarmRing();
 
       final prefs = await SharedPreferences.getInstance();
-      final int savedSleepTrackerId = prefs.getInt('sleep_tracker_id') ?? 0;
+      final int savedId = prefs.getInt('sleep_tracker_id') ?? 0;
 
-      // 2. Handle API call
-      await stopSleepTracker(savedSleepTrackerId);
+      await clearLocalTrackingFlags();
+      try {
+        await FlutterForegroundTask.stopService();
+      } catch (_) {}
+      await releasePostSessionResources();
 
-      // 3. 🔹 CRITICAL: Clear local flags so the app knows we are DONE
+      if (savedId > 0) {
+        try {
+          await TrackerApis.stopSleepTracker(sleepTrackerId: savedId)
+              .timeout(const Duration(seconds: 8));
+        } catch (e) {
+          debugPrint("finalizeSessionAtAlarmRing stop API: $e");
+        }
+      }
       await prefs.setInt('sleep_tracker_id', 0);
-      await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
-
-      // Also clear the temporary notes/description if they shouldn't persist to the next sleep
       await prefs.remove('sleep_note_ids');
       await prefs.remove('sleep_description');
+      debugPrint("✅ Session finalized at alarm ring (id=$savedId)");
+    } catch (e) {
+      debugPrint("finalizeSessionAtAlarmRing error: $e");
+    }
+  }
 
-      // 4. Stop the foreground service
-      await FlutterForegroundTask.stopService();
+  /// Lightweight teardown so alarm UI stays responsive (cancel meters/timers).
+  /// Does NOT stop waves/Lottie — hang fix is sensor/timer teardown only.
+  Future<void> prepareForAlarmRing() async {
+    try {
+      trackerState.value = TrackerState.idle;
+      _dimTimer?.cancel();
+      _idleDimTimer?.cancel();
+      _mappingTimer?.cancel();
+      _amplitudeTimer?.cancel();
+      _silenceTimer?.cancel();
+      _maxRecordTimer?.cancel();
+      _uiDbTimer?.cancel();
+      _clockTimer?.cancel();
+      await _noiseSub?.cancel();
+      _noiseSub = null;
+      _noiseStarted = false;
+      await _accelSub?.cancel();
+      _accelSub = null;
+      if (isRecording.value) {
+        try {
+          await recorder.stop();
+        } catch (_) {}
+        isRecording.value = false;
+      }
+    } catch (e) {
+      debugPrint("prepareForAlarmRing error: $e");
+    }
+  }
 
-      debugPrint("Cleanup successful: Tracker ID reset to 0");
+  /// Mark tracking inactive immediately so reboot cannot resume.
+  /// Keeps `sleep_tracker_id` until [performCleanup] finishes the stop API.
+  Future<void> clearLocalTrackingFlags() async {
+    try {
+      trackerState.value = TrackerState.idle;
+      await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
+      if (Get.isRegistered<SleepSoundController>()) {
+        Get.find<SleepSoundController>().isTrackingActive.value = false;
+      }
+    } catch (e) {
+      debugPrint("clearLocalTrackingFlags error: $e");
+    }
+  }
+
+  /// Last-resort stop when SleepTrackerController is not available / cleanup timed out.
+  static Future<void> emergencyStopOrphanTracker() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt('sleep_tracker_id') ?? 0;
+      await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
+      if (Get.isRegistered<SleepSoundController>()) {
+        Get.find<SleepSoundController>().isTrackingActive.value = false;
+      }
+      if (id > 0) {
+        try {
+          await TrackerApis.stopSleepTracker(sleepTrackerId: id)
+              .timeout(const Duration(seconds: 8));
+        } catch (_) {}
+      }
+      await prefs.setInt('sleep_tracker_id', 0);
+      await prefs.remove('sleep_note_ids');
+      await prefs.remove('sleep_description');
+      try {
+        await FlutterForegroundTask.stopService();
+      } catch (_) {}
+      if (Get.isRegistered<SleepTrackerController>()) {
+        await Get.find<SleepTrackerController>().releasePostSessionResources();
+      }
+    } catch (e) {
+      debugPrint("emergencyStopOrphanTracker error: $e");
+    }
+  }
+
+  Future<void> performCleanup(SleepTrackerController sleepController) async {
+    int savedSleepTrackerId = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      savedSleepTrackerId = prefs.getInt('sleep_tracker_id') ?? 0;
+
+      await prepareForAlarmRing();
+      await clearLocalTrackingFlags();
+
+      // Best-effort stop of any leftover recording without restarting meters
+      try {
+        await stopRecording();
+      } catch (_) {}
+
+      if (savedSleepTrackerId > 0) {
+        try {
+          // Prefer direct API so we are not blocked by isStopping / stopRecording loops
+          await TrackerApis.stopSleepTracker(sleepTrackerId: savedSleepTrackerId)
+              .timeout(const Duration(seconds: 8));
+        } catch (e) {
+          debugPrint("performCleanup stop API error: $e");
+        }
+      }
+
+      await prefs.remove('sleep_note_ids');
+      await prefs.remove('sleep_description');
+      debugPrint("Cleanup successful for tracker $savedSleepTrackerId");
     } catch (e) {
       debugPrint("Cleanup error: $e");
-      // Even if the API fails, you might want to force clear local state
-      // to prevent the user from being "stuck" in the tracker screen.
+    } finally {
+      // ALWAYS clear local state + FGS + leftover listeners — even on timeout
+      try {
+        await clearLocalTrackingFlags();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('sleep_tracker_id', 0);
+        await FlutterForegroundTask.stopService();
+        await releasePostSessionResources();
+      } catch (e) {
+        debugPrint("Cleanup finally error: $e");
+      }
     }
   }
 }

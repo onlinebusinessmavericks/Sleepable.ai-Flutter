@@ -10,9 +10,12 @@ import 'package:nb_utils/nb_utils.dart';
 
 // import 'package:nb_utils/nb_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../core/constants/shared_prefences.dart';
 import '../../../core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
+import '../../../routes/app_pages.dart';
+import '../../../widgets/notification_service.dart';
 import '../../../widgets/timezone.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/model/UserSettings.dart';
@@ -51,6 +54,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   void onInit() async {
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
+    NotificationService.onAlarmRingNotificationTap = openRingingFromNotification;
     // 1. Set HARD defaults immediately
     hour.value = 8;
     minute.value = 30;
@@ -70,6 +74,9 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     // Force a sync to ensure the controllers are at 8:30
     syncWheels();
     isProcessingBack.value = false;
+
+    // Restore snooze after process survival / route clears
+    unawaited(_restorePendingSnoozeOrRing());
   }
   // Inside AlarmController
   void prepareWakeUpPicker() {
@@ -154,6 +161,16 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     wakeUp.value = data.alarmEnabled;
     initialWakeUpState = data.alarmEnabled;
     fadeIn.value = data.fadeIn;
+
+    // Hydrate repeat-day chips from English API keys (sun/mon/...).
+    final apiDays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    if (data.repeatDays.isNotEmpty) {
+      final normalized = data.repeatDays.map((d) => d.toLowerCase().trim()).toSet();
+      for (int i = 0; i < apiDays.length && i < selected.length; i++) {
+        selected[i] = normalized.contains(apiDays[i]);
+      }
+      selected.refresh();
+    }
 
     if (data.alarmTime.contains(":")) {
       final parts = data.alarmTime.split(":");
@@ -277,6 +294,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     originalAlarmDateTime = null;
     nextAlarmDateTime = null;
     wakeUp.value = false;           // Ensure the switch stays off
+    await _clearPersistedSnooze();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove("wake_up_time"); // Clear local storage
@@ -373,7 +391,6 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   }
 
   RxString selectedSnooze = "10".obs;
-  RxBool hasSnoozedOnce = false.obs;
   String getSnoozeDisplay(BuildContext context) {
     if (selectedSnooze.value == "0") return context.lang.never;
     return "${selectedSnooze.value} ${context.lang.min}";
@@ -434,27 +451,26 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     final session = await AudioSession.instance;
     print("🔔 [ALARM] Ringing Sequence Started...");
 
-    // 1. Tracker Cleanup (Same as before, working perfectly)
+    // First ring: tear down tracker + finalize session (AI wake_time).
+    // Snooze re-ring: session already stopped — skip.
     if (Get.isRegistered<SleepTrackerController>()) {
       final tracker = Get.find<SleepTrackerController>();
-      tracker.trackerState.value = TrackerState.idle;
-      if (await tracker.recorder.isRecording()) {
-        await tracker.recorder.stop();
-        tracker.isRecording.value = false;
-        print("🔔 [ALARM] Hardware Recorder STOPPED.");
+      final prefs = await SharedPreferences.getInstance();
+      final stillHasSession = (prefs.getInt('sleep_tracker_id') ?? 0) > 0;
+      if (stillHasSession) {
+        await tracker.prepareForAlarmRing();
+        await Future.delayed(const Duration(milliseconds: 200));
+        unawaited(tracker.finalizeSessionAtAlarmRing());
       }
-      await Future.delayed(const Duration(milliseconds: 300));
     }
 
     try {
       print("🔔 [ALARM] Deactivating Session...");
       await session.setActive(false);
 
-      // 2. Optimized Configuration (Fix for Error -50)
       print("🔔 [ALARM] Reconfiguring Audio Session...");
       await session.configure(AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playback,
-        // Sirf duckOthers rakhte hain, defaultToSpeaker playback ke liye zaroori nahi hota
         avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
         androidAudioAttributes: const AndroidAudioAttributes(
           usage: AndroidAudioUsage.alarm,
@@ -465,36 +481,65 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
       print("🔔 [ALARM] Activating Session...");
       await session.setActive(true);
 
-      // 3. Play Music
       alarmPlayer ??= AudioPlayer();
       print("🔔 [ALARM] Setting Asset: ${selectedMelodyAsset.value}");
       await alarmPlayer!.setAsset(selectedMelodyAsset.value);
       await alarmPlayer!.setLoopMode(LoopMode.one);
 
-      // Play se pehle chota sa delay
       Future.delayed(const Duration(milliseconds: 100), () {
         alarmPlayer!.play();
         print("🔔 [ALARM] Audio PLAYING.");
       });
-
     } catch (e) {
       print("❌ [ALARM ERROR] Detailed: $e");
       alarmPlayer?.play();
     }
 
-    Get.to(() => const AlarmRingingScreen());
+    await _clearPersistedSnooze();
+    await _openRingingUiSafely();
   }
-// Separate helper for cleaner code
-  void _startFadeIn() async {
-    for (double v = 0; v <= 1.0; v += 0.1) {
-      if (alarmPlayer == null) break;
-      await Future.delayed(const Duration(milliseconds: 500));
-      alarmPlayer!.setVolume(v);
+
+  /// Opens ringing UI only when app is resumed — avoids stuck navigator when
+  /// snooze fires in background. Plays sound regardless; shows notification if paused.
+  Future<void> _openRingingUiSafely() async {
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final resumed = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+
+    if (!resumed) {
+      _pendingOpenRinging = true;
+      try {
+        await NotificationService.showAlarmRingNotification();
+      } catch (e) {
+        debugPrint("alarm notification error: $e");
+      }
+      debugPrint("🔔 Alarm ready — UI deferred until resume");
+      return;
+    }
+
+    _pendingOpenRinging = false;
+    try {
+      await NotificationService.cancelAlarmRingNotification();
+    } catch (_) {}
+
+    // Replace current route so tracker (waves/Lottie) is disposed — do not stack under.
+    final alreadyRinging = Get.currentRoute.contains('AlarmRinging');
+    final onDashboard = Get.currentRoute == Routes.dashboard ||
+        Get.currentRoute.contains('dashboard') ||
+        Get.currentRoute.contains('Dashboard');
+
+    if (alreadyRinging) {
+      Get.off(() => const AlarmRingingScreen());
+    } else if (onDashboard) {
+      Get.to(() => const AlarmRingingScreen());
+    } else {
+      Get.off(() => const AlarmRingingScreen());
     }
   }
-  // --------------------------
-  // Stop Alarm
-  // --------------------------
+
+  /// Notification tap / resume entry.
+  void openRingingFromNotification() {
+    unawaited(_openRingingUiSafely());
+  }
 
   Future<void> stopAlarm({bool snoozeAfterStop = true}) async {
     try {
@@ -505,43 +550,93 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint("Error stopping audio: $e");
-      alarmPlayer = null; // Force null so it doesn't block
+      alarmPlayer = null;
     }
 
-    if (snoozeAfterStop && !hasSnoozedOnce.value) {
-      hasSnoozedOnce.value = true;
-      _startSnoozeIfNeeded();
+    if (snoozeAfterStop) {
+      await _startSnoozeIfNeeded();
+    } else {
+      await cancelPendingSnooze();
     }
   }
 
-  // --------------------------
-  // Snooze Handling
-  // --------------------------
+  /// Cancel a waiting snooze so Wake permanently ends the alarm.
+  Future<void> cancelPendingSnooze() async {
+    alarmTimer?.cancel();
+    alarmTimer = null;
+    await _clearPersistedSnooze();
+  }
 
-  void _startSnoozeIfNeeded() {
-    if (selectedSnooze.value == "0") return;
+  /// Minutes configured for snooze (0 = Never).
+  int get snoozeMinutes {
+    if (selectedSnooze.value == "0") return 0;
+    return int.tryParse(selectedSnooze.value) ?? 0;
+  }
 
-    // final minutes = int.tryParse(selectedSnooze.value.split(' ')[0]) ?? 0;
-    final minutes = int.tryParse(selectedSnooze.value) ?? 0;
-    if (minutes <= 0) return;
+  bool get isSnoozeEnabled => snoozeMinutes > 0;
 
+  bool _pendingOpenRinging = false;
+  bool _isAppResumed = true;
+
+  Future<void> _startSnoozeIfNeeded() async {
+    if (!isSnoozeEnabled) return;
+
+    final minutes = snoozeMinutes;
     final now = DateTime.now();
     nextAlarmDateTime = now.add(Duration(minutes: minutes));
 
     print("🕒 Snooze start at $now");
     print("⏰ Snoozed alarm will ring at $nextAlarmDateTime");
 
-    final duration = nextAlarmDateTime!.difference(now);
-    _startAlarmTimer(duration);
-
+    await _persistSnoozeFireAt(nextAlarmDateTime!);
+    _startAlarmTimer(nextAlarmDateTime!.difference(now));
     nextAlarmTime.value = _formatTime(nextAlarmDateTime!);
   }
 
-  // --------------------------
-  // Utility to start alarm timer
-  // --------------------------
+  Future<void> _persistSnoozeFireAt(DateTime dt) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(AppSharedPreferenceKeys.snoozeFireAtMs, dt.millisecondsSinceEpoch);
+    } catch (e) {
+      debugPrint("persist snooze error: $e");
+    }
+  }
+
+  Future<void> _clearPersistedSnooze() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppSharedPreferenceKeys.snoozeFireAtMs);
+    } catch (_) {}
+  }
+
+  Future<void> _restorePendingSnoozeOrRing() async {
+    try {
+      if (_pendingOpenRinging && _isAppResumed) {
+        await _openRingingUiSafely();
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final ms = prefs.getInt(AppSharedPreferenceKeys.snoozeFireAtMs);
+      if (ms == null) return;
+
+      final fireAt = DateTime.fromMillisecondsSinceEpoch(ms);
+      final remaining = fireAt.difference(DateTime.now());
+      if (remaining.isNegative || remaining.inSeconds <= 1) {
+        await prefs.remove(AppSharedPreferenceKeys.snoozeFireAtMs);
+        await ringAlarm();
+      } else {
+        nextAlarmDateTime = fireAt;
+        nextAlarmTime.value = _formatTime(fireAt);
+        _startAlarmTimer(remaining);
+        debugPrint("😴 Restored snooze timer — rings in ${remaining.inSeconds}s");
+      }
+    } catch (e) {
+      debugPrint("restore snooze error: $e");
+    }
+  }
+
   void _startAlarmTimer(Duration duration) {
-    alarmTimer?.cancel(); // Clear existing
+    alarmTimer?.cancel();
 
     if (duration.isNegative) {
       print("⚠️ Alarm duration is negative, skipping timer.");
@@ -550,7 +645,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
 
     print("⏳ Timer started for ${duration.inSeconds} seconds");
     alarmTimer = Timer(duration, () {
-      ringAlarm(); // This MUST be a closure or direct reference
+      unawaited(ringAlarm());
     });
   }
   // --------------------------
@@ -823,15 +918,31 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   @override
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
-    stopAlarm(snoozeAfterStop: false); // Ensure silence on controller delete
+    // Stop sound only — never cancel a persisted snooze here (Home navigation
+    // must not kill the waiting re-ring).
+    try {
+      alarmPlayer?.stop();
+      alarmPlayer?.dispose();
+      alarmPlayer = null;
+    } catch (_) {}
     super.onClose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // If the app is being killed/detached by the system
-    if (state == AppLifecycleState.detached) {
-      stopAlarm(snoozeAfterStop: false);
+    if (state == AppLifecycleState.resumed) {
+      _isAppResumed = true;
+      unawaited(_restorePendingSnoozeOrRing());
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _isAppResumed = false;
+    } else if (state == AppLifecycleState.detached) {
+      _isAppResumed = false;
+      // Keep persisted snooze; only hush audio if process is dying.
+      try {
+        alarmPlayer?.stop();
+      } catch (_) {}
     }
   }
 }

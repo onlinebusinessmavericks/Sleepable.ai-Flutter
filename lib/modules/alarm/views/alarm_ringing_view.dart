@@ -1,16 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:video_player/video_player.dart';
+import 'package:nb_utils/nb_utils.dart';
 
-import '../../../generated/assets.dart';
+import '../../../core/constants/shared_prefences.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../routes/app_pages.dart';
-import '../../../widgets/rating_dialog.dart';
-import '../../dashboard/views/dashboard_view.dart';
 import '../../progress/controllers/progress_controller.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
+import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../controllers/alarm_controller.dart';
 
 class AlarmRingingScreen extends StatefulWidget {
@@ -25,43 +23,28 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
 
   RxString currentTime = "".obs;
   Timer? _timer;
+  Timer? _autoWakeTimer;
+  bool _isHandlingWake = false;
+  bool _isHandlingSnooze = false;
 
-  late VideoPlayerController _videoController;
-  Future<void>? _initializeVideo;
+  /// If user never taps Wake/Snooze, still leave alarm UI and land on Home.
+  static const Duration _autoWakeAfter = Duration(minutes: 10);
 
-  @override
   @override
   void initState() {
     super.initState();
     _updateTime();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
-
-    // Initialize controller
-    _videoController = VideoPlayerController.asset(
-      Assets.videoWakeup,
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-    );
-
-    // 🔥 Optimized Initialization logic
-    _initializeVideo = _videoController.initialize().then((_) {
-      if (!mounted) return;
-
-      _videoController.setLooping(true);
-      _videoController.setVolume(0.0); // Keep silent to let AlarmController handle music
-      _videoController.play();
-
-      setState(() {}); // Refresh to show the video in FutureBuilder
-    }).catchError((error) {
-      debugPrint("🎥 Video Player Error: $error");
+    _autoWakeTimer = Timer(_autoWakeAfter, () {
+      debugPrint("⏰ Auto-Wake: user did not press Wake/Snooze within $_autoWakeAfter");
+      _handleWake();
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _videoController.dispose();
-    final alarmController = Get.find<AlarmController>();
-    alarmController.stopAlarm(snoozeAfterStop: false);
+    _autoWakeTimer?.cancel();
     super.dispose();
   }
 
@@ -70,39 +53,156 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
     int hour = now.hour % 12;
     if (hour == 0) hour = 12;
     String minute = now.minute.toString().padLeft(2, '0');
-    String amPm = now.hour >= 12 ? context.lang.PM : context.lang.AM;
-
+    final amPm = (Get.context != null)
+        ? (now.hour >= 12 ? Get.context!.lang.PM : Get.context!.lang.AM)
+        : (now.hour >= 12 ? 'PM' : 'AM');
     currentTime.value = "${hour.toString().padLeft(2, '0')}:$minute $amPm";
+  }
+
+  Future<void> _clearTrackerLocalStateNow() async {
+    try {
+      if (Get.isRegistered<SleepTrackerController>()) {
+        await Get.find<SleepTrackerController>().clearLocalTrackingFlags();
+      } else {
+        await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
+      }
+    } catch (e) {
+      debugPrint("clearTrackerLocalState error: $e");
+    }
+  }
+
+  Future<void> _backgroundAfterWake(SleepTrackerController? sleepCtrl) async {
+    try {
+      if (sleepCtrl != null) {
+        await sleepCtrl.performCleanup(sleepCtrl).timeout(
+          const Duration(seconds: 12),
+          onTimeout: () {},
+        );
+      } else if (Get.isRegistered<SleepTrackerController>()) {
+        final c = Get.find<SleepTrackerController>();
+        await c.performCleanup(c).timeout(const Duration(seconds: 12), onTimeout: () {});
+      } else {
+        await SleepTrackerController.emergencyStopOrphanTracker();
+      }
+    } catch (e) {
+      debugPrint("background wake cleanup error: $e");
+      try {
+        await SleepTrackerController.emergencyStopOrphanTracker();
+      } catch (_) {}
+    } finally {
+      TrackerExitGuard.endExitNavigation();
+      await TrackerExitGuard.showRatingOnceAfterExit();
+      _scheduleDeferredProgressRefresh();
+    }
+  }
+
+  void _scheduleDeferredProgressRefresh() {
+    Future.delayed(const Duration(seconds: 3), () async {
+      try {
+        if (!Get.isRegistered<ProgressController>()) {
+          Get.put(ProgressController());
+        }
+        await Get.find<ProgressController>().loadAllData();
+      } catch (e) {
+        debugPrint("deferred progress refresh error: $e");
+      }
+    });
+  }
+
+  /// Snooze: stop sound, schedule next ring, go Home and wait (unlimited).
+  Future<void> _handleSnooze() async {
+    if (_isHandlingWake || _isHandlingSnooze) return;
+    if (!controller.isSnoozeEnabled) return;
+
+    _isHandlingSnooze = true;
+    _autoWakeTimer?.cancel();
+
+    try {
+      final mins = controller.snoozeMinutes;
+      await controller.stopAlarm(snoozeAfterStop: true).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {},
+      );
+
+      // Confirm snooze so Home does not feel like Quit/Wake
+      try {
+        final ctx = Get.context;
+        if (ctx != null) {
+          toast("${ctx.lang.snooze} $mins ${ctx.lang.min}");
+        } else {
+          toast("Snoozed $mins min");
+        }
+      } catch (_) {
+        toast("Snoozed $mins min");
+      }
+
+      // Home pe chhupa ke wait — no rating / no exit-guard (not a final wake)
+      Get.offAllNamed(Routes.dashboard);
+      debugPrint("😴 Snooze armed for $mins min — waiting on Home");
+    } catch (e) {
+      debugPrint("Snooze handler error: $e");
+      _isHandlingSnooze = false;
+    }
+  }
+
+  Future<void> _handleWake() async {
+    if (_isHandlingWake) return;
+    _isHandlingWake = true;
+    _autoWakeTimer?.cancel();
+    try {
+      // Permanent dismiss — cancel any pending snooze too
+      unawaited(
+        controller.stopAlarm(snoozeAfterStop: false).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {},
+        ),
+      );
+
+      final SleepTrackerController? sleepCtrl =
+          Get.isRegistered<SleepTrackerController>() ? Get.find<SleepTrackerController>() : null;
+
+      await _clearTrackerLocalStateNow();
+
+      TrackerExitGuard.beginExitNavigation();
+      Get.offAllNamed(Routes.dashboard);
+
+      unawaited(_backgroundAfterWake(sleepCtrl));
+    } catch (e) {
+      debugPrint("Wake handler error: $e");
+      try {
+        await _clearTrackerLocalStateNow();
+      } catch (_) {}
+      TrackerExitGuard.beginExitNavigation();
+      Get.offAllNamed(Routes.dashboard);
+      unawaited(_backgroundAfterWake(
+        Get.isRegistered<SleepTrackerController>() ? Get.find<SleepTrackerController>() : null,
+      ));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final showSnooze = controller.isSnoozeEnabled;
+
     return WillPopScope(
-      onWillPop: () async => false,
+      onWillPop: () async {
+        await _handleWake();
+        return false;
+      },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            /// 🔥 PERFECT BACKGROUND VIDEO
-            Positioned.fill(
-              child: _initializeVideo == null
-                  ? Container(color: Colors.black) // during 300 ms delay
-                  : FutureBuilder(
-                      future: _initializeVideo,
-                      builder: (_, snap) {
-                        if (snap.connectionState == ConnectionState.done) {
-                          return FittedBox(
-                            fit: BoxFit.cover,
-                            child: SizedBox(width: _videoController.value.size.width, height: _videoController.value.size.height, child: VideoPlayer(_videoController)),
-                          );
-                        }
-                        return Container(color: Colors.black);
-                      },
-                    ),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0A152F), Colors.black],
             ),
-
-            /// 🔥 UI OVER VIDEO
-            Center(
+          ),
+          child: SafeArea(
+            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -112,68 +212,57 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 60, fontWeight: FontWeight.bold),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Text(
                     context.lang.haveNiceDay,
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-
                   const SizedBox(height: 60),
-
-                  /// 🔵 STOP ALARM BUTTON
                   GestureDetector(
-                    onTap: () async {
-                      final AlarmController controller = Get.find<AlarmController>();
-                      // 1. Stop the alarm immediately in the controller
-                      await controller.stopAlarm(snoozeAfterStop: false);
-
-                      // 2. Stop and dispose of the video player here locally
-                      if (_videoController.value.isPlaying) {
-                        await _videoController.pause();
-                      }
-
-                      // 3. Small delay ensures the 'Stop' logic finishes before the screen is destroyed
-                      // Get.offAll(() => DashboardScreen());
-                      if (!Get.isRegistered<ProgressController>()) {
-                        Get.put(ProgressController());
-                      }
-                      final progressController = Get.find<ProgressController>();
-                      progressController.loadAllData();
-
-                      // 3. Run Cleanup and Navigate
-                      final sleepController = Get.find<SleepTrackerController>();
-                      sleepController.performCleanup(sleepController);
-
-                      Get.offAllNamed(Routes.dashboard);
-                      Future.delayed(const Duration(milliseconds: 400), () {
-                        Get.dialog(
-                          const RatingDialog(),
-                          barrierDismissible: false,
-                        );
-                      });
-                    },
-
+                    onTap: _handleWake,
                     child: Container(
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
                         color: Colors.blue,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.6), blurRadius: 15, spreadRadius: 5)],
+                        boxShadow: [
+                          BoxShadow(color: Colors.blue.withOpacity(0.6), blurRadius: 15, spreadRadius: 5),
+                        ],
                       ),
                       alignment: Alignment.center,
-                      child:  Text(
+                      child: Text(
                         context.lang.wakeUp,
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
+                  if (showSnooze) ...[
+                    const SizedBox(height: 28),
+                    GestureDetector(
+                      onTap: _handleSnooze,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Text(
+                          "${context.lang.snooze} ${controller.snoozeMinutes} ${context.lang.min}",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

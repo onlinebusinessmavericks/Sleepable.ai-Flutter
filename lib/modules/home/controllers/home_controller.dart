@@ -23,6 +23,7 @@ import '../../profile/model/UserSettings.dart';
 import '../../sleep_info/model/sleeppedia_item.dart';
 import '../../sleep_info/widget/sleeppedia_data.dart';
 import '../../sleep_sound/model/sound_sub_category_model.dart';
+import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../model/home_page_response.dart';
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   // ---------------------------------------------------------------------------
@@ -272,6 +273,13 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     // Key names (nb_utils use ho raha hai)
     const String appOpenCountKey = "app_open_count";
     const String ratedKey = "user_has_rated";
+
+    // Skip if Wake/Quit already queued/showed rating for this exit
+    if (TrackerExitGuard.isExitInProgress ||
+        TrackerExitGuard.shouldSuppressDashboardRemount ||
+        TrackerExitGuard.didQueueRatingForExit) {
+      return;
+    }
 
     // 1. Agar user ne rate kar diya hai, toh seedha wapas jao
     if (getBoolAsync(ratedKey, defaultValue: false)) return;

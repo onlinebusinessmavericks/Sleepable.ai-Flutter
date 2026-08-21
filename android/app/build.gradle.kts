@@ -115,6 +115,12 @@ flutter {
 
 configurations.all {
     resolutionStrategy {
+        eachDependency {
+            if (requested.group == "org.jetbrains.kotlin") {
+                useVersion("2.3.10")
+                because("App module must read Firebase Auth / audio_session Kotlin 2.3 metadata")
+            }
+        }
         force("androidx.browser:browser:1.5.0")
         force("androidx.core:core-ktx:1.6.0")
         force("androidx.appcompat:appcompat:1.6.1")

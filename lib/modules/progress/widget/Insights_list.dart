@@ -29,14 +29,19 @@ class InsightsList extends StatelessWidget {
       }
 
       if (controller.aiInsightsList.isEmpty) {
+        final tab = controller.selectedTab.value;
+        final emptyMsg = (subController.isPremium.value == false)
+            ? context.lang.proInsightsPrompt
+            : (tab == context.lang.week)
+                ? context.lang.noInsightsWeek
+                : (tab == context.lang.month)
+                    ? context.lang.noInsightsMonth
+                    : context.lang.noInsightsToday;
         return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
             child: Text(
-              // Agar user premium nathi, to upgrade mate no message
-              (subController.isPremium.value == false)
-                  ? context.lang.proInsightsPrompt
-                  : context.lang.noInsightsToday,
+              emptyMsg,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white54, fontSize: 14),
             ),

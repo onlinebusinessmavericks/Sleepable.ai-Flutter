@@ -16,6 +16,9 @@ class APIEndPoints {
   static const String fetchSoundsList = 'sounds/list/';
   static const String soundsMixedCreate = 'sounds/mixed/create/';
   static const String soundsMixedList = 'sounds/mixed/list/';
+  static const String soundsMixedDetail = 'sounds/mixed/'; // + <id>/
+  static const String forgotPassword = 'users/forgot-password/';
+  static const String resetPassword = 'users/reset-password/';
   static const String toggleFavorite = 'sounds/favorite/toggle/';
   static const String fetchFavoriteSounds = 'sounds/favorite/list/';
  ///Setting

@@ -1,5 +1,7 @@
+import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 
+import '../../../core/constants/shared_prefences.dart';
 import '../../../widgets/ai_consent_dialog.dart';
 
 class DashboardController extends GetxController {
@@ -7,6 +9,24 @@ class DashboardController extends GetxController {
   BuildContext? homeShowcaseContext;
   void changeTab(int index) {
     currentIndex.value = index;
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    final args = Get.arguments;
+    if (args is int && args >= 0 && args <= 3) {
+      currentIndex.value = args;
+    } else if (args is Map && args['tab'] is int) {
+      currentIndex.value = args['tab'] as int;
+    } else {
+      // Cold-start notification may have stashed a tab before Boot navigated.
+      final pending = getIntAsync(AppSharedPreferenceKeys.pendingDashboardTab, defaultValue: -1);
+      if (pending >= 0 && pending <= 3) {
+        currentIndex.value = pending;
+        setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
+      }
+    }
   }
 
   @override

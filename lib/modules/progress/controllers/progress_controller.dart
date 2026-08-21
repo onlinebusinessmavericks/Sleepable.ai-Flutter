@@ -596,6 +596,42 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     }
   }
 
+  /// Seek within the currently loaded sleep recording (0.0 – 1.0 of total).
+  Future<void> seekAudio(String audioPath, double fraction) async {
+    try {
+      if (audioPath.isEmpty) return;
+
+      // Load this clip first if another (or none) is active
+      if (playingUrl.value != audioPath) {
+        playingUrl.value = audioPath;
+        await _player.setUrl("https://api.sleepable.ai$audioPath");
+      }
+
+      var totalMs = (_player.duration ?? totalDuration.value).inMilliseconds;
+      if (totalMs <= 0) {
+        try {
+          final d = await _player.durationStream
+              .firstWhere((x) => x != null && x.inMilliseconds > 0)
+              .timeout(const Duration(seconds: 3));
+          if (d != null) {
+            totalDuration.value = d;
+            totalMs = d.inMilliseconds;
+          }
+        } catch (_) {}
+      }
+      if (totalMs <= 0) return;
+
+      final pos = Duration(milliseconds: (totalMs * fraction.clamp(0.0, 1.0)).round());
+      await _player.seek(pos);
+      currentPosition.value = pos;
+      if (!_player.playing) {
+        await _player.play();
+      }
+    } catch (e) {
+      debugPrint("Seek Error: $e");
+    }
+  }
+
   void toggleExpand(int index) {
     categories[index].isExpanded = !categories[index].isExpanded;
     categories.refresh();

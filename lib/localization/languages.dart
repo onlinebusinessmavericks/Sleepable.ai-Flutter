@@ -529,6 +529,8 @@ abstract class BaseLanguage {
   String get actualRest;
   String get proInsightsPrompt;
   String get noInsightsToday;
+  String get noInsightsWeek;
+  String get noInsightsMonth;
 
   ///setting
   String get settings;

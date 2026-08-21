@@ -17,6 +17,19 @@ rootProject.buildDir = file("../build")
 
 subprojects {
     buildDir = file("${rootProject.buildDir}/${name}")
+    extra["kotlin_version"] = "2.3.10"
+
+    buildscript {
+        extra["kotlin_version"] = "2.3.10"
+        configurations.classpath {
+            resolutionStrategy.eachDependency {
+                if (requested.group == "org.jetbrains.kotlin") {
+                    useVersion("2.3.10")
+                    because("Align Kotlin Gradle plugin across Flutter plugins")
+                }
+            }
+        }
+    }
 }
 //subprojects {
 //    afterEvaluate {

@@ -934,6 +934,10 @@ class LanguagePt extends BaseLanguage {
   @override
   String get noInsightsToday => 'Nenhuma informação encontrada para hoje.';
   @override
+  String get noInsightsWeek => 'Nenhuma informação encontrada para esta semana.';
+  @override
+  String get noInsightsMonth => 'Nenhuma informação encontrada para este mês.';
+  @override
   String get settings => 'Configurações';
   @override
   String get support => 'Apoiar';
@@ -1782,7 +1786,7 @@ class LanguagePt extends BaseLanguage {
   @override
   String get relaxYourBody => 'Relaxe o seu corpo';
   @override
-  String get unknownArtist => 'Artista desconhecido';
+  String get unknownArtist => 'Sleepable AI';
   @override
   String get spinToUnlockAn => 'Gire para desbloquear um';
   @override

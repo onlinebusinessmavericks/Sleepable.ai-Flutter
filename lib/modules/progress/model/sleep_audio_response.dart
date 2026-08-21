@@ -90,7 +90,7 @@ class AudioItem {
     id: json["id"],
     audioFile: json["audio_file"],
     durationSeconds: json["duration_seconds"],
-    recordedAt: json["recorded_at"] == null ? null : DateTime.parse(json["recorded_at"]),
+    recordedAt: _parseRecordedAt(json["recorded_at"]),
     recordedTime: json["recorded_time"],
     recordedDate: json["recorded_date"],
     description: json["description"],
@@ -99,6 +99,23 @@ class AudioItem {
         ? null
         : List<AnalysisPoint>.from(json["analysis"].map((x) => AnalysisPoint.fromJson(x))),
   );
+
+  /// Prefer ISO-8601 with offset; fall back to local naive parse.
+  static DateTime? _parseRecordedAt(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString().trim();
+    if (s.isEmpty) return null;
+    try {
+      return DateTime.parse(s).toLocal();
+    } catch (_) {
+      try {
+        // Legacy "yyyy-MM-dd HH:mm:ss" without T
+        return DateTime.parse(s.replaceFirst(' ', 'T')).toLocal();
+      } catch (_) {
+        return null;
+      }
+    }
+  }
 }
 
 class AnalysisPoint {

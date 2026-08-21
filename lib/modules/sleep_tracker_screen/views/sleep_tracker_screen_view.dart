@@ -9,15 +9,16 @@ import 'package:sleepable_ai/core/utils/library.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
+import '../../../core/constants/shared_prefences.dart';
 import '../../../generated/assets.dart';
 import '../../../localization/lang_extension.dart';
-import '../../../widgets/rating_dialog.dart';
 import '../../alarm/controllers/alarm_controller.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../progress/controllers/progress_controller.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
 import '../../sleep_sound/widget/MixBarWidget.dart';
 import '../controllers/sleep_tracker_screen_controller.dart';
+import '../controllers/tracker_exit_guard.dart';
 
 class SleepTrackerScreen extends StatefulWidget {
   @override
@@ -31,7 +32,6 @@ class _SleepTrackerScreenState extends State<SleepTrackerScreen>  {
   void initState() {
     print("---------------init call---------------");
     super.initState();
-    // WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -123,27 +123,44 @@ class _MainSleepScreen extends StatefulWidget {
   State<_MainSleepScreen> createState() => _MainSleepScreenState();
 }
 
-class _MainSleepScreenState extends State<_MainSleepScreen> with TickerProviderStateMixin {
-  late final List<AnimationController> _controllers;
+class _MainSleepScreenState extends State<_MainSleepScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  /// One shared ticker drives all waves (cheaper than many controllers).
+  late final AnimationController _waveController;
 
   @override
   void initState() {
     super.initState();
-    // loadAlarmTime();
-    _controllers = [
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(),
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..repeat(),
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 950))..repeat(),
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..repeat(),
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(),
-    ];
+    WidgetsBinding.instance.addObserver(this);
+    _waveController = AnimationController(
+      vsync: this,
+      // ~12fps feel — smoother on mid devices overnight
+      duration: const Duration(milliseconds: 3200),
+    );
+    _syncWaveTicker();
+  }
+
+  void _syncWaveTicker() {
+    final resumed =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    if (resumed) {
+      if (!_waveController.isAnimating) _waveController.repeat();
+    } else if (_waveController.isAnimating) {
+      _waveController.stop();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _syncWaveTicker();
+    super.didChangeAppLifecycleState(state);
   }
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
+    WidgetsBinding.instance.removeObserver(this);
+    _waveController.dispose();
     super.dispose();
   }
 
@@ -162,22 +179,20 @@ class _MainSleepScreenState extends State<_MainSleepScreen> with TickerProviderS
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // 1. Background Layer - Wrap in RepaintBoundary to isolate animation
               Align(
                 alignment: Alignment.topCenter,
                 child: RepaintBoundary(
+                  // Lower Lottie frame rate to reduce overnight jank
                   child: Lottie.asset(
                     Assets.lottieCloud,
                     repeat: true,
                     fit: BoxFit.contain,
-                    height: 250,
-                    // Add delegate for better performance if needed
+                    height: 220,
+                    frameRate: const FrameRate(12),
                   ),
                 ),
               ),
 
-              // 2. Main Content Layer
-              // Remove internal SafeArea if the parent already has one
               Column(
                 children: [
                   const SizedBox(height: 20),
@@ -194,7 +209,6 @@ class _MainSleepScreenState extends State<_MainSleepScreen> with TickerProviderS
                 ],
               ),
 
-              // 3. Waves Layer - Wrap in RepaintBoundary
               RepaintBoundary(
                 child: Stack(
                   children: List.generate(_waveConfigs.length, (i) => Positioned(
@@ -204,7 +218,8 @@ class _MainSleepScreenState extends State<_MainSleepScreen> with TickerProviderS
                     child: IgnorePointer(
                       child: CustomPaint(
                         painter: WavePainter(
-                          animation: _controllers[i],
+                          animation: _waveController,
+                          phase: i * 0.4,
                           color: _waveConfigs[i]['color'] as Color,
                           amplitude: _waveConfigs[i]['amplitude'] as double,
                           stroke: _waveConfigs[i]['stroke'] as double,
@@ -394,24 +409,29 @@ class _MainSleepScreenState extends State<_MainSleepScreen> with TickerProviderS
   }
 }
 
-// -------------------- Wave Configurations --------------------
+// -------------------- Wave Configurations (2 layers — light overnight) --------------------
 final List<Map<String, dynamic>> _waveConfigs = [
-  {'color': Colors.white.withOpacity(0.2), 'amplitude': 6.0, 'stroke': 1.5, 'frequency': 2.5},
-  {'color': Colors.white.withOpacity(0.35), 'amplitude': 10.0, 'stroke': 2.0, 'frequency': 3.0},
-  {'color': Colors.white.withOpacity(0.5), 'amplitude': 14.0, 'stroke': 2.3, 'frequency': 3.5},
-  {'color': Colors.white.withOpacity(0.7), 'amplitude': 20.0, 'stroke': 2.8, 'frequency': 4.0},
-  {'color': Colors.white.withOpacity(0.9), 'amplitude': 28.0, 'stroke': 3.2, 'frequency': 4.5},
+  {'color': Colors.white.withOpacity(0.35), 'amplitude': 12.0, 'stroke': 2.0, 'frequency': 2.8},
+  {'color': Colors.white.withOpacity(0.85), 'amplitude': 22.0, 'stroke': 2.8, 'frequency': 3.8},
 ];
 
 // -------------------- Wave Painter --------------------
 class WavePainter extends CustomPainter {
   final Animation<double> animation;
+  final double phase;
   final Color color;
   final double amplitude;
   final double stroke;
   final double frequency;
 
-  WavePainter({required this.animation, required this.color, required this.amplitude, required this.stroke, required this.frequency}) : super(repaint: animation);
+  WavePainter({
+    required this.animation,
+    required this.color,
+    required this.amplitude,
+    required this.stroke,
+    required this.frequency,
+    this.phase = 0,
+  }) : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -419,32 +439,33 @@ class WavePainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = stroke;
+      ..strokeWidth = stroke
+      ..isAntiAlias = false;
 
     final path = Path();
     const double baseWave = 2 * pi;
+    final phaseOffset = (animation.value + phase) * baseWave;
 
-    // for (double x = 0; x <= size.width; x++) {
-    //   double progress = (x / size.width) * baseWave * frequency;
-    //   double y = size.height / 2 + sin(progress + animation.value * 2 * pi) * amplitude;
-    //   if (x == 0)
-    //     path.moveTo(x, y);
-    //   else
-    //     path.lineTo(x, y);
-    // }
-    // Inside WavePainter
-    for (double x = 0; x <= size.width; x += 5) { // 👈 Change x++ to x += 5
-      double progress = (x / size.width) * baseWave * frequency;
-      double y = size.height / 2 + sin(progress + animation.value * 2 * pi) * amplitude;
-      if (x == 0) path.moveTo(x, y);
-      else path.lineTo(x, y);
+    for (double x = 0; x <= size.width; x += 10) {
+      final progress = (x / size.width) * baseWave * frequency;
+      final y = size.height / 2 + sin(progress + phaseOffset) * amplitude;
+      if (x == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
 
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant WavePainter oldDelegate) => true;
+  bool shouldRepaint(covariant WavePainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.amplitude != amplitude ||
+      oldDelegate.stroke != stroke ||
+      oldDelegate.frequency != frequency ||
+      oldDelegate.phase != phase;
 }
 
 void _showQuitSheet(BuildContext context) {
@@ -831,52 +852,71 @@ Widget _buildFixedLabel(BuildContext context, String label) {
     ),
   ).paddingSymmetric(horizontal: 2);
 }
-void _handleSetReminder(BuildContext context, dynamic controller) async{
+void _handleSetReminder(BuildContext context, dynamic controller) async {
   // 1. Calculate the 24h format for the API
   int h = controller.bedHour.value;
   if (!controller.bedIsAm.value && h != 12) h += 12; // PM
-  if (controller.bedIsAm.value && h == 12) h = 0;    // 12 AM
+  if (controller.bedIsAm.value && h == 12) h = 0; // 12 AM
 
   final String formattedBedtime =
       "${h.toString().padLeft(2, '0')}:${controller.bedMinute.value.toString().padLeft(2, '0')}:00";
 
-  // 2. Trigger Background API Sync
-  if (Get.isRegistered<ProfileController>()) {
-    final profileCtrl = Get.find<ProfileController>();
-    profileCtrl.updateSettings(
-      customNewData: profileCtrl.settings.value?.copyWith(
-        remindAt: formattedBedtime,
-        sleepReminders: true,
-      ),
-    );
-  }
-  if (!Get.isRegistered<ProgressController>()) {
-    Get.put(ProgressController());
-  }
-  final progressController = Get.find<ProgressController>();
-  progressController.loadAllData();
+  // Enable reminders only if bedtime is far enough that the server won't
+  // immediately push bedtime_reminder (which remounted Home after quit).
+  final bool enableReminders =
+      TrackerExitGuard.shouldEnableSleepRemindersOnQuit(formattedBedtime);
 
-  // 3. Run Cleanup and Navigate
-  // final sleepController = Get.find<SleepTrackerController>();
-  // sleepController.performCleanup(sleepController);
-// 🔥 CRITICAL SYNC FIX: Wait for full hardware release
-  if (Get.isRegistered<SleepTrackerController>()) {
-    final sleepController = Get.find<SleepTrackerController>();
+  final SleepTrackerController? sleepCtrl = Get.isRegistered<SleepTrackerController>()
+      ? Get.find<SleepTrackerController>()
+      : null;
 
-    // Force status update to block any automated background re-record loop
-    sleepController.trackerState.value = TrackerState.idle;
-
-    // 🛑 AWAIT CLEANUP: Mic close hona, API hit aur notification stop hone ka intezar karo
-    await sleepController.performCleanup(sleepController);
+  if (sleepCtrl != null) {
+    await sleepCtrl.clearLocalTrackingFlags();
+  } else {
+    await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, false);
   }
 
-  // ⏳ Small explicit delay for iOS hardware channel buffer reset (Removes Orange Dot instantly)
-  await Future.delayed(const Duration(milliseconds: 400));
+  TrackerExitGuard.beginExitNavigation();
   Get.offAllNamed(Routes.dashboard);
-  Future.delayed(const Duration(milliseconds: 400), () {
-    Get.dialog(
-      const RatingDialog(),
-      barrierDismissible: false,
-    );
+
+  Future(() async {
+    try {
+      if (Get.isRegistered<ProfileController>()) {
+        final profileCtrl = Get.find<ProfileController>();
+        profileCtrl.updateSettings(
+          customNewData: profileCtrl.settings.value?.copyWith(
+            remindAt: formattedBedtime,
+            sleepReminders: enableReminders,
+          ),
+        );
+      }
+
+      if (sleepCtrl != null) {
+        sleepCtrl.trackerState.value = TrackerState.idle;
+        await sleepCtrl.performCleanup(sleepCtrl).timeout(
+          const Duration(seconds: 12),
+          onTimeout: () {},
+        );
+      } else {
+        await SleepTrackerController.emergencyStopOrphanTracker();
+      }
+    } catch (e) {
+      debugPrint("quit reminder background error: $e");
+      try {
+        await SleepTrackerController.emergencyStopOrphanTracker();
+      } catch (_) {}
+    } finally {
+      TrackerExitGuard.endExitNavigation();
+      await TrackerExitGuard.showRatingOnceAfterExit();
+      // Defer Progress refresh so Home stays responsive after Quit
+      Future.delayed(const Duration(seconds: 3), () async {
+        try {
+          if (!Get.isRegistered<ProgressController>()) {
+            Get.put(ProgressController());
+          }
+          await Get.find<ProgressController>().loadAllData();
+        } catch (_) {}
+      });
+    }
   });
 }
