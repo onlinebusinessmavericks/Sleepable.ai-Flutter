@@ -25,7 +25,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.sleepableai.sleepableai"
-    compileSdk = 37
+    compileSdk = 36
 //    ndkVersion = "27.0.12077973"
     ndkVersion = "28.2.13676358"
 
@@ -43,7 +43,7 @@ android {
         applicationId = "com.sleepableai.sleepableai"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
+        versionCode = 19
         versionName = "1.0.16"
         multiDexEnabled = true
 
