@@ -6,6 +6,7 @@ import 'package:sleepable_ai/core/constants/colors.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/ai_consent_dialog.dart';
+import '../../../widgets/SubscriptionController.dart';
 import '../../progress/controllers/progress_controller.dart';
 
 class DreamBotController extends GetxController {
@@ -59,6 +60,17 @@ class DreamBotController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    if (sub == null || !sub.showDreambot) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Get.context != null) {
+          Get.back();
+        }
+      });
+      return;
+    }
     final String? rawId = Get.parameters["dreamId"] ?? Get.arguments?["dream_id"]?.toString();
     int? paramId = int.tryParse(rawId ?? "0");
 

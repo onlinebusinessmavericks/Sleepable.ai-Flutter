@@ -830,7 +830,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     if (isPremium) {
       newList = freshItems.where((item) => item['id'] != 'premium').toList();
     } else {
-      newList = freshItems.where((item) => item['id'] != 'story').toList();
+      newList = freshItems.where((item) => item['id'] != 'story' && item['id'] != 'dreambot').toList();
     }
 
     filteredItems.assignAll(newList);

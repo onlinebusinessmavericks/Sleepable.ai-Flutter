@@ -232,7 +232,7 @@ class LanguageEn extends BaseLanguage {
   String get mo => 'mo';
 
   @override
-  String get dayFreeTrial => '7-Day Free Trial';
+  String get dayFreeTrial => '3-Day Free Trial';
 
   @override
   String get months => 'MONTHS';
@@ -248,8 +248,8 @@ class LanguageEn extends BaseLanguage {
 
   @override
   String get termsServicePrivacyPolicy => Platform.isIOS
-      ? "Terms of service & Privacy policy. Please NOTE: After your 7-day free trial, your Apple ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or the App Store's"
-      : "Terms of service & Privacy policy. Please NOTE: After your 7-day free trial, your Google ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or Google Play's";
+      ? "Terms of service & Privacy policy. Please NOTE: After your 3-day free trial, your Apple ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or the App Store's"
+      : "Terms of service & Privacy policy. Please NOTE: After your 3-day free trial, your Google ID payment method will be automatically charged for a year. You can cancel the subscription before the free trial ends to avoid being charged. If you are unsure how to cancel or manage your subscription. please visit our help center or Google Play's";
 
   /// HOME
   @override
@@ -2318,6 +2318,12 @@ class LanguageEn extends BaseLanguage {
 
   @override
   String get trialEndingReminder => "'We'll remind you that your trial is ending.'";
+
+  @override
+  String get trialNotPremiumDisclaimer => 'You are on a 3-day free trial, not Premium. That is why you still see this offer. Buy Premium to remove ads and unlock everything.';
+
+  @override
+  String get trialNightLimitToast => 'Trial includes 3 nights of tracking. Buy Premium to continue.';
 
   @override
   String get in3Days => 'In 3 Days - Billing Starts';

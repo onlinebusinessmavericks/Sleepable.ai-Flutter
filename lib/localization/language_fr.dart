@@ -218,7 +218,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get mo => 'mo';
   @override
-  String get dayFreeTrial => 'Essai gratuit de 7 jours';
+  String get dayFreeTrial => 'Essai gratuit de 3 jours';
   @override
   String get months => 'MOIS';
   @override
@@ -228,7 +228,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get noPaymentNow => 'Aucun paiement maintenant !';
   @override
-  String get termsServicePrivacyPolicy => "Conditions d'utilisation et politique de confidentialité. Veuillez noter : après votre essai gratuit de 7 jours, votre identifiant Apple sera automatiquement débité pour un an. Vous pouvez annuler votre abonnement avant la fin de la période d'essai pour éviter d'être facturé. Si vous ne savez pas comment annuler ou gérer votre abonnement, veuillez consulter notre centre d'aide ou la page d'aide de l'App Store.";
+  String get termsServicePrivacyPolicy => "Conditions d'utilisation et politique de confidentialité. Veuillez noter : après votre essai gratuit de 3 jours, votre identifiant Apple sera automatiquement débité pour un an. Vous pouvez annuler votre abonnement avant la fin de la période d'essai pour éviter d'être facturé. Si vous ne savez pas comment annuler ou gérer votre abonnement, veuillez consulter notre centre d'aide ou la page d'aide de l'App Store.";
 
 /// HOME
 
@@ -1652,6 +1652,12 @@ class LanguageFr extends BaseLanguage {
   String get in2Days => 'Dans 2 jours - Rappel';
   @override
   String get trialEndingReminder => "'Nous vous rappelons que votre période d'essai touche à sa fin.'";
+
+  @override
+  String get trialNotPremiumDisclaimer => "Vous êtes en essai gratuit de 3 jours, pas Premium. C'est pour cela que cette offre s'affiche encore.";
+
+  @override
+  String get trialNightLimitToast => "L'essai comprend 3 nuits de suivi. Passez à Premium pour continuer.";
   @override
   String get in3Days => 'Dans 3 jours - La facturation commence';
   @override

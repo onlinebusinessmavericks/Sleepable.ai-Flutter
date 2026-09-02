@@ -97,6 +97,21 @@ Widget buildIosSubscriptionLegalLinks(BuildContext context, {double fontSize = 1
 Widget _iosScrollablePaywall(Widget column) =>
     Platform.isIOS ? SingleChildScrollView(child: column) : column;
 
+Widget _trialNotPremiumBanner(BuildContext context) {
+  final sub = Get.isRegistered<SubscriptionController>()
+      ? Get.find<SubscriptionController>()
+      : null;
+  if (sub == null || !sub.isTrial.value) return const SizedBox.shrink();
+  return Padding(
+    padding: EdgeInsets.only(bottom: sh(12), left: pad(8), right: pad(8)),
+    child: Text(
+      context.lang.trialNotPremiumDisclaimer,
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Colors.amber.shade200, fontSize: 12 * SizeConfigs.textScale, height: 1.35),
+    ),
+  );
+}
+
 showPremiumOfferSheet(BuildContext context) {
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen());
@@ -253,6 +268,8 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                           ),
 
                           const Spacer(),
+
+                          _trialNotPremiumBanner(context),
 
                           slideFade(
                             fadeButton,
@@ -490,6 +507,8 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                       ),
 
                       const Spacer(),
+
+                      _trialNotPremiumBanner(context),
 
                       // PURCHASE BUTTON
                       slideFade(
@@ -784,6 +803,8 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
                           const Spacer(),
 
+                          _trialNotPremiumBanner(context),
+
                           // PURCHASE BUTTON
                           slideFade(
                             fadeButton,
@@ -856,12 +877,14 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
   late Timer _carouselTimer;
   int _currentPage = 0;
 
-  // iOS uses dedicated 1–6 mockups; Android keeps existing paywall1–6 assets.
+  // iOS uses dedicated 1–7 mockups; Android keeps paywall1–6 assets.
   final List<String> carouselImages = Platform.isIOS
-      ? [Assets.homePaywallIos1, Assets.homePaywallIos2, Assets.homePaywallIos3, Assets.homePaywallIos4, Assets.homePaywallIos5, Assets.homePaywallIos6]
+      ? [Assets.homePaywallIos1, Assets.homePaywallIos2, Assets.homePaywallIos3, Assets.homePaywallIos4, Assets.homePaywallIos5, Assets.homePaywallIos6, Assets.homePaywallIos7]
       : [Assets.homePaywall1, Assets.homePaywall2, Assets.homePaywall3, Assets.homePaywall4, Assets.homePaywall5, Assets.homePaywall6];
 
-  final Map<int, Size> imageSizes = {5: Size(sw(850), sh(850))};
+  final Map<int, Size> imageSizes = Platform.isIOS
+      ? {6: Size(sw(850), sh(850))}
+      : {5: Size(sw(850), sh(850))};
 
   // final List<String> buttonTexts = ["Try for Free", "Get for ₹0.00", "Start Trial Now", "Unlock Access"];
 
@@ -1013,6 +1036,8 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                       icon: const Icon(Icons.close, color: Colors.white54, size: 28),
                     ),
                   ),
+
+                  _trialNotPremiumBanner(context),
 
                   SizedBox(height: sh(16)),
 
@@ -1330,6 +1355,8 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 
               const Spacer(flex: 2),
 
+              _trialNotPremiumBanner(context),
+
               // BUTTON
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: pad(24), vertical: sh(16)),
@@ -1540,6 +1567,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         ),
 
                         SizedBox(height: sh(30)),
+
+                        _trialNotPremiumBanner(context),
 
                         // 5. DYNAMIC PURCHASE BUTTON
                         SizedBox(
@@ -1829,6 +1858,8 @@ class FreeTrialReminderScreen extends StatelessWidget {
                     ),
                   ),
 
+                  _trialNotPremiumBanner(context),
+
                   // 5. MAIN ACTION BUTTON
                   SizedBox(
                     width: double.infinity,
@@ -2008,6 +2039,8 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     textAlign: TextAlign.center,
                     style: textTheme.headlineMedium?.copyWith(color: Colors.white, fontSize: 28 * SizeConfigs.textScale, fontWeight: FontWeight.w900),
                   ),
+
+                  _trialNotPremiumBanner(context),
 
                   Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 

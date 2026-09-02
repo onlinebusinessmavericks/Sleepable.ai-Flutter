@@ -917,6 +917,8 @@ abstract class BaseLanguage {
   String get threeDaysFreeThen;
   String get in2Days;
   String get trialEndingReminder;
+  String get trialNotPremiumDisclaimer;
+  String get trialNightLimitToast;
   String get in3Days;
   String get billingStartsNote;
   String get easySleepTracking;

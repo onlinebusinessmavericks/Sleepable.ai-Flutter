@@ -217,7 +217,7 @@ class LanguageEs extends BaseLanguage {
   @override
   String get mo => 'mes';
   @override
-  String get dayFreeTrial => 'Prueba gratuita de 7 días';
+  String get dayFreeTrial => 'Prueba gratuita de 3 días';
   @override
   String get months => 'MESES';
   @override
@@ -228,8 +228,8 @@ class LanguageEs extends BaseLanguage {
   String get noPaymentNow => '¡Sin pago ahora!';
   @override
   String get termsServicePrivacyPolicy => Platform.isIOS
-      ? 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 7 días, se le cobrará automáticamente un año a su método de pago de Apple ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la App Store.'
-      : 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 7 días, se le cobrará automáticamente un año a su método de pago de Google ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la página de Google Play.';
+      ? 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 3 días, se le cobrará automáticamente un año a su método de pago de Apple ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la App Store.'
+      : 'Términos de servicio y política de privacidad. NOTA: Después de su prueba gratuita de 3 días, se le cobrará automáticamente un año a su método de pago de Google ID. Puede cancelar la suscripción antes de que finalice la prueba gratuita para evitar cargos. Si no sabe cómo cancelar o administrar su suscripción, visite nuestro Centro de ayuda o la página de Google Play.';
 
   /// HOME
   @override
@@ -1616,6 +1616,12 @@ class LanguageEs extends BaseLanguage {
   String get in2Days => 'En 2 días - Recordatorio';
   @override 
   String get trialEndingReminder => 'Le recordaremos que su período de prueba está por terminar.';
+
+  @override
+  String get trialNotPremiumDisclaimer => 'Estás en una prueba gratuita de 3 días, no en Premium. Por eso sigues viendo esta oferta.';
+
+  @override
+  String get trialNightLimitToast => 'La prueba incluye 3 noches de seguimiento. Compra Premium para continuar.';
   @override 
   String get in3Days => 'En 3 días - Comienza la facturación';
   @override 

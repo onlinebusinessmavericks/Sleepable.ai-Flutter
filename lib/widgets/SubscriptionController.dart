@@ -23,8 +23,13 @@ class SubscriptionController extends GetxController {
   Rx<Package?> spinYearlyPackage = Rx<Package?>(null);
   Rx<Package?> spinWeeklyPackage = Rx<Package?>(null);
   RxBool isPremium = false.obs;
-  RxBool isLoading = false.obs;
+  RxBool isTrial = false.obs;
+  RxString firstReportDate = ''.obs;
+  RxInt trialNightsUsed = 0.obs;
   static const String PREM_KEY = "is_user_premium_cache";
+  static const String TRIAL_KEY = "is_user_trial_cache";
+  static const String FIRST_REPORT_KEY = "trial_first_report_date";
+  RxBool isLoading = false.obs;
   static const String SPIN_CACHE_KEY = "spin_status_cache";
   Rx<SpinData?> spinInfo = Rx<SpinData?>(null);
   // RxBool isReady = false.obs;
@@ -39,6 +44,8 @@ class SubscriptionController extends GetxController {
     // Start from the cached value so a paying user is not shown the free/paywall
     // state for the second or two the network sync takes.
     isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
+    isTrial.value = getBoolAsync(TRIAL_KEY, defaultValue: false);
+    firstReportDate.value = getStringAsync(FIRST_REPORT_KEY);
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -114,7 +121,19 @@ class SubscriptionController extends GetxController {
     isPremium.value = status;
     await setValue(PREM_KEY, status);
     isPremium.refresh();
+    if (status) {
+      isTrial.value = false;
+      await setValue(TRIAL_KEY, false);
+    }
     print("🔔 Cache Updated to: $status");
+  }
+
+  bool get showPaywalls => !isPremium.value;
+  bool get showDreambot => isPremium.value;
+
+  Future<void> applyTrialStatus({required bool trial}) async {
+    isTrial.value = trial;
+    await setValue(TRIAL_KEY, trial);
   }
   bool get hasSpecialOffer => spinInfo.value != null && (spinInfo.value!.discountPct ?? 0) > 0;
 
@@ -217,10 +236,33 @@ class SubscriptionController extends GetxController {
     try {
       await Purchases.configure(configuration);
       isConfigured = true;
+      Purchases.addCustomerInfoUpdateListener(_onCustomerInfoUpdated);
       print("✅ RevenueCat configured successfully for ${Platform.isIOS ? 'iOS' : 'Android'}");
     } catch (e) {
       isConfigured = false;
       print("❌ RevenueCat Configuration Error: $e");
+    }
+  }
+
+  static void _onCustomerInfoUpdated(CustomerInfo info) {
+    if (!Get.isRegistered<SubscriptionController>()) return;
+    Get.find<SubscriptionController>().applyCustomerInfo(info);
+  }
+
+  Future<void> applyCustomerInfo(CustomerInfo customerInfo) async {
+    final entitlement = customerInfo.entitlements.all['pro'];
+    final active = entitlement?.isActive ?? false;
+    if (!active) {
+      // Backend remains source of truth for access; RC only reports store period.
+      return;
+    }
+    final trial = entitlement!.periodType == PeriodType.trial;
+    if (trial) {
+      await applyTrialStatus(trial: true);
+      await updatePremiumStatus(false, isFromBackend: true);
+    } else {
+      await applyTrialStatus(trial: false);
+      await updatePremiumStatus(true, isFromBackend: true);
     }
   }
 
@@ -325,24 +367,31 @@ class SubscriptionController extends GetxController {
       // Step 1: RevenueCat Purchase
       final purchaseResult = await Purchases.purchasePackage(package);
       CustomerInfo customerInfo = purchaseResult.customerInfo;
+      final entitlement = customerInfo.entitlements.all['pro'];
 
-      // Step 2: Check Entitlement (Identifier 'pro' hi rakhna dashboard par)
-      if (customerInfo.entitlements.all['pro']?.isActive ?? false) {
-
-        // ✅ Backend Sync: Product ID aur User ID bhejein
+      if (entitlement?.isActive ?? false) {
+        final storeTrial = entitlement!.periodType == PeriodType.trial;
         await verifyPurchaseWithBackend(
             package.storeProduct.identifier,
             customerInfo.originalAppUserId,
-            spinInfo.value?.couponCode
+            spinInfo.value?.couponCode,
+            periodType: storeTrial ? 'trial' : 'normal',
         );
 
-        isPremium.value = true;
+        if (storeTrial) {
+          await applyTrialStatus(trial: true);
+          await updatePremiumStatus(false, isFromBackend: true);
+          toast("3-day trial started. You are not Premium yet.");
+        } else {
+          await applyTrialStatus(trial: false);
+          await updatePremiumStatus(true, isFromBackend: true);
+          toast("Success! Premium Activated.");
+        }
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
           soundCtrl.soundsBySubCategory.clear();
           soundCtrl.refreshCurrentTabSilently();
         }
-        toast("Success! Premium Activated.");
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
       }
@@ -369,17 +418,27 @@ class SubscriptionController extends GetxController {
     try {
       isLoading.value = true;
       final CustomerInfo customerInfo = await Purchases.restorePurchases();
-      final bool active = customerInfo.entitlements.all['pro']?.isActive ?? false;
+      final entitlement = customerInfo.entitlements.all['pro'];
+      final bool active = entitlement?.isActive ?? false;
 
       if (active) {
-        isPremium.value = true;
+        final storeTrial = entitlement!.periodType == PeriodType.trial;
+        if (storeTrial) {
+          await applyTrialStatus(trial: true);
+          await updatePremiumStatus(false, isFromBackend: true);
+        } else {
+          await applyTrialStatus(trial: false);
+          isPremium.value = true;
+        }
         await getBackendSubscriptionStatus();
         if (Get.isRegistered<SleepSoundController>()) {
           final soundCtrl = Get.find<SleepSoundController>();
           soundCtrl.soundsBySubCategory.clear();
           soundCtrl.refreshCurrentTabSilently();
         }
-        toast("Purchases restored. Premium is active.");
+        toast(storeTrial
+            ? "Trial restored. You are not Premium yet."
+            : "Purchases restored. Premium is active.");
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
       } else {
@@ -486,15 +545,14 @@ class SubscriptionController extends GetxController {
   }
 
   // 5. Backend Verification API
-  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon) async {
+  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon, {String periodType = 'normal'}) async {
     try {
-      // Backend VerifyPurchaseView expects `app_user_id` (RevenueCat customer id /
-      // user uuid). Keep `purchase_token` as a legacy alias for older servers.
       final payload = {
         "product_id": productId,
         "app_user_id": token,
         "purchase_token": token,
-        "coupon_code": coupon ?? ""
+        "coupon_code": coupon ?? "",
+        "period_type": periodType,
       };
 
       await buildHttpResponse(
@@ -521,8 +579,15 @@ class SubscriptionController extends GetxController {
             method: MethodType.get
         );
         if (response['success']) {
-          bool backendStatus = response['data']['is_premium'] ?? false;
+          final data = response['data'] ?? {};
+          bool backendStatus = data['is_premium'] ?? false;
+          bool trialStatus = data['is_trial'] ?? false;
+          await applyTrialStatus(trial: trialStatus && !backendStatus);
           await updatePremiumStatus(backendStatus, isFromBackend: true);
+          final first = (data['first_report_date'] ?? '').toString();
+          firstReportDate.value = first;
+          await setValue(FIRST_REPORT_KEY, first);
+          trialNightsUsed.value = data['trial_nights_used'] ?? 0;
           return;
         }
       } catch (e) {
@@ -552,8 +617,14 @@ class SubscriptionController extends GetxController {
 
       print("✅ [RC] CustomerInfo received");
       bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
-
-      updatePremiumStatus(isActive, isFromBackend: false);
+      final trial = customerInfo.entitlements.all['pro']?.periodType == PeriodType.trial;
+      if (isActive && trial) {
+        await applyTrialStatus(trial: true);
+        await updatePremiumStatus(false, isFromBackend: true);
+      } else if (isActive) {
+        await applyTrialStatus(trial: false);
+        updatePremiumStatus(true, isFromBackend: false);
+      }
     } catch (e) {
       print("❌ [RC] Error in checkPremiumStatus: $e");
       }

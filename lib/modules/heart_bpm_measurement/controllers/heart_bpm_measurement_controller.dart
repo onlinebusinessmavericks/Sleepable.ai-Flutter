@@ -11,6 +11,8 @@ import '../../music/views/music_view.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
 import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
+import '../../../widgets/SubscriptionController.dart';
+import '../../../widgets/showPremiumOfferSheet.dart';
 
 class HeartBpmMeasurementController extends GetxController {
   Timer? _timer;
@@ -44,6 +46,15 @@ class HeartBpmMeasurementController extends GetxController {
   Future<void> startWithoutMeasuring() async {
     if (!Get.isRegistered<AlarmController>()) {
       Get.put(AlarmController(), permanent: true);
+    }
+
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    if (sub != null && sub.isTrial.value && !sub.isPremium.value && sub.trialNightsUsed.value >= 3) {
+      toast(Get.context?.lang.trialNightLimitToast ?? "Trial includes 3 nights of tracking. Buy Premium to continue.");
+      if (Get.context != null) showPremiumOfferSheet4(Get.context!);
+      return;
     }
 
     final AlarmController alarmController = Get.find<AlarmController>();

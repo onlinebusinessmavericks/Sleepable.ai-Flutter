@@ -950,9 +950,17 @@ class ProgressScreen extends GetView<ProgressController> {
               SizedBox(height: 20 * SizeConfigs.paddingScale),
               sleepRecorderSection(context),
               SizedBox(height: 20 * SizeConfigs.paddingScale),
-              Text(context.lang.myDreams, style: textStyle),
-              SizedBox(height: 10 * SizeConfigs.paddingScale),
-              _buildMyDream(context),
+              Obx(() {
+                if (!subController.isPremium.value) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(context.lang.myDreams, style: textStyle),
+                    SizedBox(height: 10 * SizeConfigs.paddingScale),
+                    _buildMyDream(context),
+                  ],
+                );
+              }),
               // SizedBox(height: 15 * SizeConfigs.paddingScale),
 
               // -------------------- Export & Share --------------------

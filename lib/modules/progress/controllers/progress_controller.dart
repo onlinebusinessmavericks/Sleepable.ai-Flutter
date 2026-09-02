@@ -5,6 +5,8 @@ import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../widgets/ai_consent_dialog.dart';
+import '../../../widgets/SubscriptionController.dart';
+import '../../../widgets/showPremiumOfferSheet.dart';
 import '../model/AIInsightsResponse.dart';
 import '../model/SnoringIntensityResponse.dart';
 import '../model/achievement_badges_response.dart';
@@ -179,8 +181,16 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       dateToFetch = null; // Monthly doesn't need a specific day
     }
 
-    // Pass the correct type and date to all APIs
-    await Future.wait([
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    final paid = sub?.isPremium.value ?? false;
+    if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
+      type = "today";
+      dateToFetch = sub.firstReportDate.value;
+    }
+
+    final calls = <Future>[
       fetchSleepChart(type),
       fetchSleepConsistency(type, date: dateToFetch),
       getSnoringData(type, date: dateToFetch),
@@ -190,17 +200,28 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       fetchRecommendations(type, date: dateToFetch),
       fetchAchievementBadges(type, date: dateToFetch),
       fetchSleepStages(type, date: dateToFetch),
-
-      // Usually these don't depend on the tab, but you can update if needed
-      fetchSleepAudio(type, date: dateToFetch),
-      fetchMyDreams(),
-    ]);
+    ];
+    if (paid) {
+      calls.add(fetchSleepAudio(type, date: dateToFetch));
+      calls.add(fetchMyDreams());
+    }
+    await Future.wait(calls);
   }
   Future refreshAllData() async {
     await loadAllData();
   }
 
   void onDateSelected(String formattedDate) {
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    if (sub != null && sub.isTrial.value && !sub.isPremium.value) {
+      final first = sub.firstReportDate.value;
+      if (first.isNotEmpty && formattedDate != first) {
+        showPremiumOfferSheet4(Get.context!);
+        return;
+      }
+    }
     // 1. Update UI state
     selectedTab.value = "Today";
     activeDate.value = formattedDate; // 🟢 Save the date!
@@ -238,31 +259,36 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   }
 
   Future<void> _fetchTabSpecificData(String type, {String? customDate}) async {
-    // Use customDate if provided (from calendar), otherwise use actual today's date
     String dateToFetch = customDate ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    final paid = sub?.isPremium.value ?? false;
+    if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
+      type = "today";
+      dateToFetch = sub.firstReportDate.value;
+    }
     isChartLoading.value = true;
     isQualityLoading.value = true;
     isInsightsLoading.value = true;
     isAIInsightsLoading.value = true;
     isStagesLoading.value = true;
-    await Future.wait([
+    final calls = <Future>[
       fetchSleepChart(type),
-      fetchSleepConsistency(type),
-      getSnoringData(type),
-      fetchKeyInsights(type),
-      fetchSleepQuality(type),
-      fetchAIInsights(type),
-      fetchRecommendations(type),
-      fetchAchievementBadges(type),
-      fetchSleepAudio(type),
-      // Pass the specific date to the Sleep Stages API
-      fetchSleepStages(type, date: type == "today" ? dateToFetch : null),
-
-      if (_isInitialLoad) ...[
-
-        fetchMyDreams(),
-      ]
-    ]);
+      fetchSleepConsistency(type, date: dateToFetch),
+      getSnoringData(type, date: dateToFetch),
+      fetchKeyInsights(type, date: dateToFetch),
+      fetchSleepQuality(type, date: dateToFetch),
+      fetchAIInsights(type, date: dateToFetch),
+      fetchRecommendations(type, date: dateToFetch),
+      fetchAchievementBadges(type, date: dateToFetch),
+      fetchSleepStages(type, date: dateToFetch),
+    ];
+    if (paid) {
+      calls.add(fetchSleepAudio(type, date: dateToFetch));
+      if (_isInitialLoad) calls.add(fetchMyDreams());
+    }
+    await Future.wait(calls);
 
     _isInitialLoad = false;
   }
@@ -274,8 +300,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     isLoading.value = true; // snoring loading
 
     try {
+      final paid = Get.isRegistered<SubscriptionController>() &&
+          Get.find<SubscriptionController>().isPremium.value;
       // We use "today" as the dataType because we want the 24h view for a specific date
-      await Future.wait([
+      final calls = <Future>[
         fetchSleepStages("today", date: date),
         fetchSleepQuality("today", date: date),
         getSnoringData("today", date: date),
@@ -284,8 +312,11 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         fetchAIInsights("today", date: date),
         fetchRecommendations("today", date: date),
         fetchAchievementBadges("today", date: date),
-        fetchSleepAudio("today", date: date),
-      ]);
+      ];
+      if (paid) {
+        calls.add(fetchSleepAudio("today", date: date));
+      }
+      await Future.wait(calls);
 
     } catch (e) {
       debugPrint("Error fetching historical date: $e");

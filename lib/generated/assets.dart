@@ -30,6 +30,7 @@ class Assets {
   static const String homePaywallIos4 = 'assets/images/home/4.png';
   static const String homePaywallIos5 = 'assets/images/home/5.png';
   static const String homePaywallIos6 = 'assets/images/home/6.png';
+  static const String homePaywallIos7 = 'assets/images/home/7.png';
   static const String homePaywellBackground = 'assets/images/home/paywell_background.png';
   static const String homePaywellBackground1 = 'assets/images/home/paywell_background1.png';
   static const String homeLock = 'assets/images/home/lock.png';

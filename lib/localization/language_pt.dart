@@ -215,7 +215,7 @@ class LanguagePt extends BaseLanguage {
   @override
   String get mo => 'mo';
   @override
-  String get dayFreeTrial => 'Teste grátis por 7 dias';
+  String get dayFreeTrial => 'Teste grátis por 3 dias';
   @override
   String get months => 'MESES';
   @override
@@ -226,8 +226,8 @@ class LanguagePt extends BaseLanguage {
   String get noPaymentNow => 'Sem pagamento agora!';
   @override
   String get termsServicePrivacyPolicy => Platform.isIOS
-      ? 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 7 dias, sua forma de pagamento da Apple será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a App Store.'
-      : 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 7 dias, sua forma de pagamento do Google será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a página do Google Play.';
+      ? 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 3 dias, sua forma de pagamento da Apple será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a App Store.'
+      : 'Termos de serviço e Política de privacidade. Observação: após o período de teste gratuito de 3 dias, sua forma de pagamento do Google será cobrada automaticamente por um ano. Você pode cancelar a assinatura antes do término do período de teste gratuito para evitar a cobrança. Se tiver dúvidas sobre como cancelar ou gerenciar sua assinatura, visite nossa Central de Ajuda ou a página do Google Play.';
 
 /// HOME
   @override
@@ -1617,6 +1617,12 @@ class LanguagePt extends BaseLanguage {
   String get in2Days => 'Em 2 dias - Lembrete';
   @override
   String get trialEndingReminder => 'Gostaríamos de lembrar que seu período de teste está terminando.';
+
+  @override
+  String get trialNotPremiumDisclaimer => 'Você está no teste grátis de 3 dias, não no Premium. Por isso esta oferta ainda aparece.';
+
+  @override
+  String get trialNightLimitToast => 'O teste inclui 3 noites de rastreamento. Compre o Premium para continuar.';
   @override
   String get in3Days => 'Em 3 dias - Início da cobrança';
   @override

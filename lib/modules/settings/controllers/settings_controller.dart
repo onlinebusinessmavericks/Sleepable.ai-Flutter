@@ -202,7 +202,8 @@ class SettingsController extends GetxController {
       final CommonResponse response = await AuthServiceApis.logOut(request: request);
       if (Get.isRegistered<SubscriptionController>()) {
         final subCtrl = Get.find<SubscriptionController>();
-        subCtrl.isPremium.value = false; // Local value reset
+        subCtrl.isPremium.value = false;
+        subCtrl.isTrial.value = false;
         // Detach RevenueCat so the next account does not inherit this
         // customer's entitlements.
         await subCtrl.resetUser();
@@ -218,6 +219,8 @@ class SettingsController extends GetxController {
 
       // 🟢 PREMIUM CACHE CLEAR (Sabse important)
       await removeKey(SubscriptionController.PREM_KEY); // "is_user_premium_cache"
+      await removeKey(SubscriptionController.TRIAL_KEY);
+      await removeKey(SubscriptionController.FIRST_REPORT_KEY);
       await removeKey("cached_home_data"); // Home screen ka purana data bhi saaf karein
       if (response.success == true) {
         Get.offAllNamed(Routes.login);
@@ -230,6 +233,8 @@ class SettingsController extends GetxController {
       // Safety fallback: Even if the API fails, clear local data so user isn't stuck
       removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
       await removeKey(SubscriptionController.PREM_KEY);
+      await removeKey(SubscriptionController.TRIAL_KEY);
+      await removeKey(SubscriptionController.FIRST_REPORT_KEY);
       Get.offAllNamed(Routes.login);
     }
   }

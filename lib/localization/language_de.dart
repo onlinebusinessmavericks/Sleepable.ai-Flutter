@@ -216,7 +216,7 @@ class LanguageDe extends BaseLanguage {
   @override
   String get mo => 'mo';
   @override
-  String get dayFreeTrial => '7 Tage kostenlos testen';
+  String get dayFreeTrial => '3 Tage kostenlos testen';
   @override
   String get months => 'MONATE';
   @override
@@ -227,8 +227,8 @@ class LanguageDe extends BaseLanguage {
   String get noPaymentNow => 'Keine Zahlung jetzt!';
   @override
   String get termsServicePrivacyPolicy => Platform.isIOS
-      ? 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 7-tägigen kostenlosen Testphase wird Ihre Apple-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die App Store-Hilfe.'
-      : 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 7-tägigen kostenlosen Testphase wird Ihre Google-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die Google Play-Hilfe.';
+      ? 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 3-tägigen kostenlosen Testphase wird Ihre Apple-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die App Store-Hilfe.'
+      : 'Nutzungsbedingungen und Datenschutzrichtlinie. Hinweis: Nach Ablauf Ihrer 3-tägigen kostenlosen Testphase wird Ihre Google-ID-Zahlungsmethode automatisch für ein Jahr belastet. Sie können das Abonnement vor Ablauf der Testphase kündigen, um Gebühren zu vermeiden. Wenn Sie sich nicht sicher sind, wie Sie Ihr Abonnement kündigen oder verwalten können, besuchen Sie bitte unser Hilfecenter oder die Google Play-Hilfe.';
 
 /// HOME
   @override
@@ -1616,6 +1616,12 @@ class LanguageDe extends BaseLanguage {
   String get in2Days => 'In 2 Tagen – Erinnerung';
   @override
   String get trialEndingReminder => 'Wir erinnern Sie daran, dass Ihre Testphase zu Ende geht.';
+
+  @override
+  String get trialNotPremiumDisclaimer => 'Sie nutzen eine 3-tägige kostenlose Testphase, kein Premium. Deshalb sehen Sie dieses Angebot noch.';
+
+  @override
+  String get trialNightLimitToast => 'Die Testphase umfasst 3 Nächte Tracking. Kaufen Sie Premium, um fortzufahren.';
   @override
   String get in3Days => 'In 3 Tagen – Abrechnungsbeginn';
   @override

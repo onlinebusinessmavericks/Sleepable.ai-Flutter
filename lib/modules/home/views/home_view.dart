@@ -953,9 +953,11 @@ class HomeScreen extends GetView<HomeController> {
         },
       ];
       // Filter logic: Agar isPremium true hai, toh 'premium' id wala banner hata do
-      final banners = subController.isPremium.value
-          ? allBanners.where((b) => b['id'] != 'premium').toList()
-          : allBanners;
+      final banners = allBanners.where((b) {
+        if (b['id'] == 'premium' && subController.isPremium.value) return false;
+        if (b['id'] == 'dreambot' && !subController.isPremium.value) return false;
+        return true;
+      }).toList();
 
       // Agar saare banners khatam ho jayein (safety check)
       if (banners.isEmpty) return const SizedBox.shrink();

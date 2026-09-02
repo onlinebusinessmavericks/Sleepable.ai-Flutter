@@ -22,6 +22,7 @@ import '../../../localization/lang_extension.dart';
 import '../../../routes/app_pages.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
+import '../../../widgets/SubscriptionController.dart';
 import 'tracker_exit_guard.dart';
 import 'package:battery_plus/battery_plus.dart';
 enum TrackerState { idle, musicPlaying, silenceRecording }
@@ -674,6 +675,9 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
           if (Get.isRegistered<SleepSoundController>()) {
             Get.find<SleepSoundController>().isTrackingActive.value = false;
             debugPrint("📢 SleepSoundController notified: tracking is now FALSE");}
+          if (Get.isRegistered<SubscriptionController>()) {
+            unawaited(Get.find<SubscriptionController>().getBackendSubscriptionStatus());
+          }
           debugPrint("✅ Sleep tracker stopped");
           return true;
         }
