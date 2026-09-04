@@ -201,7 +201,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
 
                       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
-                      if (package == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
+                      if (package == null) return paywallProductsPlaceholder(context);
                       // Store-localized currency (Play Store country) — same approach as iOS
                       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
                       double storePrice = package.storeProduct.price;
@@ -400,7 +400,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
             final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
             if (package == null) {
-              return const Center(child: CircularProgressIndicator(color: Colors.white));
+              return paywallProductsPlaceholder(context);
             }
 
             // Store-localized currency (Play Store country) — same approach as iOS
@@ -691,7 +691,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
       if (package == null) {
-        return const Center(child: CircularProgressIndicator(color: Colors.white));
+        return paywallProductsPlaceholder(context);
       }
 
       // Store-localized currency (Play Store country) — same approach as iOS
@@ -957,7 +957,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
       if (package == null) {
-        return const Center(child: CircularProgressIndicator(color: Colors.white));
+        return paywallProductsPlaceholder(context);
       }
 
       // 2. Real-time Store Data & Currency Fetch
@@ -1437,7 +1437,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       // Package select karein
       final yearlyPackage = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
-      if (yearlyPackage == null) return const Center(child: CircularProgressIndicator(color: Colors.white));
+      if (yearlyPackage == null) return paywallProductsPlaceholder(context);
 
       // Store-localized currency (Play Store country) — same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
@@ -1774,7 +1774,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
               : subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
 
           if (package == null) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return paywallProductsPlaceholder(context);
           }
 
           // Store-localized currency (Play Store country) — same approach as iOS
@@ -1940,7 +1940,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // 1. Offer priority
       final yearlyPackage = showOffer ? (spinPackage ?? standardAnnual) : standardAnnual;
 
-      if (yearlyPackage == null) return const Center(child: CircularProgressIndicator());
+      if (yearlyPackage == null) return paywallProductsPlaceholder(context);
 
       // 2. Real-time Store Data & Currency Fetch
       String yearlyPriceText = subController.getDisplayYearlyPrice(
@@ -2386,4 +2386,46 @@ String _trialCopy(String key) {
   };
   final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
   return table[key] ?? map["en"]![key] ?? "";
+}
+
+/// Shown in a paywall while the store products load, and with a retry once they
+/// have failed. Previously a failed fetch left the sheet on an endless spinner
+/// with no message and no way to try again.
+Widget paywallProductsPlaceholder(BuildContext context) {
+  final sub = Get.isRegistered<SubscriptionController>()
+      ? Get.find<SubscriptionController>()
+      : Get.put(SubscriptionController());
+
+  return Obx(() {
+    if (!sub.offeringsLoadFailed.value) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: pad(32)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 34),
+            SizedBox(height: sh(12)),
+            Text(
+              "We couldn't load the plans. Check your connection and try again.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 14 * SizeConfigs.textScale, height: 1.4),
+            ),
+            SizedBox(height: sh(16)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => sub.fetchStoreProducts(),
+              child: const Text("Retry", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  });
 }

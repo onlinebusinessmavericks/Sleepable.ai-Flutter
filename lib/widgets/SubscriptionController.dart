@@ -316,44 +316,65 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  Future<void> fetchStoreProducts() async {
+  /// True when the store products could not be loaded at all. The paywall shows
+  /// a retry instead of spinning forever, which is what used to happen.
+  RxBool offeringsLoadFailed = false.obs;
+
+  /// Loads the plans shown on every paywall.
+  ///
+  /// Retries before giving up: this runs once at launch, and a single failed
+  /// call used to leave the paywall on an endless spinner (and, on iOS, silently
+  /// fall back to the full yearly price because the discount offering was missing).
+  Future<void> fetchStoreProducts({int retries = 2}) async {
     if (!isConfigured) return;
-    try {
-      Offerings offerings = await Purchases.getOfferings();
-      print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
 
-      // ✅ 1. Current / Regular Offering Loading (default_new - ₹5,400)
-      if (offerings.current != null) {
-        final allAvailablePackages = offerings.current!.availablePackages;
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        Offerings offerings = await Purchases.getOfferings();
+        print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
 
-        // Saare regular packages ko map karo reactive list mein
-        packages.assignAll(allAvailablePackages);
-        print("✅ [RC] Standard Plans Loaded from Current: ${packages.length}");
+        // ✅ 1. Current / Regular Offering Loading (default_new - ₹5,400)
+        if (offerings.current != null) {
+          final allAvailablePackages = offerings.current!.availablePackages;
 
-        // Regular Weekly plan link karein
-        spinWeeklyPackage.value = allAvailablePackages.firstWhereOrNull(
-                (p) => p.packageType == PackageType.weekly
-        );
-      }
+          // Saare regular packages ko map karo reactive list mein
+          packages.assignAll(allAvailablePackages);
+          print("✅ [RC] Standard Plans Loaded from Current: ${packages.length}");
 
-      // ✅ 2. Discount Offering Loading (discount_offering - ₹2,800)
-      // 🔥 ABSOLUTE SYNC LOCK: Ab hum specific discount offering ko dashboard se target kar rahe hain
-      if (offerings.all["discount_offering"] != null) {
-        final discountOffering = offerings.all["discount_offering"]!;
-
-        // Dashboard par humne 'Annual' identifier link kiya hai, toh direct .annual uthayenge
-        spinYearlyPackage.value = discountOffering.annual;
-
-        if (spinYearlyPackage.value != null) {
-          print("🎁 [RC] SPIN OFFER LOADED FROM discount_offering: ${spinYearlyPackage.value?.storeProduct.priceString}");
+          // Regular Weekly plan link karein
+          spinWeeklyPackage.value = allAvailablePackages.firstWhereOrNull(
+                  (p) => p.packageType == PackageType.weekly
+          );
         }
-      } else {
-        print("⚠️ [RC] 'discount_offering' NOT FOUND in RevenueCat Dashboard");
+
+        // ✅ 2. Discount Offering Loading (discount_offering - ₹2,800)
+        if (offerings.all["discount_offering"] != null) {
+          final discountOffering = offerings.all["discount_offering"]!;
+          spinYearlyPackage.value = discountOffering.annual;
+
+          if (spinYearlyPackage.value != null) {
+            print("🎁 [RC] SPIN OFFER LOADED FROM discount_offering: ${spinYearlyPackage.value?.storeProduct.priceString}");
+          }
+        } else {
+          print("⚠️ [RC] 'discount_offering' NOT FOUND in RevenueCat Dashboard");
+        }
+
+        // Only a run that actually produced something counts as loaded.
+        if (packages.isNotEmpty || spinYearlyPackage.value != null) {
+          offeringsLoadFailed.value = false;
+          return;
+        }
+        print("⚠️ [RC] Offerings came back empty (attempt ${attempt + 1})");
+      } catch (e) {
+        print("❌ [RC] Fetch attempt ${attempt + 1} failed: $e");
       }
 
-    } catch (e) {
-      print("❌ [RC] Fetch Error: $e");
+      if (attempt < retries) {
+        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
+      }
     }
+
+    offeringsLoadFailed.value = true;
   }
   Future<void> buyProduct(Package package) async {
     if (!isConfigured) {
