@@ -1992,7 +1992,14 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // first year that then renews at the full price. Android keeps its trial.
       final String buttonText = Platform.isIOS
           ? (isYearly ? lang.continueYearly : lang.startJourney)
-          : (onTrial ? _trialCopy("buy") : (isYearly ? lang.startFreeTrial : lang.startJourney));
+          : (onTrial
+              ? _trialCopy("buy")
+              : (isYearly
+                  // The store gives the trial once per account; a returning
+                  // subscriber would be charged straight away, so do not
+                  // promise them a trial.
+                  ? (subController.yearlyIntroEligible.value ? lang.startFreeTrial : lang.continueYearly)
+                  : lang.startJourney));
       final String bottomSubText = isYearly
           ? (Platform.isIOS
               ? subController.formatIosTrialSubtext(

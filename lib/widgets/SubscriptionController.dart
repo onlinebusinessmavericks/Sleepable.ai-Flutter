@@ -100,6 +100,10 @@ class SubscriptionController extends GetxController {
 
       await checkSpinStatus();
 
+      // The store grants a trial once per account - find out before the paywall
+      // promises one.
+      await refreshTrialEligibility();
+
     } catch (e) {
       print("❌ [DEBUG] Sync Error: $e");
     } finally {
@@ -376,6 +380,66 @@ class SubscriptionController extends GetxController {
 
     offeringsLoadFailed.value = true;
   }
+  /// True when this user can still get the free trial / introductory price on
+  /// the yearly plan. The store grants it once per account, so a returning
+  /// subscriber must not be promised a trial the store will refuse.
+  RxBool yearlyIntroEligible = true.obs;
+
+  Package? get _yearlyPackage =>
+      spinYearlyPackage.value ??
+      packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+
+  Future<void> refreshTrialEligibility() async {
+    if (!isConfigured) return;
+    final productId = _yearlyPackage?.storeProduct.identifier;
+    if (productId == null) return;
+
+    try {
+      final result =
+          await Purchases.checkTrialOrIntroductoryPriceEligibility([productId]);
+      final status = result[productId]?.status;
+      // Only a definite "ineligible" hides the trial wording; unknown keeps the
+      // current copy rather than downgrading it on a bad network.
+      if (status == IntroEligibilityStatus.introEligibilityStatusIneligible ||
+          status == IntroEligibilityStatus.introEligibilityStatusNoIntroOfferExists) {
+        yearlyIntroEligible.value = false;
+      } else if (status == IntroEligibilityStatus.introEligibilityStatusEligible) {
+        yearlyIntroEligible.value = true;
+      }
+      print("🎟️ [RC] Intro eligibility for $productId: $status");
+    } catch (e) {
+      print("❌ [RC] Eligibility check failed: $e");
+    }
+  }
+
+  /// The product the user is subscribed to right now, if any.
+  Future<String?> _activeProductId() async {
+    try {
+      final info = await Purchases.getCustomerInfo();
+      final entitlement = info.entitlements.all['pro'];
+      if (entitlement?.isActive ?? false) return entitlement!.productIdentifier;
+    } catch (e) {
+      print("❌ [RC] Could not read active product: $e");
+    }
+    return null;
+  }
+
+  /// Google needs to be told how to handle a plan change, otherwise the result
+  /// is whatever the billing library defaults to. Moving up to yearly takes
+  /// effect now with credit for unused time; moving down to weekly waits for the
+  /// current period to end so the user is not refunded mid-term.
+  GoogleProrationMode _prorationModeFor(Package newPackage, String oldProductId) {
+    final oldPackage = [...packages, if (spinYearlyPackage.value != null) spinYearlyPackage.value!]
+        .firstWhereOrNull((p) => p.storeProduct.identifier == oldProductId);
+
+    final oldIsAnnual = oldPackage?.packageType == PackageType.annual;
+    final newIsAnnual = newPackage.packageType == PackageType.annual;
+
+    if (newIsAnnual && !oldIsAnnual) return GoogleProrationMode.immediateWithTimeProration;
+    if (!newIsAnnual && oldIsAnnual) return GoogleProrationMode.deferred;
+    return GoogleProrationMode.immediateWithTimeProration;
+  }
+
   Future<void> buyProduct(Package package) async {
     if (!isConfigured) {
       toast("Store not available on this device");
@@ -386,7 +450,24 @@ class SubscriptionController extends GetxController {
       isLoading.value = true;
 
       // Step 1: RevenueCat Purchase
-      final purchaseResult = await Purchases.purchasePackage(package);
+      // Android needs the plan change spelled out. Without this a switch
+      // between plans falls back to whatever the billing library defaults to.
+      GoogleProductChangeInfo? changeInfo;
+      if (Platform.isAndroid) {
+        final oldProductId = await _activeProductId();
+        if (oldProductId != null && oldProductId != package.storeProduct.identifier) {
+          changeInfo = GoogleProductChangeInfo(
+            oldProductId,
+            prorationMode: _prorationModeFor(package, oldProductId),
+          );
+          print("🔁 [RC] Plan change $oldProductId -> ${package.storeProduct.identifier} (${changeInfo.prorationMode})");
+        }
+      }
+
+      final purchaseResult = await Purchases.purchasePackage(
+        package,
+        googleProductChangeInfo: changeInfo,
+      );
       CustomerInfo customerInfo = purchaseResult.customerInfo;
       final entitlement = customerInfo.entitlements.all['pro'];
 
