@@ -993,7 +993,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       // Apple Guideline 3.1.2(c): the rotating "Get for {symbol}0.00" label made a
       // $0.00 price more conspicuous than the billed amount. iOS uses one stable,
       // neutral label; Android keeps the rotating marketing labels.
-      String currentButtonText = Platform.isIOS ? lang.startFreeTrial : buttonTexts[currentTextIndex];
+      String currentButtonText = Platform.isIOS ? lang.continueYearly : buttonTexts[currentTextIndex];
       return PopScope(
         canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
@@ -1067,7 +1067,9 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                             ),
                           ),
                         Text(
-                          "${context.lang.trySleepableFree}\n${context.lang.trySleepableFree1}",
+                          Platform.isIOS
+                              ? context.lang.unlockSleepableTitle
+                              : "${context.lang.trySleepableFree}\n${context.lang.trySleepableFree1}",
                           textAlign: TextAlign.center,
                           style: textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 26 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
                         ),
@@ -1196,7 +1198,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           ),
                           SizedBox(height: sh(2)),
                           Text(
-                            "3-day free trial, then $yearlyPrice per year ($currencySymbol$weeklyAvg / ${context.lang.week}). Cancel anytime.",
+                            iosYearlyPriceCopy(package, yearWord: context.lang.year),
                             textAlign: TextAlign.center,
                             style: textTheme.bodySmall?.copyWith(color: Colors.white54, fontSize: 11 * SizeConfigs.textScale),
                           ),
@@ -1986,10 +1988,11 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // Someone already inside the free trial must not be offered the trial
       // again - the store would reject it as an existing subscription.
       final bool onTrial = subController.isTrial.value;
-      final String buttonText = onTrial
-          ? _trialCopy("buy")
-          : (isYearly ? lang.startFreeTrial : lang.startJourney);
-
+      // iOS has no free trial: the yearly plan is an introductory price for the
+      // first year that then renews at the full price. Android keeps its trial.
+      final String buttonText = Platform.isIOS
+          ? (isYearly ? lang.continueYearly : lang.startJourney)
+          : (onTrial ? _trialCopy("buy") : (isYearly ? lang.startFreeTrial : lang.startJourney));
       final String bottomSubText = isYearly
           ? (Platform.isIOS
               ? subController.formatIosTrialSubtext(
@@ -2050,7 +2053,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
                   // CENTER CONTENT (Timeline vs Features)
-                  AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: isYearly ? _buildTimeline(textTheme) : _buildFeaturesList(textTheme)),
+                  AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: (isYearly && !Platform.isIOS) ? _buildTimeline(textTheme) : _buildFeaturesList(textTheme)),
 
                   Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
@@ -2073,7 +2076,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                           title: context.lang.yearly,
                           price: yearlyPriceText,
                           originalPrice: yearlyOriginalPrice,
-                          badge: context.lang.threeDaysFreeBadge,
+                          badge: Platform.isIOS ? null : context.lang.threeDaysFreeBadge,
                           textTheme: textTheme,
                         ),
                       ),
@@ -2146,11 +2149,11 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   SizedBox(height: sh(12)),
 
                   if (Platform.isIOS) ...[
-                    // Apple Guideline 3.1.2(c): the total billed amount must be the
-                    // MOST clear and conspicuous pricing element. It is shown largest
-                    // here; the free trial and per-week breakdown are subordinate.
+                    // Apple Guideline 3.1.2(c): the amount charged today is the most
+                    // conspicuous element - the introductory price on iOS, with the
+                    // renewal price stated plainly just below.
                     Text(
-                      isYearly ? "$yearlyPriceText / ${lang.year}" : "$weeklyPriceText / ${lang.week}",
+                      isYearly ? "${iosYearlyBilledNow(yearlyPackage)} / ${lang.year}" : "$weeklyPriceText / ${lang.week}",
                       textAlign: TextAlign.center,
                       style: textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
@@ -2161,7 +2164,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     SizedBox(height: sh(4)),
                     Text(
                       isYearly
-                          ? "3-day free trial, then $yearlyPriceText per year ($currencySymbol$weeklyAvgFromYearly / ${lang.week}). Cancel anytime."
+                          ? iosYearlyPriceCopy(yearlyPackage, yearWord: lang.year)
                           : "Billed $weeklyPriceText per week. Cancel anytime.",
                       textAlign: TextAlign.center,
                       style: textTheme.bodySmall?.copyWith(color: Colors.white54, fontSize: 12 * SizeConfigs.textScale),
@@ -2428,4 +2431,30 @@ Widget paywallProductsPlaceholder(BuildContext context) {
       ),
     );
   });
+}
+
+/// iOS yearly pricing copy.
+///
+/// On iOS there is no free trial: the yearly plan carries an introductory price
+/// for the first year and renews at the full price after that. Both numbers come
+/// straight from the store, so this stays correct in every currency.
+String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
+  if (yearly == null) return "";
+  final product = yearly.storeProduct;
+  final intro = product.introductoryPrice;
+
+  if (intro == null) {
+    // No introductory offer configured - just the recurring price.
+    return "${product.priceString} / $yearWord";
+  }
+  return "${intro.priceString} for the first $yearWord, "
+      "then ${product.priceString} / $yearWord. Cancel anytime.";
+}
+
+/// The amount actually charged today for the yearly plan on iOS - the
+/// introductory price when there is one, otherwise the standard price.
+String iosYearlyBilledNow(Package? yearly) {
+  if (yearly == null) return "";
+  final product = yearly.storeProduct;
+  return product.introductoryPrice?.priceString ?? product.priceString;
 }
