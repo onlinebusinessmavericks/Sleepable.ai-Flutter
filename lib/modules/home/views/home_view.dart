@@ -185,6 +185,12 @@ class HomeScreen extends GetView<HomeController> {
                                                 // ✅ Hamesha ID check karein, Label nahi
                                                 final String itemId = item['id'];
 
+                                                // Premium-only chips are shown locked; send free/trial users to the paywall.
+                                                if (item['premiumOnly'] == true && !subController.isPremium.value) {
+                                                  controller.showRotatingPremiumSheet(context);
+                                                  return;
+                                                }
+
                                                 if (itemId == 'white_noise') {
                                                   sleepSoundController.setJumpArguments(jumpTab: "white-noise", jumpFilter: "__all__");
                                                   dashboardController.changeTab(1);
@@ -226,7 +232,19 @@ class HomeScreen extends GetView<HomeController> {
                                                       child: Container(
                                                         decoration: BoxDecoration(color: AppColors.cardColor, borderRadius: BorderRadius.circular(28)),
                                                         child: Center(
-                                                          child: Icon(item['icon'], color: isTapped ? AppColors.primary : Colors.white, size: 26 * SizeConfigs.paddingScale),
+                                                          child: Stack(
+                                                            alignment: Alignment.center,
+                                                            clipBehavior: Clip.none,
+                                                            children: [
+                                                              Icon(item['icon'], color: isTapped ? AppColors.primary : Colors.white, size: 26 * SizeConfigs.paddingScale),
+                                                              if (item['premiumOnly'] == true && !subController.isPremium.value)
+                                                                Positioned(
+                                                                  right: -2,
+                                                                  bottom: -2,
+                                                                  child: Icon(Icons.lock, color: AppColors.starFillColor, size: 14 * SizeConfigs.paddingScale),
+                                                                ),
+                                                            ],
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
@@ -955,7 +973,7 @@ class HomeScreen extends GetView<HomeController> {
       // Filter logic: Agar isPremium true hai, toh 'premium' id wala banner hata do
       final banners = allBanners.where((b) {
         if (b['id'] == 'premium' && subController.isPremium.value) return false;
-        if (b['id'] == 'dreambot' && !subController.isPremium.value) return false;
+        // DreamBot banner stays visible for free/trial users - tapping it opens the paywall.
         return true;
       }).toList();
 
@@ -980,6 +998,10 @@ class HomeScreen extends GetView<HomeController> {
                       final homeController = Get.put(HomeController());
                       homeController.showRotatingPremiumSheet(context);
                     } else if (item['id'] == 'dreambot') {
+                      if (!subController.isPremium.value) {
+                        Get.put(HomeController()).showRotatingPremiumSheet(context);
+                        return;
+                      }
                       Get.toNamed(
                         Routes.dreamBot,
                         parameters: {"fromProgress": "true", "dreamId": "0"},

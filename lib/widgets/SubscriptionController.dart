@@ -400,7 +400,13 @@ class SubscriptionController extends GetxController {
       if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
         // User ne cancel kiya, koi galti nahi hai
       } else {
-        toast("Purchase Error: ${e.message}");
+        if (errorCode == PurchasesErrorCode.productAlreadyPurchasedError) {
+          // Already in the store trial for this plan, so it cannot be bought
+          // again - the store rejects it. Say that plainly.
+          toast("You are already subscribed to this plan. It starts automatically when your free trial ends.");
+        } else {
+          toast("Purchase Error: ${e.message}");
+        }
       }
     } finally {
       isLoading.value = false;

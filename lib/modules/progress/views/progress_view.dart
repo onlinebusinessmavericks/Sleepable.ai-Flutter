@@ -951,13 +951,13 @@ class ProgressScreen extends GetView<ProgressController> {
               sleepRecorderSection(context),
               SizedBox(height: 20 * SizeConfigs.paddingScale),
               Obx(() {
-                if (!subController.isPremium.value) return const SizedBox.shrink();
+                // My Dreams stays visible for free/trial users - shown locked, not hidden.
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(context.lang.myDreams, style: textStyle),
                     SizedBox(height: 10 * SizeConfigs.paddingScale),
-                    _buildMyDream(context),
+                    subController.isPremium.value ? _buildMyDream(context) : _lockedDreamsCard(context),
                   ],
                 );
               }),
@@ -1841,6 +1841,39 @@ class BreathEvent {
   final double duration;
 
   BreathEvent(this.time, this.duration);
+}
+
+/// Placeholder shown to free and trial users in place of the dream list, so the
+/// feature is visible but clearly locked behind Premium.
+Widget _lockedDreamsCard(BuildContext context) {
+  return GestureDetector(
+    onTap: () => Get.put(HomeController()).showRotatingPremiumSheet(context),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.lock, color: Colors.white54, size: 26),
+          const SizedBox(height: 10),
+          Text(
+            context.lang.dreamBotTitle,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.lang.unlockAllFeatures,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 Widget _buildMyDream(BuildContext context) {

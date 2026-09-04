@@ -1983,7 +1983,12 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // promotion) so the billed amount stays the most conspicuous element.
       // Android keeps its original trial-forward title.
       final String mainTitle = (isYearly && !Platform.isIOS) ? lang.startTrialToContinue : lang.unlockSleepableTitle;
-      final String buttonText = isYearly ? lang.startFreeTrial : lang.startJourney;
+      // Someone already inside the free trial must not be offered the trial
+      // again - the store would reject it as an existing subscription.
+      final bool onTrial = subController.isTrial.value;
+      final String buttonText = onTrial
+          ? _trialCopy("buy")
+          : (isYearly ? lang.startFreeTrial : lang.startJourney);
 
       final String bottomSubText = isYearly
           ? (Platform.isIOS
@@ -2120,6 +2125,12 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                       //   }
                       // },
                       onPressed: () async {
+                        // On trial for Yearly: the store will not allow a switch
+                        // down to Weekly, so explain rather than fail silently.
+                        if (onTrial && !isYearly) {
+                          toast(_trialCopy("noDowngrade"));
+                          return;
+                        }
                         final package = isYearly ? yearlyPackage : weeklyPackage;
                         if (package != null) {
                           await subController.buyProduct(package);
@@ -2344,4 +2355,35 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       ),
     );
   }
+}
+
+/// Paywall copy shown once the user is already inside the free trial.
+///
+/// Kept here rather than in the BaseLanguage abstract class, which would need
+/// every language file edited in lockstep or the build breaks.
+String _trialCopy(String key) {
+  const map = {
+    "en": {
+      "buy": "Buy Premium Now",
+      "noDowngrade": "You are already on a trial for the Yearly plan, so you cannot switch to Weekly.",
+    },
+    "de": {
+      "buy": "Jetzt Premium kaufen",
+      "noDowngrade": "Sie testen bereits den Jahresplan und koennen daher nicht zu Woechentlich wechseln.",
+    },
+    "fr": {
+      "buy": "Acheter Premium",
+      "noDowngrade": "Vous etes deja en essai sur le plan annuel, vous ne pouvez donc pas passer au plan hebdomadaire.",
+    },
+    "es": {
+      "buy": "Comprar Premium",
+      "noDowngrade": "Ya tienes una prueba del plan anual, por lo que no puedes cambiar al plan semanal.",
+    },
+    "pt": {
+      "buy": "Comprar Premium",
+      "noDowngrade": "Voce ja esta em teste no plano anual, portanto nao pode mudar para o semanal.",
+    },
+  };
+  final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
+  return table[key] ?? map["en"]![key] ?? "";
 }
