@@ -1993,7 +1993,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       final String buttonText = Platform.isIOS
           ? (isYearly ? lang.continueYearly : lang.startJourney)
           : (onTrial
-              ? _trialCopy("buy")
+              ? trialCountdownText(subController)
               : (isYearly
                   // The store gives the trial once per account; a returning
                   // subscriber would be charged straight away, so do not
@@ -2135,10 +2135,13 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                       //   }
                       // },
                       onPressed: () async {
-                        // On trial for Yearly: the store will not allow a switch
-                        // down to Weekly, so explain rather than fail silently.
-                        if (onTrial && !isYearly) {
-                          toast(_trialCopy("noDowngrade"));
+                        // A trial converts on the store's own schedule and cannot be
+                        // paid off early - the store rejects buying a plan you already
+                        // hold. Show what happens next instead of failing.
+                        if (onTrial) {
+                          toast(isYearly
+                              ? trialCountdownText(subController)
+                              : _trialCopy("noDowngrade"));
                           return;
                         }
                         final package = isYearly ? yearlyPackage : weeklyPackage;
@@ -2376,22 +2379,37 @@ String _trialCopy(String key) {
     "en": {
       "buy": "Buy Premium Now",
       "noDowngrade": "You are already on a trial for the Yearly plan, so you cannot switch to Weekly.",
+      "startsIn": "Your Premium starts in {days} days",
+      "startsTomorrow": "Your Premium starts tomorrow",
+      "startsToday": "Your Premium starts today",
     },
     "de": {
       "buy": "Jetzt Premium kaufen",
       "noDowngrade": "Sie testen bereits den Jahresplan und koennen daher nicht zu Woechentlich wechseln.",
+      "startsIn": "Ihr Premium startet in {days} Tagen",
+      "startsTomorrow": "Ihr Premium startet morgen",
+      "startsToday": "Ihr Premium startet heute",
     },
     "fr": {
       "buy": "Acheter Premium",
       "noDowngrade": "Vous etes deja en essai sur le plan annuel, vous ne pouvez donc pas passer au plan hebdomadaire.",
+      "startsIn": "Votre Premium demarre dans {days} jours",
+      "startsTomorrow": "Votre Premium demarre demain",
+      "startsToday": "Votre Premium demarre aujourd hui",
     },
     "es": {
       "buy": "Comprar Premium",
       "noDowngrade": "Ya tienes una prueba del plan anual, por lo que no puedes cambiar al plan semanal.",
+      "startsIn": "Tu Premium comienza en {days} dias",
+      "startsTomorrow": "Tu Premium comienza manana",
+      "startsToday": "Tu Premium comienza hoy",
     },
     "pt": {
       "buy": "Comprar Premium",
       "noDowngrade": "Voce ja esta em teste no plano anual, portanto nao pode mudar para o semanal.",
+      "startsIn": "Seu Premium comeca em {days} dias",
+      "startsTomorrow": "Seu Premium comeca amanha",
+      "startsToday": "Seu Premium comeca hoje",
     },
   };
   final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
@@ -2464,4 +2482,17 @@ String iosYearlyBilledNow(Package? yearly) {
   if (yearly == null) return "";
   final product = yearly.storeProduct;
   return product.introductoryPrice?.priceString ?? product.priceString;
+}
+
+/// What a user inside the free trial sees in place of a buy button.
+///
+/// The store converts the trial on its own schedule and will not take payment
+/// early, so the paywall counts down instead of offering a purchase that would
+/// be rejected as an existing subscription.
+String trialCountdownText(SubscriptionController sub) {
+  final days = sub.trialDaysRemaining;
+  if (days == null) return _trialCopy("buy");
+  if (days <= 0) return _trialCopy("startsToday");
+  if (days == 1) return _trialCopy("startsTomorrow");
+  return _trialCopy("startsIn").replaceAll("{days}", "$days");
 }

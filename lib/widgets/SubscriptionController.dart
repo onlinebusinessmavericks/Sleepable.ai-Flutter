@@ -29,6 +29,11 @@ class SubscriptionController extends GetxController {
   static const String PREM_KEY = "is_user_premium_cache";
   static const String TRIAL_KEY = "is_user_trial_cache";
   static const String FIRST_REPORT_KEY = "trial_first_report_date";
+  static const String TRIAL_ENDS_KEY = "trial_ends_at";
+
+  /// Exactly when the store will charge for the trial, straight from the store
+  /// via the backend - not a date counted locally. Null unless a trial is running.
+  Rx<DateTime?> trialEndsAt = Rx<DateTime?>(null);
   RxBool isLoading = false.obs;
   static const String SPIN_CACHE_KEY = "spin_status_cache";
   Rx<SpinData?> spinInfo = Rx<SpinData?>(null);
@@ -46,6 +51,7 @@ class SubscriptionController extends GetxController {
     isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
     isTrial.value = getBoolAsync(TRIAL_KEY, defaultValue: false);
     firstReportDate.value = getStringAsync(FIRST_REPORT_KEY);
+    _restoreTrialEndFromCache();
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -679,6 +685,39 @@ class SubscriptionController extends GetxController {
   ///
   /// Retries before giving up: a failed call must not lock a paying or
   /// admin-granted user out, so on total failure the cached value is kept.
+  /// Stores the trial end sent by the backend. Accepts both plain and
+  /// microsecond ISO timestamps; anything unparseable is treated as "no trial"
+  /// rather than crashing the status sync.
+  void _applyTrialEnd(dynamic raw) {
+    final text = (raw ?? '').toString();
+    if (text.isEmpty || text == 'null') {
+      trialEndsAt.value = null;
+      removeKey(TRIAL_ENDS_KEY);
+      return;
+    }
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) {
+      log("Could not parse trial_ends_at: $text");
+      return;
+    }
+    trialEndsAt.value = parsed.toUtc();
+    setValue(TRIAL_ENDS_KEY, text);
+  }
+
+  void _restoreTrialEndFromCache() {
+    final cached = getStringAsync(TRIAL_ENDS_KEY);
+    if (cached.isEmpty) return;
+    trialEndsAt.value = DateTime.tryParse(cached)?.toUtc();
+  }
+
+  /// Whole days left before the trial converts. Null when no trial is running.
+  int? get trialDaysRemaining {
+    final end = trialEndsAt.value;
+    if (end == null) return null;
+    final left = end.difference(DateTime.now().toUtc());
+    return left.isNegative ? 0 : left.inDays;
+  }
+
   Future<void> getBackendSubscriptionStatus({int retries = 2}) async {
     for (int attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -696,6 +735,7 @@ class SubscriptionController extends GetxController {
           firstReportDate.value = first;
           await setValue(FIRST_REPORT_KEY, first);
           trialNightsUsed.value = data['trial_nights_used'] ?? 0;
+          _applyTrialEnd(data['trial_ends_at']);
           return;
         }
       } catch (e) {
