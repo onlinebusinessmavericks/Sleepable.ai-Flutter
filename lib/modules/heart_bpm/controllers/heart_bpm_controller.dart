@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:nb_utils/nb_utils.dart';
 
 import '../../../localization/lang_extension.dart';
@@ -126,27 +127,108 @@ class HeartBPMController extends GetxController {
         "$yourBpmLabel: $bpm - $status";
   }
 
+  /// Why the camera could not be started. Empty while things are fine.
+  ///
+  /// Every failure here used to be an unhandled async error: the screen was
+  /// left on its spinner with nothing to read and no way forward.
+  RxString cameraError = ''.obs;
+
   Future<void> initCamera() async {
-    final cams = await availableCameras();
-    cameraController = CameraController(
-      cams.first,
-      ResolutionPreset.low,
-      enableAudio: false,
-      imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.yuv420,
-    );
+    cameraError.value = '';
+    try {
+      // Android needs the grant at runtime. Without it availableCameras()
+      // comes back empty on some versions and initialize() throws on others.
+      final status = await ph.Permission.camera.request();
+      if (!status.isGranted) {
+        cameraError.value = _cameraErrorText(
+            status.isPermanentlyDenied ? 'deniedForever' : 'denied');
+        return;
+      }
 
-    await cameraController!.initialize();
+      final cams = await availableCameras();
+      CameraDescription? lens;
+      for (final c in cams) {
+        if (c.lensDirection == CameraLensDirection.back) {
+          lens = c;
+          break;
+        }
+      }
+      lens ??= cams.isNotEmpty ? cams.first : null;
+      if (lens == null) {
+        cameraError.value = _cameraErrorText('noCamera');
+        return;
+      }
 
-    // 🔥 FIX: Flash on karne se pehle 500ms ka delay dein
-    await Future.delayed(const Duration(milliseconds: 500));
-    await cameraController!.setFlashMode(FlashMode.torch);
+      cameraController = CameraController(
+        lens,
+        ResolutionPreset.low,
+        enableAudio: false,
+        imageFormatGroup: Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.yuv420,
+      );
 
-    // 🔥 FIX: Stream shuru karne se pehle phir se thoda delay dein
-    await Future.delayed(const Duration(milliseconds: 500));
+      await cameraController!.initialize();
 
-    isCameraReady.value = true;
-    _startStream();
+      // Give the sensor a moment before switching the torch on.
+      await Future.delayed(const Duration(milliseconds: 500));
+      // Not every device has a torch. The reading is weaker without it, but
+      // that is no reason to kill the screen.
+      try {
+        await cameraController!.setFlashMode(FlashMode.torch);
+      } catch (e) {
+        debugPrint("Torch unavailable: $e");
+      }
+
+      // And another before the stream starts.
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      isCameraReady.value = true;
+      _startStream();
+    } catch (e) {
+      debugPrint("Heart rate camera init failed: $e");
+      cameraError.value = _cameraErrorText('failed');
+    }
   }
+
+  String _cameraErrorText(String key) {
+    const map = {
+      "en": {
+        "denied": "Camera access is needed to read your pulse. Please allow it and try again.",
+        "deniedForever": "Camera access is blocked. Turn it on for Sleepable in your phone's settings.",
+        "noCamera": "No usable camera was found on this device.",
+        "failed": "The camera could not be started. Close any other app using it and try again.",
+      },
+      "de": {
+        "denied": "Fuer die Pulsmessung wird die Kamera benoetigt. Bitte erlauben und erneut versuchen.",
+        "deniedForever": "Der Kamerazugriff ist blockiert. Aktivieren Sie ihn fuer Sleepable in den Einstellungen.",
+        "noCamera": "Auf diesem Geraet wurde keine nutzbare Kamera gefunden.",
+        "failed": "Die Kamera konnte nicht gestartet werden. Schliessen Sie andere Apps und versuchen Sie es erneut.",
+      },
+      "fr": {
+        "denied": "L'acces a la camera est necessaire pour mesurer votre pouls. Autorisez-le puis reessayez.",
+        "deniedForever": "L'acces a la camera est bloque. Activez-le pour Sleepable dans les reglages.",
+        "noCamera": "Aucune camera utilisable n'a ete trouvee sur cet appareil.",
+        "failed": "Impossible de demarrer la camera. Fermez les autres applications et reessayez.",
+      },
+      "es": {
+        "denied": "Se necesita la camara para medir tu pulso. Permitelo e intentalo de nuevo.",
+        "deniedForever": "El acceso a la camara esta bloqueado. Activalo para Sleepable en los ajustes.",
+        "noCamera": "No se encontro ninguna camara utilizable en este dispositivo.",
+        "failed": "No se pudo iniciar la camara. Cierra otras apps e intentalo de nuevo.",
+      },
+      "pt": {
+        "denied": "A camera e necessaria para medir seu pulso. Permita e tente novamente.",
+        "deniedForever": "O acesso a camera esta bloqueado. Ative-o para o Sleepable nas configuracoes.",
+        "noCamera": "Nenhuma camera utilizavel foi encontrada neste aparelho.",
+        "failed": "Nao foi possivel iniciar a camera. Feche outros apps e tente novamente.",
+      },
+    };
+    final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
+    return table[key] ?? map["en"]![key] ?? "";
+  }
+
+  /// Opens the OS settings page so a permanently denied permission can be
+  /// turned back on.
+  Future<void> openCameraSettings() => ph.openAppSettings();
   // -----------------------------------------------------------
   // LIGHT + RED DETECTION STREAM
   // -----------------------------------------------------------
@@ -351,8 +433,13 @@ class HeartBPMController extends GetxController {
     _timestamps.clear();
 
     /// 🔥 Restart camera
-    await cameraController?.initialize();
-    await cameraController?.setFlashMode(FlashMode.torch);
+    // A restart must not die on a device without a torch either.
+    try {
+      await cameraController?.initialize();
+      await cameraController?.setFlashMode(FlashMode.torch);
+    } catch (e) {
+      debugPrint("Heart rate camera restart failed: $e");
+    }
     isCameraReady.value = true;
 
     if (fingerOn.value) _startMeasurement();

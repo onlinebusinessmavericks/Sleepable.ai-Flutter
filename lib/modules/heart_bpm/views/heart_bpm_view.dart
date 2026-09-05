@@ -154,6 +154,40 @@ class _HeartBPMViewState extends State<HeartBPMView> with TickerProviderStateMix
               Center(
                 child: Obx(() {
                   if (!c.showSaveButton.value && (!c.isCameraReady.value || c.cameraController == null || !c.cameraController!.value.isInitialized)) {
+                    // A camera failure used to leave this spinner running for
+                    // ever, with nothing to read and no way forward.
+                    if (c.cameraError.value.isNotEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.no_photography_outlined, color: Colors.white54, size: 34),
+                            const SizedBox(height: 12),
+                            Text(
+                              c.cameraError.value,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 12,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: c.initCamera,
+                                  child: Text(context.lang.retry),
+                                ),
+                                TextButton(
+                                  onPressed: c.openCameraSettings,
+                                  child: Text(context.lang.settings, style: const TextStyle(color: Colors.white70)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                     return const Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator());
                   }
 
