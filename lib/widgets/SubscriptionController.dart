@@ -145,6 +145,17 @@ class SubscriptionController extends GetxController {
     isTrial.value = trial;
     await setValue(TRIAL_KEY, trial);
   }
+  /// Whether the user can open a premium feature.
+  ///
+  /// A few features are usable during the trial in a limited form - DreamBot
+  /// allows one dream - so those pass [trialAllowed]. Everything else stays
+  /// locked until the trial converts and the user is actually premium. The
+  /// per-feature limit itself is enforced by the backend, not here.
+  bool hasAccessTo({bool trialAllowed = false}) {
+    if (isPremium.value) return true;
+    return trialAllowed && isTrial.value;
+  }
+
   bool get hasSpecialOffer => spinInfo.value != null && (spinInfo.value!.discountPct ?? 0) > 0;
 
   /// iOS: show discount upfront on the primary paywall (no spin required).

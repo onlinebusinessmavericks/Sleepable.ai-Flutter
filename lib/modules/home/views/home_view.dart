@@ -186,7 +186,7 @@ class HomeScreen extends GetView<HomeController> {
                                                 final String itemId = item['id'];
 
                                                 // Premium-only chips are shown locked; send free/trial users to the paywall.
-                                                if (item['premiumOnly'] == true && !subController.isPremium.value) {
+                                                if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
                                                   controller.showRotatingPremiumSheet(context);
                                                   return;
                                                 }
@@ -237,7 +237,7 @@ class HomeScreen extends GetView<HomeController> {
                                                             clipBehavior: Clip.none,
                                                             children: [
                                                               Icon(item['icon'], color: isTapped ? AppColors.primary : Colors.white, size: 26 * SizeConfigs.paddingScale),
-                                                              if (item['premiumOnly'] == true && !subController.isPremium.value)
+                                                              if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true))
                                                                 Positioned(
                                                                   right: -2,
                                                                   bottom: -2,
@@ -998,7 +998,7 @@ class HomeScreen extends GetView<HomeController> {
                       final homeController = Get.put(HomeController());
                       homeController.showRotatingPremiumSheet(context);
                     } else if (item['id'] == 'dreambot') {
-                      if (!subController.isPremium.value) {
+                      if (!subController.hasAccessTo(trialAllowed: true)) {
                         Get.put(HomeController()).showRotatingPremiumSheet(context);
                         return;
                       }

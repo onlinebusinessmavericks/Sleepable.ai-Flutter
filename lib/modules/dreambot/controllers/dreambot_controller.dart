@@ -57,6 +57,61 @@ class DreamBotController extends GetxController {
     return granted;
   }
 
+  SubscriptionController? get _sub => Get.isRegistered<SubscriptionController>()
+      ? Get.find<SubscriptionController>()
+      : null;
+
+  bool _isOnTrial() {
+    final sub = _sub;
+    return sub != null && sub.isTrial.value && !sub.isPremium.value;
+  }
+
+  /// The trial includes a single dream. Once it is used there is nothing to
+  /// upgrade to - the store converts the trial on its own schedule - so the
+  /// free-user "upgrade to premium" copy would be misleading here.
+  String _trialDreamLimitMessage() {
+    const map = {
+      "en": {
+        "used": "That was your 1 dream for the free trial.",
+        "in": "Unlimited dreams unlock in {days} days, when your Premium starts.",
+        "tomorrow": "Unlimited dreams unlock tomorrow, when your Premium starts.",
+        "soon": "Unlimited dreams unlock as soon as your trial ends.",
+      },
+      "de": {
+        "used": "Das war Ihr 1 Traum in der kostenlosen Testphase.",
+        "in": "Unbegrenzte Traeume gibt es in {days} Tagen, wenn Ihr Premium startet.",
+        "tomorrow": "Unbegrenzte Traeume gibt es morgen, wenn Ihr Premium startet.",
+        "soon": "Unbegrenzte Traeume gibt es, sobald Ihre Testphase endet.",
+      },
+      "fr": {
+        "used": "C'etait votre 1 reve de la periode d'essai.",
+        "in": "Les reves illimites arrivent dans {days} jours, au debut de votre Premium.",
+        "tomorrow": "Les reves illimites arrivent demain, au debut de votre Premium.",
+        "soon": "Les reves illimites arrivent des la fin de votre essai.",
+      },
+      "es": {
+        "used": "Ese fue tu unico sueno de la prueba gratuita.",
+        "in": "Los suenos ilimitados se activan en {days} dias, cuando empiece tu Premium.",
+        "tomorrow": "Los suenos ilimitados se activan manana, cuando empiece tu Premium.",
+        "soon": "Los suenos ilimitados se activan en cuanto termine tu prueba.",
+      },
+      "pt": {
+        "used": "Esse foi o seu unico sonho do teste gratuito.",
+        "in": "Sonhos ilimitados chegam em {days} dias, quando o seu Premium comecar.",
+        "tomorrow": "Sonhos ilimitados chegam amanha, quando o seu Premium comecar.",
+        "soon": "Sonhos ilimitados chegam assim que o teste terminar.",
+      },
+    };
+    final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
+    final days = _sub?.trialDaysRemaining;
+    final String wait = days == null
+        ? table["soon"]!
+        : days <= 1
+            ? table["tomorrow"]!
+            : table["in"]!.replaceAll("{days}", "$days");
+    return "${table["used"]!} $wait";
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -139,7 +194,11 @@ class DreamBotController extends GetxController {
 
         debugPrint("🎯 Session Started. ID: $currentDreamId");
       } else {
-        String errorMsg = res?['message'] ?? "Limit reached.";
+        // The backend's copy asks free users to upgrade; a trial user has
+        // already paid their way in and only has to wait it out.
+        String errorMsg = _isOnTrial()
+            ? _trialDreamLimitMessage()
+            : (res?['message'] ?? "Limit reached.");
         welcomeMessage.value = errorMsg;
         // If there's an error, we don't add to messages yet to keep UI clean
       }
@@ -148,7 +207,13 @@ class DreamBotController extends GetxController {
       String rawError = e.toString().replaceAll("${Get.context?.lang.exception}:", "").trim();
 
       if (rawError.toLowerCase().contains("${Get.context?.lang.forbidden}") || rawError.toLowerCase().contains("${Get.context?.lang.pageNotFound}")) {
-        rawError = Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ?? "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.";
+        // A trial user gets one dream, and cannot buy their way out early -
+        // the store converts the trial on its own schedule. Tell them that
+        // rather than asking them to upgrade.
+        rawError = _isOnTrial()
+            ? _trialDreamLimitMessage()
+            : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
+                "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
       }
 
       welcomeMessage.value = rawError;

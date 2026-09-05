@@ -957,7 +957,7 @@ class ProgressScreen extends GetView<ProgressController> {
                   children: [
                     Text(context.lang.myDreams, style: textStyle),
                     SizedBox(height: 10 * SizeConfigs.paddingScale),
-                    subController.isPremium.value ? _buildMyDream(context) : _lockedDreamsCard(context),
+                    subController.hasAccessTo(trialAllowed: true) ? _buildMyDream(context) : _lockedDreamsCard(context),
                   ],
                 );
               }),
