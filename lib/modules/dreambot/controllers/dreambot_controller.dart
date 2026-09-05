@@ -125,20 +125,36 @@ class DreamBotController extends GetxController {
                 : table["in"]!.replaceAll("{days}", "$days");
     return "${table["used"]!} $wait";
   }
+  /// Whether an error came back from a 403.
+  ///
+  /// The network layer throws the English literal "Access forbidden", but
+  /// lang.forbidden is translated - so on a German or Spanish device the old
+  /// check never matched and the user was shown the raw error text instead of
+  /// the limit message. Match the literal, the translation, and the parsed body.
+  bool _isForbiddenError(String raw) {
+    if (lastForbiddenDetail != null) return true;
+    final text = raw.toLowerCase();
+    if (text.contains("forbidden") || text.contains("not found")) return true;
+    for (final word in [Get.context?.lang.forbidden, Get.context?.lang.pageNotFound]) {
+      final w = (word ?? "").toLowerCase();
+      if (w.isNotEmpty && text.contains(w)) return true;
+    }
+    return false;
+  }
 
   /// The dream limit comes back as a 403. The chat and the analysis used to
   /// swallow it, so the screen just froze with no explanation. Returns true
   /// when the error was a limit and a message has been shown.
   bool _reportLimitError(Object e) {
-    final raw = e.toString().toLowerCase();
-    final forbidden = "${Get.context?.lang.forbidden}".toLowerCase();
-    if (!raw.contains("forbidden") && !raw.contains(forbidden)) return false;
-    _showToast(_isOnTrial()
-        ? _trialDreamLimitMessage()
-        : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
-            "Free users can start 1 dream session per month. Upgrade to premium for unlimited access."));
+    if (!_isForbiddenError(e.toString())) return false;
+    _showToast(_limitMessage());
     return true;
   }
+
+  String _limitMessage() => _isOnTrial()
+      ? _trialDreamLimitMessage()
+      : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
+          "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
 
   @override
   void onInit() {
@@ -237,14 +253,11 @@ class DreamBotController extends GetxController {
       debugPrint("🛑 API Error Caught: $e");
       String rawError = e.toString().replaceAll("${Get.context?.lang.exception}:", "").trim();
 
-      if (rawError.toLowerCase().contains("${Get.context?.lang.forbidden}") || rawError.toLowerCase().contains("${Get.context?.lang.pageNotFound}")) {
+      if (_isForbiddenError(rawError)) {
         // A trial user gets one dream, and cannot buy their way out early -
         // the store converts the trial on its own schedule. Tell them that
         // rather than asking them to upgrade.
-        rawError = _isOnTrial()
-            ? _trialDreamLimitMessage()
-            : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
-                "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
+        rawError = _limitMessage();
       }
 
       welcomeMessage.value = rawError;
