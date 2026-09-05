@@ -126,6 +126,20 @@ class DreamBotController extends GetxController {
     return "${table["used"]!} $wait";
   }
 
+  /// The dream limit comes back as a 403. The chat and the analysis used to
+  /// swallow it, so the screen just froze with no explanation. Returns true
+  /// when the error was a limit and a message has been shown.
+  bool _reportLimitError(Object e) {
+    final raw = e.toString().toLowerCase();
+    final forbidden = "${Get.context?.lang.forbidden}".toLowerCase();
+    if (!raw.contains("forbidden") && !raw.contains(forbidden)) return false;
+    _showToast(_isOnTrial()
+        ? _trialDreamLimitMessage()
+        : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
+            "Free users can start 1 dream session per month. Upgrade to premium for unlimited access."));
+    return true;
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -293,6 +307,7 @@ class DreamBotController extends GetxController {
     } catch (e) {
       isBotTyping.value = false;
       debugPrint("Send Message Error: $e");
+      _reportLimitError(e);
     }
     scrollToBottom();
   }
@@ -364,6 +379,7 @@ class DreamBotController extends GetxController {
       }
     } catch (e) {
       debugPrint("Analysis Error: $e");
+      _reportLimitError(e);
     } finally {
       isFirstAnalyzeLoading.value = false;
       // Show analysis result from the top (image/summary first), not Action Steps at bottom
