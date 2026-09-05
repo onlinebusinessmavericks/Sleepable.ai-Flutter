@@ -374,7 +374,7 @@ class SubscriptionController extends GetxController {
           spinYearlyPackage.value = discountOffering.annual;
 
           if (spinYearlyPackage.value != null) {
-            print("🎁 [RC] SPIN OFFER LOADED FROM discount_offering: ${spinYearlyPackage.value?.storeProduct.priceString}");
+            print("🎁 [RC] discount_offering annual = ${spinYearlyPackage.value?.storeProduct.identifier} @ ${spinYearlyPackage.value?.storeProduct.priceString}");
           }
         } else {
           print("⚠️ [RC] 'discount_offering' NOT FOUND in RevenueCat Dashboard");
