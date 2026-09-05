@@ -1945,7 +1945,12 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       if (yearlyPackage == null) return paywallProductsPlaceholder(context);
 
       // 2. Real-time Store Data & Currency Fetch
-      String yearlyPriceText = subController.getDisplayYearlyPrice(
+      // On Android the discount now lives inside the Play offer, so the
+      // first-year amount comes from that offer's intro phase - the product
+      // itself carries the renewal price.
+      String yearlyPriceText = Platform.isAndroid
+          ? subController.androidYearlyFirstYearPrice(discounted: showOffer)
+          : subController.getDisplayYearlyPrice(
         spinData: spinData,
         discountPackage: spinPackage,
         standardPackage: standardAnnual,
@@ -2146,7 +2151,15 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                         }
                         final package = isYearly ? yearlyPackage : weeklyPackage;
                         if (package != null) {
-                          await subController.buyProduct(package);
+                          // Android: pick the Play offer that matches the spin
+                          // result. iOS ignores this - its discount is a store
+                          // introductory offer applied automatically.
+                          await subController.buyProduct(
+                            package,
+                            option: isYearly
+                                ? subController.androidYearlyOption(discounted: showOffer)
+                                : null,
+                          );
                           if (subController.isPremium.value) {
                             Get.offAllNamed(Routes.dashboard);
                           }

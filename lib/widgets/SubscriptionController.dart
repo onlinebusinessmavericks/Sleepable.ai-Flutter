@@ -446,7 +446,46 @@ class SubscriptionController extends GetxController {
     return GoogleProrationMode.immediateWithTimeProration;
   }
 
-  Future<void> buyProduct(Package package) async {
+  /// The Play offer to buy the yearly plan with.
+  ///
+  /// Both offers live on the same base plan, so the discount is no longer a
+  /// separate product: `spin` gives a year at the reduced price before the plan
+  /// renews at full price, `trial` gives the free days and then full price.
+  /// iOS has no equivalent - there the store applies the introductory offer.
+  SubscriptionOption? androidYearlyOption({required bool discounted}) {
+    if (!Platform.isAndroid) return null;
+
+    final product = _yearlyPackage?.storeProduct;
+    final options = product?.subscriptionOptions;
+    if (options == null || options.isEmpty) return null;
+
+    final wantedTag = discounted ? 'spin' : 'trial';
+    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains(wantedTag))
+        // Tag missing in the console: fall back to shape - the discounted offer
+        // is the one carrying an intro phase.
+        ?? options.firstWhereOrNull((o) => !o.isBasePlan && (o.introPhase != null) == discounted)
+        ?? product?.defaultOption;
+  }
+
+  /// What the user is actually charged for the first year on Android.
+  ///
+  /// The base plan price is the renewal price, so a discounted offer's real
+  /// first-year amount comes from its intro phase, not from the product.
+  String androidYearlyFirstYearPrice({required bool discounted}) {
+    final option = androidYearlyOption(discounted: discounted);
+    final intro = option?.introPhase;
+    if (intro != null) return intro.price.formatted;
+    return _yearlyPackage?.storeProduct.priceString ?? '';
+  }
+
+  /// The price the yearly plan renews at once any offer has run out.
+  String androidYearlyRenewalPrice() =>
+      _yearlyPackage?.storeProduct.priceString ?? '';
+
+  /// Buys [package]. On Android pass [option] to pick a specific Play offer
+  /// (the discounted year vs the plain free trial); without it the store
+  /// decides, which is not what the spin result should get.
+  Future<void> buyProduct(Package package, {SubscriptionOption? option}) async {
     if (!isConfigured) {
       toast("Store not available on this device");
       print("Store not available on this device");
@@ -470,9 +509,16 @@ class SubscriptionController extends GetxController {
         }
       }
 
-      final purchaseResult = await Purchases.purchasePackage(
-        package,
-        googleProductChangeInfo: changeInfo,
+      final purchaseResult = await Purchases.purchase(
+        option != null && Platform.isAndroid
+            ? PurchaseParams.subscriptionOption(
+                option,
+                googleProductChangeInfo: changeInfo,
+              )
+            : PurchaseParams.package(
+                package,
+                googleProductChangeInfo: changeInfo,
+              ),
       );
       CustomerInfo customerInfo = purchaseResult.customerInfo;
       final entitlement = customerInfo.entitlements.all['pro'];
