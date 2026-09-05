@@ -615,9 +615,9 @@ class ProgressScreen extends GetView<ProgressController> {
                         padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: Text(
                           // Agar user premium nahi hai toh analytics wala text dikhao
-                          (subController.isPremium.value == false)
-                          ?context.lang.noSnoringDataAvailableUpgradePremium
-                           : context.lang.noSnoringDataAvailableToday,
+                          lockedSectionText(subController,
+                              upgrade: context.lang.noSnoringDataAvailableUpgradePremium,
+                              empty: context.lang.noSnoringDataAvailableToday),
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white38, fontSize: 14),
                         ),
@@ -903,9 +903,9 @@ class ProgressScreen extends GetView<ProgressController> {
                           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
                           child: Text(
                             // Free user mate premium prompt ane premium user mate default empty text
-                            (subController.isPremium.value == false)
-                            ? context.lang.noRecommendationsYetUpgradePremiumPersonalizedSleepImprovementTips
-                            : context.lang.noRecommendationsAvailableToday,
+                            lockedSectionText(subController,
+                                upgrade: context.lang.noRecommendationsYetUpgradePremiumPersonalizedSleepImprovementTips,
+                                empty: context.lang.noRecommendationsAvailableToday),
                                 // ? "No recommendations yet. Upgrade to Premium for personalized sleep improvement tips ✨"
                                 // : "No recommendations available for today.",
                             textAlign: TextAlign.center,
@@ -1191,9 +1191,9 @@ class ProgressScreen extends GetView<ProgressController> {
             padding: const EdgeInsets.only(top: 40, left: 30, right: 30),
             child: Text(
               // Check if user is NOT premium
-              (subController.isPremium.value == false)
-                  ? context.lang.unlockRecordingsPrompt
-                  : context.lang.noRecordingsToday,
+              lockedSectionText(subController,
+                  upgrade: context.lang.unlockRecordingsPrompt,
+                  empty: context.lang.noRecordingsToday),
                   // ? "No recordings found. Unlock your sleep recordings and AI analysis with Sleepable Premium ✨"
                   // : "No recordings found for today.",
               textAlign: TextAlign.center,
@@ -2336,3 +2336,18 @@ Widget _stat(BuildContext context, IconData icon, String label, String time, Col
   ),
 );
 
+
+/// Text for a section the user cannot see yet.
+///
+/// A trial user is not premium, but telling them to upgrade is useless - they
+/// have already subscribed and only have to wait for the trial to convert.
+/// Give them the countdown instead, the same one the paywall shows.
+String lockedSectionText(
+  SubscriptionController sub, {
+  required String upgrade,
+  required String empty,
+}) {
+  if (sub.isPremium.value) return empty;
+  if (sub.isTrial.value) return trialCountdownText(sub);
+  return upgrade;
+}
