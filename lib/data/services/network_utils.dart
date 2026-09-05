@@ -264,12 +264,18 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
   else if (response.statusCode == 429) {
     throw 'Too many requests';
   } else if (response.statusCode == 500) {
-    var body = jsonDecode(response.body);
-    if (body is Map && body.containsKey('status') && body['status'] is bool && !body['status']) {
-      throw parseHtmlString(body['message'] ?? 'Internal server error');
-    } else {
-      throw 'Internal server error';
+    // With DEBUG off the server returns an HTML error page rather than JSON,
+    // so the decode has to be allowed to fail - otherwise the user is shown a
+    // FormatException instead of a readable message.
+    try {
+      var body = jsonDecode(response.body);
+      if (body is Map && body.containsKey('status') && body['status'] is bool && !body['status']) {
+        throw parseHtmlString(body['message'] ?? 'Internal server error');
+      }
+    } on FormatException {
+      // Body was not JSON; fall through to the generic message.
     }
+    throw 'Internal server error';
   } else if (response.statusCode == 502) {
     throw 'Bad gateway';
   } else if (response.statusCode == 503) {
