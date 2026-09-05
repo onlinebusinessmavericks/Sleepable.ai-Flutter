@@ -150,28 +150,39 @@ class AppPages {
   ];
 }
 
+/// A zero-sigma [ImageFilter.blur] is not free: [BackdropFilter] still takes a
+/// full-screen save layer of everything painted behind it. Both transitions
+/// below left one of those painted at rest - [BlurFadeRoute] for the entire
+/// lifetime of its route - and some Android GPUs composite that layer blank,
+/// which is what turned these screens grey on certain devices. So the filter is
+/// only built while it actually has something to blur.
 class BlurFadeTransition extends CustomTransition {
   @override
   Widget buildTransition(BuildContext context, Curve? curve, Alignment? alignment, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+    final blur = 10 * animation.value;
+
+    /// NEW SCREEN → Fade IN + slight scale
+    final newScreen = FadeTransition(
+      opacity: animation,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.95, end: 1).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: child,
+      ),
+    );
+
+    if (blur <= 0) return newScreen;
+
     return Stack(
       children: [
         /// OLD SCREEN → Blur + Fade out
         FadeTransition(
           opacity: Tween<double>(begin: 1, end: 0).animate(animation),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10 * animation.value, sigmaY: 10 * animation.value),
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
             child: Container(color: Colors.black.withOpacity(0)),
           ),
         ),
-
-        /// NEW SCREEN → Fade IN + slight scale
-        FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.95, end: 1).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-            child: child,
-          ),
-        ),
+        newScreen,
       ],
     );
   }
@@ -180,25 +191,25 @@ class BlurFadeTransition extends CustomTransition {
 class BlurFadeRoute extends CustomTransition {
   @override
   Widget buildTransition(BuildContext context, Curve? curve, Alignment? alignment, Animation<double> animation, Animation<double> secondary, Widget child) {
-    /// OLD PAGE → fade out + blur + darker
-    final oldScreen = FadeTransition(
-      opacity: Tween<double>(begin: 1, end: 0).animate(secondary),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 40 * secondary.value, // more smooth blur
-          sigmaY: 40 * secondary.value,
-        ),
-        child: Container(
-          color: Colors.black.withOpacity(0.4 * secondary.value),
-          // ⬆ slowly increases to 0.4 opacity
-        ),
-      ),
-    );
+    final blur = 40 * secondary.value;
 
     /// NEW PAGE → fade in from 0.5 to 1.0
     final newScreen = FadeTransition(
       opacity: Tween<double>(begin: 0.01, end: 1).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
       child: child,
+    );
+
+    if (blur <= 0) return newScreen;
+
+    /// OLD PAGE → fade out + blur + darker
+    final oldScreen = FadeTransition(
+      opacity: Tween<double>(begin: 1, end: 0).animate(secondary),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        child: Container(
+          color: Colors.black.withOpacity(0.4 * secondary.value),
+        ),
+      ),
     );
 
     return Stack(children: [oldScreen, newScreen]);
