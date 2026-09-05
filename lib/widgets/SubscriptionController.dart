@@ -688,9 +688,14 @@ class SubscriptionController extends GetxController {
           method: MethodType.post
       );
 
-      if (response['success'] == true || response['message'].toString().contains("already")) {
-        // 1. Data parse karein
-        final data = SpinData.fromJson(response['data']);
+      // Branch on the structured flag, never on the message text. The backend
+      // translates its messages, so matching the English word "already" failed
+      // silently on every non-English device and the win was thrown away.
+      final body = response['data'];
+      final alreadySpun = body is Map && body['already_spun'] == true;
+
+      if ((response['success'] == true || alreadySpun) && body is Map) {
+        final data = SpinData.fromJson(Map<String, dynamic>.from(body));
 
         // 2. Force status true (Security check)
         data.alreadySpun = true;
