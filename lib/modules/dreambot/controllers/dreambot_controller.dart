@@ -80,40 +80,49 @@ class DreamBotController extends GetxController {
         "used": "That was your 1 dream for the free trial.",
         "in": "Unlimited dreams unlock in {days} days, when your Premium starts.",
         "tomorrow": "Unlimited dreams unlock tomorrow, when your Premium starts.",
+        "today": "Unlimited dreams unlock today, when your Premium starts.",
         "soon": "Unlimited dreams unlock as soon as your trial ends.",
       },
       "de": {
         "used": "Das war Ihr 1 Traum in der kostenlosen Testphase.",
         "in": "Unbegrenzte Traeume gibt es in {days} Tagen, wenn Ihr Premium startet.",
         "tomorrow": "Unbegrenzte Traeume gibt es morgen, wenn Ihr Premium startet.",
+        "today": "Unbegrenzte Traeume gibt es heute, wenn Ihr Premium startet.",
         "soon": "Unbegrenzte Traeume gibt es, sobald Ihre Testphase endet.",
       },
       "fr": {
         "used": "C'etait votre 1 reve de la periode d'essai.",
         "in": "Les reves illimites arrivent dans {days} jours, au debut de votre Premium.",
         "tomorrow": "Les reves illimites arrivent demain, au debut de votre Premium.",
+        "today": "Les reves illimites arrivent aujourd'hui, au debut de votre Premium.",
         "soon": "Les reves illimites arrivent des la fin de votre essai.",
       },
       "es": {
         "used": "Ese fue tu unico sueno de la prueba gratuita.",
         "in": "Los suenos ilimitados se activan en {days} dias, cuando empiece tu Premium.",
         "tomorrow": "Los suenos ilimitados se activan manana, cuando empiece tu Premium.",
+        "today": "Los suenos ilimitados se activan hoy, cuando empiece tu Premium.",
         "soon": "Los suenos ilimitados se activan en cuanto termine tu prueba.",
       },
       "pt": {
         "used": "Esse foi o seu unico sonho do teste gratuito.",
         "in": "Sonhos ilimitados chegam em {days} dias, quando o seu Premium comecar.",
         "tomorrow": "Sonhos ilimitados chegam amanha, quando o seu Premium comecar.",
+        "today": "Sonhos ilimitados chegam hoje, quando o seu Premium comecar.",
         "soon": "Sonhos ilimitados chegam assim que o teste terminar.",
       },
     };
     final table = map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
     final days = _sub?.trialDaysRemaining;
+    // Same thresholds as trialCountdownText() on the paywall, so the two
+    // screens never disagree about when the trial converts.
     final String wait = days == null
         ? table["soon"]!
-        : days <= 1
-            ? table["tomorrow"]!
-            : table["in"]!.replaceAll("{days}", "$days");
+        : days <= 0
+            ? table["today"]!
+            : days == 1
+                ? table["tomorrow"]!
+                : table["in"]!.replaceAll("{days}", "$days");
     return "${table["used"]!} $wait";
   }
 
