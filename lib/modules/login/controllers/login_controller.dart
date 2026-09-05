@@ -84,7 +84,14 @@ class LoginController extends BaseController {
       await _handleSocialLogin(provider: "google", user: userCredential.user);
     } catch (e) {
       isLoading.value = false;
-      print("❌ Google Login Error: $e");
+      // ApiException: 10 is DEVELOPER_ERROR - the signing key of this build
+      // is not registered with Firebase. Worth naming, because it reads like
+      // a login bug when it is a build problem.
+      final devError = e.toString().contains("ApiException: 10")
+          ? " (signing key not registered with Firebase)"
+          : "";
+      print("Google Login Error: $e$devError");
+      _showSignInError(e);
     }
   }
 
@@ -116,8 +123,9 @@ class LoginController extends BaseController {
 
     } catch (e) {
       isLoading.value = false;
-      print("❌ Apple Login Error: $e");
-      // User cancel kare toh loading band honi chahiye
+      // A cancelled sign-in stops the loader without showing an error.
+      print("Apple Login Error: $e");
+      _showSignInError(e);
     }
   }
   // ===================== FACEBOOK LOGIN =====================
@@ -147,7 +155,21 @@ class LoginController extends BaseController {
     } catch (e) {
       isLoading.value = false;
       print("❌ Facebook Login Error: $e");
+      _showSignInError(e);
     }
+  }
+
+  /// A failed social sign-in was only printed, so the login screen just sat
+  /// there and looked as though the tap had done nothing at all.
+  void _showSignInError(Object e) {
+    // Someone who backed out of the sheet does not need to be told anything.
+    if (e is SignInWithAppleAuthorizationException &&
+        e.code == AuthorizationErrorCode.canceled) {
+      return;
+    }
+    final ctx = Get.context;
+    if (ctx == null) return;
+    Get.snackbar(ctx.lang.error, ctx.lang.somethingWentWrongDuringLogin);
   }
 
   // ===================== SING UP =====================
