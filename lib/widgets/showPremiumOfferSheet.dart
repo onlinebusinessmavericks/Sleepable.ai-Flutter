@@ -202,7 +202,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       final package = showOffer ? (spinPackage ?? standardPackage) : standardPackage;
 
                       if (package == null) return paywallProductsPlaceholder(context);
-                      // Store-localized currency (Play Store country) — same approach as iOS
+                      // Store-localized currency (Play Store country) - same approach as iOS
                       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
                       double storePrice = package.storeProduct.price;
                       String pricePerYear = package.storeProduct.priceString;
@@ -403,7 +403,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
               return paywallProductsPlaceholder(context);
             }
 
-            // Store-localized currency (Play Store country) — same approach as iOS
+            // Store-localized currency (Play Store country) - same approach as iOS
             String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
             double storePrice = package.storeProduct.price;
             String pricePerYear = package.storeProduct.priceString;
@@ -694,7 +694,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
         return paywallProductsPlaceholder(context);
       }
 
-      // Store-localized currency (Play Store country) — same approach as iOS
+      // Store-localized currency (Play Store country) - same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
       double storePrice = package.storeProduct.price;
       String pricePerYear = package.storeProduct.priceString;
@@ -1441,7 +1441,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
       if (yearlyPackage == null) return paywallProductsPlaceholder(context);
 
-      // Store-localized currency (Play Store country) — same approach as iOS
+      // Store-localized currency (Play Store country) - same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
       String yearlyDisplayPrice = yearlyPackage.storeProduct.priceString;
       double storePrice = yearlyPackage.storeProduct.price;
@@ -1779,7 +1779,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
             return paywallProductsPlaceholder(context);
           }
 
-          // Store-localized currency (Play Store country) — same approach as iOS
+          // Store-localized currency (Play Store country) - same approach as iOS
           String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
           String yearlyPrice = package.storeProduct.priceString;
           double storePrice = package.storeProduct.price;
@@ -2048,7 +2048,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   ),
 
                   // Apple Guideline 3.1.2(c): the prominent "50% OFF" discount banner
-                  // was removed from this purchase flow — it made the introductory
+                  // was removed from this purchase flow - it made the introductory
                   // offer more conspicuous than the billed amount. It was already
                   // iOS-only here, so Android's flow is unaffected.
 

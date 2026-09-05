@@ -1265,7 +1265,7 @@ class SleepSoundController extends GetxController {
         return;
       }
 
-      // 3. FADE OUT LOGIC — from each player's CURRENT volume → 0 (no spike)
+      // 3. FADE OUT LOGIC - from each player's CURRENT volume → 0 (no spike)
       if (!isPaused.value && activePlayers.isNotEmpty) {
         const int steps = 12;
         final int stepDelay = duration.inMilliseconds ~/ steps;

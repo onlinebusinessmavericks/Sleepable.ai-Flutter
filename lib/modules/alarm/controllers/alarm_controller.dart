@@ -452,7 +452,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     print("🔔 [ALARM] Ringing Sequence Started...");
 
     // First ring: tear down tracker + finalize session (AI wake_time).
-    // Snooze re-ring: session already stopped — skip.
+    // Snooze re-ring: session already stopped - skip.
     if (Get.isRegistered<SleepTrackerController>()) {
       final tracker = Get.find<SleepTrackerController>();
       final prefs = await SharedPreferences.getInstance();
@@ -499,7 +499,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     await _openRingingUiSafely();
   }
 
-  /// Opens ringing UI only when app is resumed — avoids stuck navigator when
+  /// Opens ringing UI only when app is resumed - avoids stuck navigator when
   /// snooze fires in background. Plays sound regardless; shows notification if paused.
   Future<void> _openRingingUiSafely() async {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
@@ -512,7 +512,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
       } catch (e) {
         debugPrint("alarm notification error: $e");
       }
-      debugPrint("🔔 Alarm ready — UI deferred until resume");
+      debugPrint("🔔 Alarm ready - UI deferred until resume");
       return;
     }
 
@@ -521,7 +521,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
       await NotificationService.cancelAlarmRingNotification();
     } catch (_) {}
 
-    // Replace current route so tracker (waves/Lottie) is disposed — do not stack under.
+    // Replace current route so tracker (waves/Lottie) is disposed - do not stack under.
     final alreadyRinging = Get.currentRoute.contains('AlarmRinging');
     final onDashboard = Get.currentRoute == Routes.dashboard ||
         Get.currentRoute.contains('dashboard') ||
@@ -628,7 +628,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
         nextAlarmDateTime = fireAt;
         nextAlarmTime.value = _formatTime(fireAt);
         _startAlarmTimer(remaining);
-        debugPrint("😴 Restored snooze timer — rings in ${remaining.inSeconds}s");
+        debugPrint("😴 Restored snooze timer - rings in ${remaining.inSeconds}s");
       }
     } catch (e) {
       debugPrint("restore snooze error: $e");
@@ -918,7 +918,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   @override
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Stop sound only — never cancel a persisted snooze here (Home navigation
+    // Stop sound only - never cancel a persisted snooze here (Home navigation
     // must not kill the waiting re-ring).
     try {
       alarmPlayer?.stop();

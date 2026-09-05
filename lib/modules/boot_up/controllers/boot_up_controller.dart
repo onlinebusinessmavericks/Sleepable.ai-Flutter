@@ -92,12 +92,12 @@ class BootUpController extends GetxController {
           print("🚀 Resuming active sleep session from API: $activeId");
           Get.offAllNamed(Routes.sleepTracker, arguments: activeId);
         } else {
-          // Local quit/wake already happened, or server idle — never resume.
+          // Local quit/wake already happened, or server idle - never resume.
           if (statusResponse.success &&
               statusResponse.data.isRunning &&
               (!localTracking || localId <= 0)) {
             final orphanId = statusResponse.data.sleepTrackerId;
-            debugPrint("🧹 Orphan tracker on server after local quit: $orphanId — stopping");
+            debugPrint("🧹 Orphan tracker on server after local quit: $orphanId - stopping");
             unawaited(TrackerApis.stopSleepTracker(sleepTrackerId: orphanId));
           }
 

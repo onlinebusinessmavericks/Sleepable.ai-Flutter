@@ -935,7 +935,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                                           if (hasAlreadySpun && !GetPlatform.isIOS) {
                                             // ✅ Agar spin ho gaya hai, toh direct discount wali sheet (Sheet 6)
-                                            // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) — Sheet 4 hi.
+                                            // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) - Sheet 4 hi.
                                             showPremiumOfferSheet6(context);
                                           } else {
                                             // ❌ Agar spin nahi hua, toh normal paywall (Sheet 4)

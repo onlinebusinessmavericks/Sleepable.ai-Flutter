@@ -19,7 +19,7 @@ class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
-  /// Set by AlarmController — avoids circular import.
+  /// Set by AlarmController - avoids circular import.
   static void Function()? onAlarmRingNotificationTap;
 
   static Future<void> init() async {
@@ -79,7 +79,7 @@ class NotificationService {
     RemoteMessage? initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       await stashPendingRedirect(initialMessage.data);
-      // Apply once routes are ready — short delay only for GetMaterialApp mount
+      // Apply once routes are ready - short delay only for GetMaterialApp mount
       Future.delayed(const Duration(milliseconds: 400), () {
         handleRedirect(initialMessage.data);
       });
@@ -292,7 +292,7 @@ class NotificationService {
         _switchToTab(1);
         break;
 
-    // --- PROGRESS SCREEN (Tab 2) — sleep report / summaries ---
+    // --- PROGRESS SCREEN (Tab 2) - sleep report / summaries ---
       case 'weekly_summary':
       case 'first_sleep_tracked':
       case 'morning_summary':
@@ -354,7 +354,7 @@ class NotificationService {
           Get.find<DashboardController>().changeTab(index);
           setValue(AppSharedPreferenceKeys.pendingDashboardTab, -1);
         } else {
-          dev.log("⏳ Suppress remount — stashed tab $index during tracker exit");
+          dev.log("⏳ Suppress remount - stashed tab $index during tracker exit");
         }
         return;
       }

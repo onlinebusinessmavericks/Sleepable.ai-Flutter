@@ -332,7 +332,7 @@ class ProfileController extends GetxController {
   });
   // Inside your GetxController:
 // A list of dates where the user successfully tracked their sleep/habit
-  // Live streak days come from streakCalendar / API — no mock completed dates.
+  // Live streak days come from streakCalendar / API - no mock completed dates.
   RxList<DateTime> completedDates = <DateTime>[].obs;
   // String formatTime(String? time) {
   //   if (time == null || time.isEmpty) return "--";

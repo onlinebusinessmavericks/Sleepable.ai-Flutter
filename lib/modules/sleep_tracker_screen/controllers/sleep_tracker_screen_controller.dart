@@ -165,7 +165,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   }
   Future<void> _initController() async {
     final lang = Get.context!.lang;
-    // New tracking session — re-attach resources
+    // New tracking session - re-attach resources
     _ensureTaskDataCallback();
     if (!_lifecycleObserverAttached) {
       WidgetsBinding.instance.addObserver(this);
@@ -766,7 +766,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   Future<void> forceQuitFromNotification() async {
     debugPrint("🚨 Notification Stop Triggered: Running Cleanup...");
 
-    // Do NOT force-enable sleepReminders here — that caused an immediate
+    // Do NOT force-enable sleepReminders here - that caused an immediate
     // bedtime reminder after quit, then another Home navigation.
     await clearLocalTrackingFlags();
 
@@ -969,7 +969,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
   }
 
   /// Lightweight teardown so alarm UI stays responsive (cancel meters/timers).
-  /// Does NOT stop waves/Lottie — hang fix is sensor/timer teardown only.
+  /// Does NOT stop waves/Lottie - hang fix is sensor/timer teardown only.
   Future<void> prepareForAlarmRing() async {
     try {
       trackerState.value = TrackerState.idle;
@@ -1070,7 +1070,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
     } catch (e) {
       debugPrint("Cleanup error: $e");
     } finally {
-      // ALWAYS clear local state + FGS + leftover listeners — even on timeout
+      // ALWAYS clear local state + FGS + leftover listeners - even on timeout
       try {
         await clearLocalTrackingFlags();
         final prefs = await SharedPreferences.getInstance();

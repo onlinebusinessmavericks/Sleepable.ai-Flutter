@@ -140,7 +140,7 @@ class DreamBotController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    // Do not start a second session — onInit already handles it.
+    // Do not start a second session - onInit already handles it.
   }
   String formatDreamDate(String? rawDate) {
     if (rawDate == null || rawDate.isEmpty) return "";

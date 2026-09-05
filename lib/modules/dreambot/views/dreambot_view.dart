@@ -187,7 +187,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
           ? Get.find<SubscriptionController>()
           : Get.put(SubscriptionController());
       // Scaffold already resizes for keyboard (resizeToAvoidBottomInset).
-      // Do NOT add viewInsets.bottom here — that double-counts and crushes the layout.
+      // Do NOT add viewInsets.bottom here - that double-counts and crushes the layout.
       return AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.only(left: 18, right: 18, top: 8, bottom: 10),

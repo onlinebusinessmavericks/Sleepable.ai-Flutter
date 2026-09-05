@@ -136,9 +136,9 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
         toast("Snoozed $mins min");
       }
 
-      // Home pe chhupa ke wait — no rating / no exit-guard (not a final wake)
+      // Home pe chhupa ke wait - no rating / no exit-guard (not a final wake)
       Get.offAllNamed(Routes.dashboard);
-      debugPrint("😴 Snooze armed for $mins min — waiting on Home");
+      debugPrint("😴 Snooze armed for $mins min - waiting on Home");
     } catch (e) {
       debugPrint("Snooze handler error: $e");
       _isHandlingSnooze = false;
@@ -150,7 +150,7 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
     _isHandlingWake = true;
     _autoWakeTimer?.cancel();
     try {
-      // Permanent dismiss — cancel any pending snooze too
+      // Permanent dismiss - cancel any pending snooze too
       unawaited(
         controller.stopAlarm(snoozeAfterStop: false).timeout(
           const Duration(seconds: 2),

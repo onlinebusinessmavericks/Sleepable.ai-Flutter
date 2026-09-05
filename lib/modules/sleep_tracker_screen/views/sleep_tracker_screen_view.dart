@@ -134,7 +134,7 @@ class _MainSleepScreenState extends State<_MainSleepScreen>
     WidgetsBinding.instance.addObserver(this);
     _waveController = AnimationController(
       vsync: this,
-      // ~12fps feel — smoother on mid devices overnight
+      // ~12fps feel - smoother on mid devices overnight
       duration: const Duration(milliseconds: 3200),
     );
     _syncWaveTicker();
@@ -409,7 +409,7 @@ class _MainSleepScreenState extends State<_MainSleepScreen>
   }
 }
 
-// -------------------- Wave Configurations (2 layers — light overnight) --------------------
+// -------------------- Wave Configurations (2 layers - light overnight) --------------------
 final List<Map<String, dynamic>> _waveConfigs = [
   {'color': Colors.white.withOpacity(0.35), 'amplitude': 12.0, 'stroke': 2.0, 'frequency': 2.8},
   {'color': Colors.white.withOpacity(0.85), 'amplitude': 22.0, 'stroke': 2.8, 'frequency': 3.8},

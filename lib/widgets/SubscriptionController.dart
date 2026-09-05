@@ -98,7 +98,7 @@ class SubscriptionController extends GetxController {
       //
       // Premium access is decided by our backend alone. Some users are granted
       // premium from the admin panel without ever making a store purchase, and
-      // RevenueCat has no record of those — asking it would lock them out even
+      // RevenueCat has no record of those - asking it would lock them out even
       // though the profile shows PRO. RevenueCat is used to make purchases, not
       // to grant access.
       print("📡 [DEBUG] Checking Premium Status...");
@@ -478,6 +478,17 @@ class SubscriptionController extends GetxController {
         ?? product?.defaultOption;
   }
 
+  /// Play formats a subscription option id as "<basePlanId>:<offerId>" for an
+  /// offer, and as just "<basePlanId>" for the base plan. The backend matches
+  /// on the bare offer id, so hand it that. Null on iOS and on a base-plan
+  /// purchase, where there is no offer to report.
+  String? _playOfferId(SubscriptionOption? option) {
+    if (option == null || option.isBasePlan) return null;
+    final id = option.id;
+    final sep = id.lastIndexOf(':');
+    return sep >= 0 ? id.substring(sep + 1) : id;
+  }
+
   /// What the user is actually charged for the first year on Android.
   ///
   /// The base plan price is the renewal price, so a discounted offer's real
@@ -541,6 +552,7 @@ class SubscriptionController extends GetxController {
             customerInfo.originalAppUserId,
             spinInfo.value?.couponCode,
             periodType: storeTrial ? 'trial' : 'normal',
+            offerId: _playOfferId(option),
         );
 
         if (storeTrial) {
@@ -716,7 +728,8 @@ class SubscriptionController extends GetxController {
   }
 
   // 5. Backend Verification API
-  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon, {String periodType = 'normal'}) async {
+  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon,
+      {String periodType = 'normal', String? offerId}) async {
     try {
       final payload = {
         "product_id": productId,
@@ -724,6 +737,10 @@ class SubscriptionController extends GetxController {
         "purchase_token": token,
         "coupon_code": coupon ?? "",
         "period_type": periodType,
+        // Play offer the purchase actually went through, so the backend can
+        // tell a spin discount apart from a plain trial. Empty on iOS, where
+        // the store applies the introductory offer without an offer id.
+        "offer_id": offerId ?? "",
       };
 
       await buildHttpResponse(
