@@ -220,6 +220,14 @@ Future<dynamic> buildMultipartHttpResponse({
 }
 
 
+
+/// Body of the most recent 403, when it was JSON.
+///
+/// A 403 is thrown as a plain string, so callers lose the detail the backend
+/// sends with it - which plan the user is on, how much of a limit they used.
+/// DreamBot needs `is_trial` to tell a trial user (who only has to wait for the
+/// trial to convert) from a free user (who has to buy).
+Map<String, dynamic>? lastForbiddenDetail;
 Future handleResponse(Response response, {HttpResponseType httpResponseType = HttpResponseType.JSON}) async {
   if (!await isNetworkAvailable()) {
     throw errorInternetNotAvailable;
@@ -234,8 +242,10 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
     // treat a plain "Access forbidden" as the premium-limit error.
     bool consentRequired = false;
     String consentMessage = 'AI consent required';
+    lastForbiddenDetail = null;
     try {
       var body = jsonDecode(response.body);
+      if (body is Map) lastForbiddenDetail = Map<String, dynamic>.from(body);
       if (body is Map && body['code'] == 'AI_CONSENT_REQUIRED') {
         consentRequired = true;
         consentMessage = body['message']?.toString() ?? consentMessage;

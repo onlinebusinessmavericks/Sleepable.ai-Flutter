@@ -6,6 +6,7 @@ import 'package:sleepable_ai/core/constants/colors.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/ai_consent_dialog.dart';
+import '../../../data/services/network_utils.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../progress/controllers/progress_controller.dart';
 
@@ -61,7 +62,11 @@ class DreamBotController extends GetxController {
       ? Get.find<SubscriptionController>()
       : null;
 
+  /// Prefers the flag the backend sends with its 403 - that one is current,
+  /// where the controller's copy is only as fresh as the last status sync.
   bool _isOnTrial() {
+    final serverFlag = lastForbiddenDetail?['is_trial'];
+    if (serverFlag is bool) return serverFlag;
     final sub = _sub;
     return sub != null && sub.isTrial.value && !sub.isPremium.value;
   }
@@ -170,6 +175,9 @@ class DreamBotController extends GetxController {
     }
 
     try {
+      // A stale 403 body from an earlier call must not decide this one.
+      lastForbiddenDetail = null;
+
       // Don't clear if we already have messages (to avoid flickering)
       if (messages.isEmpty) {
         isFirstAnalyzeLoading.value = true;
