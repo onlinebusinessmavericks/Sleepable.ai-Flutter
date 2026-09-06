@@ -56,6 +56,18 @@ class EmailLoginView extends GetView<LoginController> {
                     :  Text(context.lang.continues, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             )),
+            const SizedBox(height: 18),
+            // The sign-up screen existed but nothing linked to it, so a new
+            // email user had no way to create an account at all.
+            Center(
+              child: TextButton(
+                onPressed: () => Get.toNamed(Routes.signup),
+                child: Text(
+                  _signUpCopy(),
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -78,4 +90,16 @@ class EmailLoginView extends GetView<LoginController> {
       ),
     );
   }
+}
+/// The app ships five languages and there is no existing key for this line, so
+/// it carries its own table rather than falling back to English everywhere.
+String _signUpCopy() {
+  const map = {
+    "en": "New here? Create an account",
+    "de": "Neu hier? Konto erstellen",
+    "fr": "Nouveau ? Creer un compte",
+    "es": "Nuevo aqui? Crea una cuenta",
+    "pt": "Novo por aqui? Crie uma conta",
+  };
+  return map[Get.locale?.languageCode ?? "en"] ?? map["en"]!;
 }

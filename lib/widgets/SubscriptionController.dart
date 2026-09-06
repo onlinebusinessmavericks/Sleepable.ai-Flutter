@@ -635,6 +635,22 @@ class SubscriptionController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// The store's own record of the active subscription: which product, when it
+  /// was bought, when it renews, whether it has been cancelled. Null when the
+  /// user has no store purchase - a free user, or one granted premium by an
+  /// admin, where the backend is the only source of truth.
+  Rx<EntitlementInfo?> activeEntitlement = Rx<EntitlementInfo?>(null);
+
+  Future<void> refreshEntitlementDetails() async {
+    if (!isConfigured) return;
+    try {
+      final info = await Purchases.getCustomerInfo();
+      activeEntitlement.value = info.entitlements.all['pro'];
+    } catch (e) {
+      print("[RC] Could not read entitlement details: $e");
+    }
+  }
   // 2. Spin Wheel API (Check Status)
   //
   // A user who already won a discount must never be shown the full price just

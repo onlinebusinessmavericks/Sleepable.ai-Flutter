@@ -5,6 +5,7 @@ import 'package:sleepable_ai/modules/dreambot/bindings/dreambot_binding.dart';
 import 'package:sleepable_ai/modules/dreambot/views/dreambot_view.dart';
 import 'package:sleepable_ai/modules/heart_bpm_measurement/views/heart_bpm_measurement_view.dart';
 import 'package:sleepable_ai/modules/profile_sleep_reminder/views/profile_sleep_reminder_view.dart';
+import 'package:sleepable_ai/modules/subscription/views/my_subscription_view.dart';
 import 'package:sleepable_ai/modules/sign_up/views/sign_up_view.dart';
 import 'package:sleepable_ai/modules/sleep_report/views/sleep_report_view.dart';
 import 'package:sleepable_ai/modules/welcome/bindings/welcome_binding.dart';
@@ -101,6 +102,7 @@ class AppPages {
 
     GetPage(name: _Paths.profile, page: () => ProfileScreen(), binding: ProfileBinding()),
     GetPage(name: _Paths.settings, page: () => SettingsView(), binding: SettingsBinding()),
+    GetPage(name: _Paths.mySubscription, page: () => const MySubscriptionView(), transition: Transition.rightToLeft),
      GetPage(
       name: _Paths.editProfile,
       page: () {

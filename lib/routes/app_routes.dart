@@ -31,6 +31,7 @@ abstract class Routes {
   static const sleepTracker = _Paths.sleepTracker;
   static const profile = _Paths.profile;
   static const settings = _Paths.settings;
+  static const mySubscription = _Paths.mySubscription;
   static const editProfile = _Paths.editProfile;
   static const progress = _Paths.progress;
   static const heartBPM = _Paths.heartBPM;
@@ -83,6 +84,7 @@ abstract class _Paths {
   static const sleepTracker = '/sleep-tracker';
   static const profile = '/profile';
   static const settings = '/settings';
+  static const mySubscription = '/my-subscription';
   static const editProfile = '/edit-profile';
   static const progress = '/progress';
   static const heartBPM = '/heartBPM';
