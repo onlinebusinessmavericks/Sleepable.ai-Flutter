@@ -160,37 +160,43 @@ class SubscriptionController extends GetxController {
     return trialAllowed && isTrial.value;
   }
 
-  bool get hasSpecialOffer => spinInfo.value != null && (spinInfo.value!.discountPct ?? 0) > 0;
+  /// True once the user has actually won the spin discount.
+  ///
+  /// This used to also accept `discount_pct > 0`, but the backend now sends
+  /// that field before any spin - it is the amount the wheel WILL award, not
+  /// something the user holds. Reading it as a win put "LUCKY SPIN OFFER
+  /// APPLIED" and the discounted price in front of brand new users.
+  bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true;
 
   /// iOS: show discount upfront on the primary paywall (no spin required).
   bool shouldShowDiscountOnPaywall() {
     if (Platform.isIOS) {
+      // There is no spin on iOS; the introductory offer is applied by the store
+      // to everyone who qualifies, so the paywall always states it.
       return spinYearlyPackage.value != null || (spinInfo.value?.discountPct ?? 0) > 0;
     }
-    final spinData = spinInfo.value;
-    return spinData != null &&
-        (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+    return spinInfo.value?.alreadySpun == true;
   }
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
 
-  /// iOS paywall price line: "Just {price} /year ({symbol}{weekly} / WEEK)"
+  /// iOS paywall price line: "Just {price} / year ({symbol}{weekly} / week)"
   String formatIosYearlyPriceLine({
     required String prefix,
     required String yearlyPrice,
     required String currencySymbol,
     required String weeklyAvg,
   }) {
-    return '$prefix $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
+    return '$prefix $yearlyPrice / year ($currencySymbol$weeklyAvg / week)';
   }
 
-  /// iOS trial footer: "3 days free, then {price} /year ({symbol}{weekly} / WEEK)"
+  /// iOS trial footer: "3 days free, then {price} / year ({symbol}{weekly} / week)"
   String formatIosTrialSubtext({
     required String yearlyPrice,
     required String currencySymbol,
     required String weeklyAvg,
   }) {
-    return '3 days free, then $yearlyPrice /year ($currencySymbol$weeklyAvg / WEEK)';
+    return '3 days free, then $yearlyPrice / year ($currencySymbol$weeklyAvg / week)';
   }
 
   /// Store-localized yearly price (App Store / Play Store). Same for iOS & Android.

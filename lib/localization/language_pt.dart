@@ -1546,7 +1546,7 @@ class LanguagePt extends BaseLanguage {
   @override
   String get only => 'APENAS';
   @override
-  String get perWeek => 'SEMANA';
+  String get perWeek => 'semana';
   @override
   String get total => 'Total';
   @override

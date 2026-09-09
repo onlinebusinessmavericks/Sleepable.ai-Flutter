@@ -1581,7 +1581,7 @@ class LanguageFr extends BaseLanguage {
   @override
   String get only => 'SEULEMENT';
   @override
-  String get perWeek => 'SEMAINE';
+  String get perWeek => 'semaine';
   @override
   String get total => 'Total';
   @override

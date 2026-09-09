@@ -2212,7 +2212,7 @@ class LanguageEn extends BaseLanguage {
   String get only => 'ONLY';
 
   @override
-  String get perWeek => 'WEEK';
+  String get perWeek => 'week';
 
   @override
   String get total => 'Total';

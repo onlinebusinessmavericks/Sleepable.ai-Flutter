@@ -192,7 +192,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                     child: Obx(() {
                       final spinData = subController.spinInfo.value;
                       // bool showOffer = spinData != null && spinData.alreadySpun == true;
-                      bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+                      bool showOffer = spinData?.alreadySpun == true;
                       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
                       final spinPackage = subController.spinYearlyPackage.value;
 
@@ -247,7 +247,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                         style: TextStyle(color: AppColors.starFillColor, fontSize: sp(28), fontWeight: FontWeight.bold),
                                       ),
                                       TextSpan(
-                                        text: " / ${context.lang.week}",
+                                        text: " / ${context.lang.perWeek}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(18)),
                                       ),
                                     ],
@@ -255,12 +255,12 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                 ),
                                 10.height,
                                 Text(
-                                  "${context.lang.total} $pricePerYear/${context.lang.year}",
+                                  "${context.lang.total} $pricePerYear / ${context.lang.year}",
                                   style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: sp(16)),
                                 ),
                                 if (strikePrice != null)
                                   Text(
-                                    "($strikePrice/${context.lang.year})",
+                                    "($strikePrice / ${context.lang.year})",
                                     style: TextStyle(color: Colors.white54, fontSize: sp(14), decoration: TextDecoration.lineThrough),
                                   ),
                               ],
@@ -392,7 +392,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
           child: Obx(() {
 
             final spinData = subController.spinInfo.value;
-            bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+            bool showOffer = spinData?.alreadySpun == true;
             final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
             final spinPackage = subController.spinYearlyPackage.value;
 
@@ -682,7 +682,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
       final spinData = subController.spinInfo.value;
       // Ensure this condition is same in all sheets:
-      bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      bool showOffer = spinData?.alreadySpun == true;
 
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -758,7 +758,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                         style: TextStyle(color: AppColors.starFillColor, fontSize: sp(24), fontWeight: FontWeight.bold),
                                       ),
                                       TextSpan(
-                                        text: " / ${context.lang.week}",
+                                        text: " / ${context.lang.perWeek}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(18), fontWeight: FontWeight.w200),
                                       ),
                                     ],
@@ -769,7 +769,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                   TextSpan(
                                     children: [
                                       TextSpan(
-                                        text: "${context.lang.total} $yearlyPrice/${context.lang.year}",
+                                        text: "${context.lang.total} $yearlyPrice / ${context.lang.year}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                       ),
                                       if (strikePrice != null) ...[
@@ -778,7 +778,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                           style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                         ),
                                         TextSpan(
-                                          text: "$strikePrice/${context.lang.year}",
+                                          text: "$strikePrice / ${context.lang.year}",
                                           style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: sp(16),
@@ -837,7 +837,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
                           SizedBox(height: sh(12)),
                           Text(
-                            "${context.lang.termsApply} ${context.lang.googleIdCharge} $yearlyPrice ${context.lang.perYear} ${context.lang.cancelStore}",
+                            "${context.lang.termsApply} ${context.lang.googleIdCharge} $yearlyPrice / ${context.lang.perYear} ${context.lang.cancelStore}",
                             //"Terms of service apply. Your Google ID will be charged $yearlyPrice per year. Cancel anytime via Play Store.",
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.white70, fontSize: sp(10), height: 1.4),
@@ -1147,7 +1147,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                                             currencySymbol: currencySymbol,
                                             weeklyAvg: weeklyAvg,
                                           )
-                                        : "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})")
+                                        : "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})")
                                     : context.lang.noPaymentDue,
                                 style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
                               ),
@@ -1212,7 +1212,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           ),
                         ] else
                           Text(
-                            "${context.lang.just} $yearlyPrice ${context.lang.perYear} ($weeklyAvg/${context.lang.perWeek})",
+                            "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($weeklyAvg / ${context.lang.perWeek})",
                             style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
                           ),
                         buildIosSubscriptionLegalLinks(context),
@@ -1452,7 +1452,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       final spinData = subController.spinInfo.value;
       // ✅ Check karein ki spinData null toh nahi hai aur spin ho chuka hai
       // Ensure this condition is same in all sheets:
-      bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+      bool showOffer = spinData?.alreadySpun == true;
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
 
@@ -1582,7 +1582,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         _buildPlanCard(
                           index: 1,
                           title: context.lang.yearlyPremium,
-                          price: "$currencySymbol$weeklyAvgFromYearly/${context.lang.week ?? 'wk'}",
+                          price: "$currencySymbol$weeklyAvgFromYearly / ${context.lang.perWeek}",
                           subTitle: "12mo • $yearlyDisplayPrice",
                           isPopular: true,
                           textTheme: textTheme,
@@ -1788,7 +1788,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
         child: Obx(() {
           final spinData = subController.spinInfo.value;
           // Ensure this condition is same in all sheets:
-          bool showOffer = spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+          bool showOffer = spinData?.alreadySpun == true;
 
           // 1. Determine Package
           final package = showOffer
@@ -1913,8 +1913,8 @@ class FreeTrialReminderScreen extends StatelessWidget {
                   // 6. PRICING SUBTEXT (Dynamic)
                   Text(
                     // "Just $yearlyPrice per year ($currencySymbol$weeklyPrice/Week)",
-                    "${context.lang.just} $yearlyPrice ${context.lang.perYear} "
-                    "($currencySymbol$weeklyPrice${context.lang.perWeek})",
+                    "${context.lang.just} $yearlyPrice / ${context.lang.perYear} "
+                    "($currencySymbol$weeklyPrice / ${context.lang.perWeek})",
                     style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 14 * SizeConfigs.textScale),
                   ),
 
@@ -1963,7 +1963,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       final spinData = subController.spinInfo.value;
       bool showOffer = Platform.isIOS
           ? subController.shouldShowDiscountOnPaywall()
-          : spinData != null && (spinData.alreadySpun == true || (spinData.discountPct ?? 0) > 0);
+          : spinData?.alreadySpun == true;
 
       final standardAnnual = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -2063,8 +2063,8 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   currencySymbol: currencySymbol,
                   weeklyAvg: weeklyAvgFromYearly,
                 )
-              : "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly${lang.perWeek})")
-          : "${lang.just} $weeklyPriceText ${lang.perWeek}";
+              : "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})")
+          : "${lang.just} $weeklyPriceText / ${lang.perWeek}";
       return PopScope(
         canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
@@ -2225,7 +2225,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     // conspicuous element - the introductory price on iOS, with the
                     // renewal price stated plainly just below.
                     Text(
-                      isYearly ? "${iosYearlyBilledNow(yearlyPackage)} / ${lang.year}" : "$weeklyPriceText / ${lang.week}",
+                      isYearly ? "${iosYearlyBilledNow(yearlyPackage)} / ${lang.year}" : "$weeklyPriceText / ${lang.perWeek}",
                       textAlign: TextAlign.center,
                       style: textTheme.headlineMedium?.copyWith(
                         color: Colors.white,

@@ -1545,7 +1545,7 @@ class LanguageDe extends BaseLanguage {
   @override
   String get only => 'NUR';
   @override
-  String get perWeek => 'WOCHE';
+  String get perWeek => 'Woche';
   @override
   String get total => 'Gesamt';
   @override

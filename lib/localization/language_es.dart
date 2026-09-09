@@ -1545,7 +1545,7 @@ class LanguageEs extends BaseLanguage {
   @override 
   String get only => 'SOLO';
   @override 
-  String get perWeek => 'SEMANA';
+  String get perWeek => 'semana';
   @override 
   String get total => 'Total';
   @override 
