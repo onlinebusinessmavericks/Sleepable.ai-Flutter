@@ -27,6 +27,12 @@ class SubscriptionController extends GetxController {
   RxString firstReportDate = ''.obs;
   RxInt trialNightsUsed = 0.obs;
   static const String PREM_KEY = "is_user_premium_cache";
+  /// Plan description from the backend, used when the store has no record of
+  /// the purchase - Premium granted by support, for instance.
+  RxString backendPlanName = ''.obs;
+  RxString backendPlanPrice = ''.obs;
+  RxString backendStartsAt = ''.obs;
+  RxString backendExpiresAt = ''.obs;
   static const String TRIAL_KEY = "is_user_trial_cache";
   static const String FIRST_REPORT_KEY = "trial_first_report_date";
   static const String TRIAL_ENDS_KEY = "trial_ends_at";
@@ -873,6 +879,13 @@ class SubscriptionController extends GetxController {
           await setValue(FIRST_REPORT_KEY, first);
           trialNightsUsed.value = data['trial_nights_used'] ?? 0;
           _applyTrialEnd(data['trial_ends_at']);
+          // The backend describes the plan too. It is the only source for a
+          // user whose Premium was granted outside the store, where there is
+          // no purchase for RevenueCat to report.
+          backendPlanName.value = (data['plan_name'] ?? '').toString();
+          backendPlanPrice.value = (data['price'] ?? '').toString();
+          backendStartsAt.value = (data['starts_at'] ?? '').toString();
+          backendExpiresAt.value = (data['expires_at'] ?? '').toString();
           return;
         }
       } catch (e) {

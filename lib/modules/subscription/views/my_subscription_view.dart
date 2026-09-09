@@ -180,9 +180,21 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
     final rows = <Widget>[];
 
     if (ent == null) {
-      // Premium without a store purchase: nothing here comes from the store, so
-      // say that plainly rather than showing blank rows.
-      rows.add(_infoBox(_copy("noStoreRecord")));
+      // No store purchase to read - Premium granted outside the store, or a
+      // record that has not synced yet. The backend describes the plan, so show
+      // that rather than an empty screen with one apologetic note.
+      final name = sub.backendPlanName.value;
+      final price = sub.backendPlanPrice.value;
+      final started = _date(sub.backendStartsAt.value);
+      final ends = _date(sub.backendExpiresAt.value);
+
+      if (name.isNotEmpty) rows.add(_row(_copy("plan"), name));
+      if (price.isNotEmpty) rows.add(_row(_copy("price"), price));
+      if (started != null) rows.add(_row(_copy("started"), started));
+      if (ends != null) {
+        rows.add(_row(isTrial ? _copy("firstCharge") : _copy("accessUntil"), ends));
+      }
+      if (rows.isEmpty) rows.add(_infoBox(_copy("noStoreRecord")));
       return rows;
     }
 
@@ -364,6 +376,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsToday": "Premium starts today",
         "trialIncludes": "During the trial you get 1 dream and 1 sleep report. Recordings unlock when Premium starts.",
         "plan": "Plan",
+        "price": "Price",
         "started": "Started on",
         "renewsOn": "Renews on",
         "accessUntil": "Access until",
@@ -398,6 +411,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsToday": "Premium startet heute",
         "trialIncludes": "Waehrend der Testphase erhalten Sie 1 Traum und 1 Schlafbericht. Aufnahmen werden mit Premium freigeschaltet.",
         "plan": "Tarif",
+        "price": "Preis",
         "started": "Begonnen am",
         "renewsOn": "Verlaengert am",
         "accessUntil": "Zugriff bis",
@@ -432,6 +446,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsToday": "Premium demarre aujourd'hui",
         "trialIncludes": "Pendant l'essai vous avez 1 reve et 1 rapport de sommeil. Les enregistrements arrivent avec Premium.",
         "plan": "Formule",
+        "price": "Prix",
         "started": "Debut le",
         "renewsOn": "Renouvellement le",
         "accessUntil": "Acces jusqu'au",
@@ -466,6 +481,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsToday": "Premium empieza hoy",
         "trialIncludes": "Durante la prueba tienes 1 sueno y 1 informe de sueno. Las grabaciones se activan con Premium.",
         "plan": "Plan",
+        "price": "Precio",
         "started": "Inicio el",
         "renewsOn": "Se renueva el",
         "accessUntil": "Acceso hasta",
@@ -500,6 +516,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsToday": "O Premium comeca hoje",
         "trialIncludes": "Durante o teste voce tem 1 sonho e 1 relatorio de sono. As gravacoes liberam com o Premium.",
         "plan": "Plano",
+        "price": "Preco",
         "started": "Iniciado em",
         "renewsOn": "Renova em",
         "accessUntil": "Acesso ate",
