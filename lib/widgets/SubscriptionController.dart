@@ -199,20 +199,21 @@ class SubscriptionController extends GetxController {
     return '3 days free, then $yearlyPrice / year ($currencySymbol$weeklyAvg / week)';
   }
 
-  /// Store-localized yearly price (App Store / Play Store). Same for iOS & Android.
+  /// Yearly price to show, taken from what the first year actually costs.
+  ///
+  /// These used to read `storeProduct.priceString`, which is the renewal price.
+  /// Since the discounted offering now points at the same product as the
+  /// standard one, that made the "discounted" price identical to the full price
+  /// - a struck-out 5,600 next to a 5,600. The package arguments are kept so
+  /// call sites do not have to change; only the source of the number moved.
   String getDisplayYearlyPrice({
     required SpinData? spinData,
     required Package? discountPackage,
     required Package? standardPackage,
     required bool showOffer,
   }) {
-    if (!showOffer) {
-      return standardPackage?.storeProduct.priceString ?? '';
-    }
-    final storePrice = discountPackage?.storeProduct.priceString
-        ?? standardPackage?.storeProduct.priceString
-        ?? '';
-    if (storePrice.isNotEmpty) return storePrice;
+    final price = yearlyFirstYearPrice(discounted: showOffer);
+    if (price.isNotEmpty) return price;
     // Last resort only if offerings failed to load
     return spinData?.discountedPrice ?? '';
   }
@@ -223,19 +224,12 @@ class SubscriptionController extends GetxController {
     required Package? standardPackage,
     required bool showOffer,
   }) {
-    if (!showOffer) {
-      return standardPackage?.storeProduct.price ?? 0;
-    }
-    final storePrice = discountPackage?.storeProduct.price
-        ?? standardPackage?.storeProduct.price
-        ?? 0;
-    if (storePrice > 0) return storePrice;
+    final amount = yearlyFirstYearAmount(discounted: showOffer);
+    if (amount > 0) return amount;
     // Last resort only if offerings failed to load
-    if (spinData?.discountedPrice != null) {
-      final cleanPrice = spinData!.discountedPrice!
-          .replaceAll(',', '')
-          .replaceAll(RegExp(r'[^0-9.]'), '');
-      final parsed = double.tryParse(cleanPrice);
+    final raw = spinData?.discountedPrice;
+    if (raw != null) {
+      final parsed = double.tryParse(raw.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), ''));
       if (parsed != null) return parsed;
     }
     return 0;
@@ -513,6 +507,44 @@ class SubscriptionController extends GetxController {
   /// The price the yearly plan renews at once any offer has run out.
   String androidYearlyRenewalPrice() =>
       _yearlyPackage?.storeProduct.priceString ?? '';
+
+  /// What the first year actually costs, as a number, on either platform.
+  ///
+  /// The store product carries the *renewal* price - on Play the discount lives
+  /// in the offer's intro phase, on the App Store in the introductory offer.
+  /// Every "per week" and "per day" figure has to come from here, otherwise the
+  /// page shows a discounted yearly price next to a full-price weekly average,
+  /// which is what the paywalls were doing.
+  double yearlyFirstYearAmount({required bool discounted}) {
+    if (Platform.isAndroid) {
+      final intro = androidYearlyOption(discounted: discounted)?.introPhase;
+      if (intro != null) return intro.price.amountMicros / 1000000.0;
+      return _yearlyPackage?.storeProduct.price ?? 0;
+    }
+    final product = _yearlyPackage?.storeProduct;
+    return product?.introductoryPrice?.price ?? product?.price ?? 0;
+  }
+
+  /// What the plan costs every year after the first one.
+  double yearlyRenewalAmount() => _yearlyPackage?.storeProduct.price ?? 0;
+
+  /// Formatted first-year price for either platform.
+  String yearlyFirstYearPrice({required bool discounted}) {
+    if (Platform.isAndroid) return androidYearlyFirstYearPrice(discounted: discounted);
+    final product = _yearlyPackage?.storeProduct;
+    return product?.introductoryPrice?.priceString ?? product?.priceString ?? '';
+  }
+
+  /// The crossed-out price, or null when there is nothing to cross out.
+  ///
+  /// A strike-through that reads the same as the price beside it is worse than
+  /// none at all - it claims a saving that does not exist.
+  String? yearlyStrikePrice({required bool discounted}) {
+    final renewal = yearlyRenewalAmount();
+    final first = yearlyFirstYearAmount(discounted: discounted);
+    if (renewal <= first) return null;
+    return _yearlyPackage?.storeProduct.priceString;
+  }
 
   /// Buys [package]. On Android pass [option] to pick a specific Play offer
   /// (the discounted year vs the plain free trial); without it the store
@@ -926,19 +958,37 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  /// Set once a review has been asked for in this session.
+  ///
+  /// The prompt used to have no throttle beyond "has the user already rated",
+  /// and it was fired from every paywall dismissal, so it reappeared again and
+  /// again - at one point on top of the spin wheel.
+  static bool _ratingAskedThisSession = false;
+
   void checkAndShowRatingAfterPostDelay() {
     if (Platform.isIOS) return;
+    if (_ratingAskedThisSession) return;
+    if (getBoolAsync("user_has_rated", defaultValue: false)) return;
 
-    bool hasRated = getBoolAsync("user_has_rated", defaultValue: false);
-    if (hasRated) return;
+    // Ask only once the user has actually spent some time in the app.
+    if (getIntAsync("app_open_count", defaultValue: 0) < 3) return;
+
+    // And leave them alone for a week after they say no.
+    final declined = getStringAsync("rating_declined_at");
+    if (declined.isNotEmpty) {
+      final when = DateTime.tryParse(declined);
+      if (when != null && DateTime.now().difference(when).inDays < 7) return;
+    }
+
+    _ratingAskedThisSession = true;
 
     Future.delayed(const Duration(milliseconds: 1500), () {
-      if (Get.context != null && !Get.isDialogOpen!) {
-        Get.dialog(
-          const RatingDialog(),
-          barrierDismissible: false, // User ko "No" ya "Rate" click karne par majboor karein
-        );
-      }
+      // Never stack it on whatever the user is already dealing with.
+      if (Get.context == null) return;
+      if (Get.isDialogOpen == true || Get.isBottomSheetOpen == true) return;
+      // Dismissible: forcing a choice on a review prompt is the kind of thing
+      // both stores take a dim view of.
+      Get.dialog(const RatingDialog(), barrierDismissible: true);
     });
   }
 }

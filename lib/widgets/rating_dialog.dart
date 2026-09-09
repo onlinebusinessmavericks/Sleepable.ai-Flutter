@@ -105,9 +105,11 @@ class _RatingDialogState extends State<RatingDialog> with SingleTickerProviderSt
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () {
-                  // 🔥 RESET COUNT: Isse user hamesha ke liye block nahi hoga,
-                  // par agle kuch sessions tak pareshan bhi nahi hoga.
+                  // Reset the session count so the user is not blocked for
+                  // ever, and record when they said no so nothing asks again
+                  // for a while.
                   setValue("app_open_count", 0);
+                  setValue("rating_declined_at", DateTime.now().toIso8601String());
                   Get.back();
                 },
                 child:  Text(

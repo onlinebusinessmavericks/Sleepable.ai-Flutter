@@ -182,7 +182,6 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                         icon: const Icon(Icons.close, color: Colors.white, size: 30),
                         onPressed: () {
                           Get.back();
-                          subController.checkAndShowRatingAfterPostDelay();
                         },
                       ),
                     ),
@@ -204,15 +203,13 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                       if (package == null) return paywallProductsPlaceholder(context);
                       // Store-localized currency (Play Store country) - same approach as iOS
                       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-                      double storePrice = package.storeProduct.price;
-                      String pricePerYear = package.storeProduct.priceString;
+                      double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
+                      String pricePerYear = subController.yearlyFirstYearPrice(discounted: showOffer);
 
                       // Strike-through only against the real standard plan price.
                       // Never fabricate one (the old 1.5x estimate showed a price
                       // that was never actually charged).
-                      final String? strikePrice = showOffer && standardPackage != null
-                          ? standardPackage.storeProduct.priceString
-                          : null;
+                      final String? strikePrice = subController.yearlyStrikePrice(discounted: showOffer);
 
                       String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
 
@@ -405,15 +402,13 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
 
             // Store-localized currency (Play Store country) - same approach as iOS
             String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-            double storePrice = package.storeProduct.price;
-            String pricePerYear = package.storeProduct.priceString;
+            double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
+            String pricePerYear = subController.yearlyFirstYearPrice(discounted: showOffer);
             String yearlyPrice = pricePerYear;
 
             // Strike-through only against the real standard plan price; never a
             // fabricated 1.5x estimate.
-            final String? strikePrice = showOffer && standardPackage != null
-                ? standardPackage.storeProduct.priceString
-                : null;
+            final String? strikePrice = subController.yearlyStrikePrice(discounted: showOffer);
 
             String weeklyPrice = (storePrice / 52).toStringAsFixed(2);
             return Column(
@@ -426,7 +421,6 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                   child: GestureDetector(
                     onTap: () {
                       Get.back();
-                      subController.checkAndShowRatingAfterPostDelay();
                     },
                     child: Padding(
                       padding: EdgeInsets.only(right: pad(2), top: pad(18)),
@@ -696,15 +690,13 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
       // Store-localized currency (Play Store country) - same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-      double storePrice = package.storeProduct.price;
-      String pricePerYear = package.storeProduct.priceString;
+      double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
+      String pricePerYear = subController.yearlyFirstYearPrice(discounted: showOffer);
       String yearlyPrice = pricePerYear;
 
       // Strike-through only against the real standard plan price; never a
       // fabricated 1.5x estimate.
-      final String? strikePrice = showOffer && standardPackage != null
-          ? standardPackage.storeProduct.priceString
-          : null;
+      final String? strikePrice = subController.yearlyStrikePrice(discounted: showOffer);
 
       String pricePerWeek = (storePrice / 52).toStringAsFixed(2);
       return Scaffold(
@@ -726,7 +718,6 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () {
                           Get.back();
-                          subController.checkAndShowRatingAfterPostDelay();
                         },
                       ),
                     ),
@@ -1039,7 +1030,6 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                         } else {
                           Get.back(result: false);
                         }
-                        subController.checkAndShowRatingAfterPostDelay();
                       },
                       icon: const Icon(Icons.close, color: Colors.white54, size: 28),
                     ),
@@ -1463,14 +1453,12 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
       // Store-localized currency (Play Store country) - same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
-      String yearlyDisplayPrice = yearlyPackage.storeProduct.priceString;
-      double storePrice = yearlyPackage.storeProduct.price;
+      String yearlyDisplayPrice = subController.yearlyFirstYearPrice(discounted: showOffer);
+      double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
 
       // Strike-through only against the real standard plan price; never a
       // fabricated 1.5x estimate.
-      final String? strikePrice = showOffer && standardPackage != null
-          ? standardPackage.storeProduct.priceString
-          : null;
+      final String? strikePrice = subController.yearlyStrikePrice(discounted: showOffer);
 
       double discountedYearlyRaw = storePrice;
 
@@ -1639,7 +1627,6 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                     onPressed: () {
                       // Get.back(result: false);},
                       Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-                      subController.checkAndShowRatingAfterPostDelay();
                     },
                   ),
                 ),
@@ -1801,8 +1788,8 @@ class FreeTrialReminderScreen extends StatelessWidget {
 
           // Store-localized currency (Play Store country) - same approach as iOS
           String currencySymbol = subController.getCurrencySymbol(package.storeProduct.currencyCode);
-          String yearlyPrice = package.storeProduct.priceString;
-          double storePrice = package.storeProduct.price;
+          String yearlyPrice = subController.yearlyFirstYearPrice(discounted: showOffer);
+          double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
           String weeklyPrice = (storePrice / 52).toStringAsFixed(2);
           return PopScope(
             canPop: false, // 👈 Physical back button ko block karein
@@ -1835,7 +1822,6 @@ class FreeTrialReminderScreen extends StatelessWidget {
                           // Warna sirf sheet close karo taki user wahi screen par rahe
                           Get.back(result: false);
                         }
-                        subController.checkAndShowRatingAfterPostDelay();
                       },
                       icon: const Icon(Icons.close, color: Colors.white, size: 28),
                     ),
@@ -1950,7 +1936,6 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
   void _closeAndOfferSpin(BuildContext context, SubscriptionController subController) {
     Get.back();
     subController.checkAndShowPremiumSheet(context);
-    subController.checkAndShowRatingAfterPostDelay();
   }
 
   @override
@@ -2025,12 +2010,10 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
         }
       }
 
-      double rawYearlyMath = subController.getDisplayYearlyRawPrice(
-        spinData: spinData,
-        discountPackage: spinPackage,
-        standardPackage: standardAnnual,
-        showOffer: showOffer,
-      );
+      // The weekly average has to come off what the first year actually costs,
+      // not off the renewal price, or a discounted year sits beside a
+      // full-price week.
+      double rawYearlyMath = subController.yearlyFirstYearAmount(discounted: showOffer);
 
       String weeklyAvgFromYearly = (rawYearlyMath / 52).toStringAsFixed(2);
 
