@@ -1931,6 +1931,16 @@ class UnifiedPremiumSheet extends StatefulWidget {
 class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
   int selectedPlanIndex = 1; // 1 = Yearly (Default), 0 = Weekly
 
+  /// Leaving this paywall without buying is what triggers the exit offer -
+  /// Lucky Spin for someone who has not spun, the won-discount sheet for
+  /// someone who has. Both the X and the system back gesture come through here
+  /// so the two behave the same.
+  void _closeAndOfferSpin(BuildContext context, SubscriptionController subController) {
+    Get.back();
+    subController.checkAndShowPremiumSheet(context);
+    subController.checkAndShowRatingAfterPostDelay();
+  }
+
   @override
   Widget build(BuildContext context) {
     SizeConfigs.init(context);
@@ -1950,7 +1960,28 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // 1. Offer priority
       final yearlyPackage = showOffer ? (spinPackage ?? standardAnnual) : standardAnnual;
 
-      if (yearlyPackage == null) return paywallProductsPlaceholder(context);
+      if (yearlyPackage == null) {
+        // Keep the close button on screen. Returning the bare placeholder left
+        // the sheet with no way out, and system back skipped the exit offer
+        // entirely - so a user whose plans failed to load never saw Lucky Spin.
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Stack(
+              children: [
+                paywallProductsPlaceholder(context),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    onPressed: () => _closeAndOfferSpin(context, subController),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
 
       // 2. Real-time Store Data & Currency Fetch
       // On Android the discount now lives inside the Play offer, so the
@@ -2030,7 +2061,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
           if (Get.currentRoute == Routes.login) {
             Get.offAllNamed(Routes.dashboard);
           } else {
-            Get.back();
+            // The system back gesture is how most Android users leave this
+            // sheet, so it has to reach the exit offer too, not just pop.
+            _closeAndOfferSpin(context, subController);
           }
         },
         child: Scaffold(
@@ -2046,11 +2079,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   Align(
                     alignment: Alignment.topRight,
                     child: IconButton(
-                      onPressed: () {
-                        Get.back();
-                        subController.checkAndShowPremiumSheet(context);
-                        subController.checkAndShowRatingAfterPostDelay();
-                      },
+                      onPressed: () => _closeAndOfferSpin(context, subController),
                       icon: const Icon(Icons.close, color: Colors.white, size: 28),
                     ),
                   ),

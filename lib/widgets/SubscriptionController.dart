@@ -876,15 +876,28 @@ class SubscriptionController extends GetxController {
       print("❌ [RC] Error in checkPremiumStatus: $e");
       }
   }
+  /// Opens the exit offer after a paywall is dismissed.
+  ///
+  /// [context] is deliberately ignored. Every caller pops its own sheet on the
+  /// line above this call, so by the time we get here that element is already
+  /// deactivated - and pushing a bottom sheet against a dead context does
+  /// nothing at all, which is why Lucky Spin never appeared when the yearly
+  /// paywall was closed. Go through the navigator's own context instead, once
+  /// the pop has been through a frame.
   void checkAndShowPremiumSheet(BuildContext context) {
     if (isPremium.value || isOnFreeTrial || Platform.isIOS) return;
 
-    final spinData = spinInfo.value;
-    if (spinData != null && spinData.alreadySpun) {
-      showPremiumOfferSheet6(context);
-    } else {
-      showPremiumOfferSheet5(context);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = Get.context;
+      if (ctx == null) return;
+
+      final spinData = spinInfo.value;
+      if (spinData != null && spinData.alreadySpun) {
+        showPremiumOfferSheet6(ctx);
+      } else {
+        showPremiumOfferSheet5(ctx);
+      }
+    });
   }
   String getCurrencySymbol(String currencyCode) {
     if (currencyCode == "INR" || currencyCode.toUpperCase() == "INR") {
