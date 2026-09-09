@@ -1250,15 +1250,26 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 
   final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
-  // Segments logic (Probability match with your backend)
-  final List<WheelSegment> _segments = [
-    WheelSegment('80%', 80, color: Colors.black, probability: 0.5),
-    WheelSegment('70%', 70, color: Colors.white, probability: 0.0),
-    WheelSegment(Get.context?.lang.gift ?? 'Gift', 1, color: Colors.black, probability: 0.5),
-    WheelSegment('60%', 60, color: Colors.white, probability: 0.0),
-    WheelSegment('30%', 30, color: Colors.black, probability: 0.0),
-    WheelSegment(Get.context?.lang.noLuck ?? 'No Luck', 0, color: Colors.white, probability: 0.0),
-  ];
+  /// The wheel has to stop on the discount the backend actually gives.
+  ///
+  /// It used to be built with fixed slices - 80%, 70%, Gift, 60%, 30%, No Luck
+  /// - and only "80%" and "Gift" could win. Meanwhile the message underneath
+  /// announced the real award, 50%, which was not even on the wheel: the
+  /// pointer and the text disagreed every single time. The winning slice now
+  /// carries the real number, and every decorative slice is smaller than it, so
+  /// the wheel can never seem to promise more than the user is given.
+  late final List<WheelSegment> _segments = _buildSegments(subController.paywallDiscountPercent);
+
+  List<WheelSegment> _buildSegments(int win) {
+    return [
+      WheelSegment('$win%', win, color: Colors.black, probability: 1.0),
+      WheelSegment('10%', 10, color: Colors.white, probability: 0.0),
+      WheelSegment(Get.context?.lang.gift ?? 'Gift', 1, color: Colors.black, probability: 0.0),
+      WheelSegment('20%', 20, color: Colors.white, probability: 0.0),
+      WheelSegment('30%', 30, color: Colors.black, probability: 0.0),
+      WheelSegment(Get.context?.lang.noLuck ?? 'No Luck', 0, color: Colors.white, probability: 0.0),
+    ];
+  }
 
   /// The backend rejects a second spin, so offer the won discount instead of a
   /// spin the user cannot use.
@@ -1350,7 +1361,8 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
                       _hasWon = true;
 
                       final spinData = subController.spinInfo.value;
-                      final discount = spinData?.discountPct ?? 80;
+                      // Fall back to the same number the wheel was drawn with, never 80.
+                      final discount = spinData?.discountPct ?? subController.paywallDiscountPercent;
 
                       //_statusText = "CONGRATS!\nYou unlocked $discount% OFF";
                       _statusText = "${lang.congrats}\n${lang.unlocked} $discount% ${lang.off}";
