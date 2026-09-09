@@ -16,6 +16,8 @@ class DreamBotController extends GetxController {
   RxBool isBotTyping = false.obs;
   RxBool isFirstAnalyzeLoading = false.obs;
   RxBool canAnalyze = false.obs; // Controls visibility of the Generate Button
+  /// True when the backend refused a new session (free monthly cap or trial's 1 dream).
+  RxBool sessionLimitReached = false.obs;
   RxBool isTyping = false.obs;
   RxString userInput = "".obs;
   RxString welcomeMessage = "Initializing DreamBot...".obs;
@@ -162,7 +164,7 @@ class DreamBotController extends GetxController {
     final sub = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
         : null;
-    if (sub == null || !sub.showDreambot) {
+    if (sub == null || !sub.hasAccessTo(trialAllowed: true)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Get.context != null) {
           Get.back();
@@ -216,6 +218,7 @@ class DreamBotController extends GetxController {
     try {
       // A stale 403 body from an earlier call must not decide this one.
       lastForbiddenDetail = null;
+      sessionLimitReached.value = false;
 
       // Don't clear if we already have messages (to avoid flickering)
       if (messages.isEmpty) {
@@ -243,6 +246,7 @@ class DreamBotController extends GetxController {
       } else {
         // The backend's copy asks free users to upgrade; a trial user has
         // already paid their way in and only has to wait it out.
+        sessionLimitReached.value = true;
         String errorMsg = _isOnTrial()
             ? _trialDreamLimitMessage()
             : (res?['message'] ?? "Limit reached.");
@@ -257,6 +261,7 @@ class DreamBotController extends GetxController {
         // A trial user gets one dream, and cannot buy their way out early -
         // the store converts the trial on its own schedule. Tell them that
         // rather than asking them to upgrade.
+        sessionLimitReached.value = true;
         rawError = _limitMessage();
       }
 

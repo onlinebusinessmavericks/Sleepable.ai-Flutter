@@ -185,6 +185,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
+    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
     if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
       type = "today";
       dateToFetch = sub.firstReportDate.value;
@@ -203,6 +204,8 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     ];
     if (paid) {
       calls.add(fetchSleepAudio(type, date: dateToFetch));
+    }
+    if (canUseDreams) {
       calls.add(fetchMyDreams());
     }
     await Future.wait(calls);
@@ -264,6 +267,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
+    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
     if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
       type = "today";
       dateToFetch = sub.firstReportDate.value;
@@ -286,7 +290,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     ];
     if (paid) {
       calls.add(fetchSleepAudio(type, date: dateToFetch));
-      if (_isInitialLoad) calls.add(fetchMyDreams());
+    }
+    if (canUseDreams && _isInitialLoad) {
+      calls.add(fetchMyDreams());
     }
     await Future.wait(calls);
 

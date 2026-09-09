@@ -858,6 +858,14 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 }
 
 Future showPremiumOfferSheet4(BuildContext context) {
+  final sub = Get.isRegistered<SubscriptionController>()
+      ? Get.find<SubscriptionController>()
+      : null;
+  // Trial users already started this plan. Opening the carousel would promise
+  // another 3-day trial and can lead to Lucky Spin on close of checkout.
+  if (sub != null && sub.isOnFreeTrial) {
+    return Get.toNamed(Routes.mySubscription) ?? Future.value();
+  }
   return showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen4());
 }
 

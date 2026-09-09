@@ -185,7 +185,8 @@ class HomeScreen extends GetView<HomeController> {
                                                 // ✅ Hamesha ID check karein, Label nahi
                                                 final String itemId = item['id'];
 
-                                                // Premium-only chips are shown locked; send free/trial users to the paywall.
+                                                // Premium-only chips: free users see the paywall. Trial users
+                                                // can open DreamBot (trialAllowed); other premium chips stay locked.
                                                 if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
                                                   controller.showRotatingPremiumSheet(context);
                                                   return;

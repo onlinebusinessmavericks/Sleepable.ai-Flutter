@@ -210,7 +210,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         if (isClosed) return;
         // Re-check after the launch sync: premium status is fetched
         // asynchronously, so it may still have been unknown when onReady ran.
-        if (await _isPremiumAfterSync(subController)) {
+        // Trial users already started the plan - do not auto-open a paywall.
+        if (await _shouldSkipLaunchPaywall(subController)) {
           _checkAndShowRatingDialog();
           return;
         }
@@ -239,6 +240,12 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     return sub.isPremium.value;
   }
 
+  /// Skip the launch start-trial funnel for Premium and for an active 3-day trial.
+  Future<bool> _shouldSkipLaunchPaywall(SubscriptionController sub) async {
+    await _isPremiumAfterSync(sub);
+    return sub.isPremium.value || sub.isOnFreeTrial;
+  }
+
   // Helper 1: Paywall Handler
   void _showInitialPaywall() {
     Future.delayed(const Duration(milliseconds: 500), () async {
@@ -246,8 +253,9 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
       final subController = Get.find<SubscriptionController>();
 
-      // Never upsell someone who already has premium.
-      if (await _isPremiumAfterSync(subController)) {
+      // Never upsell someone who already has premium, or who is already on the
+      // 3-day trial - that funnel would promise a trial they already started.
+      if (await _shouldSkipLaunchPaywall(subController)) {
         if (Get.arguments != null) Get.arguments['show_paywall'] = false;
         return;
       }
@@ -766,8 +774,30 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void changeIndex(int index) => selectedIndex.value = index;
 
+  /// Profile / Progress PRO. Trial users already started the plan, so send
+  /// them to My Subscription instead of the "start free trial" paywall.
+  void onProTapped(BuildContext context) {
+    final sub = Get.find<SubscriptionController>();
+    if (sub.isPremium.value) return;
+    if (sub.isTrial.value) {
+      Get.toNamed(Routes.mySubscription);
+      return;
+    }
+    final bool hasAlreadySpun = sub.spinInfo.value?.alreadySpun ?? false;
+    if (hasAlreadySpun) {
+      showRotatingPremiumSheet(context);
+    } else {
+      showPremiumOfferSheet4(context);
+    }
+  }
+
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
+    if (subController.isPremium.value) return;
+    if (subController.isTrial.value) {
+      Get.toNamed(Routes.mySubscription);
+      return;
+    }
 
     if (Platform.isIOS) {
       showPremiumOfferSheet4(context);

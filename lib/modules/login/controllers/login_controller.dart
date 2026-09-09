@@ -233,12 +233,13 @@ class LoginController extends BaseController {
         await subController.initData();
 
         // 🚀 FINAL NAVIGATION
-        if (subController.isPremium.value == true) {
-          print("✅ User is Premium. Going to Dashboard.");
+        // Start-trial paywall is only for free users who have not begun the
+        // 3-day trial. Trial and Premium both go straight to Dashboard.
+        if (subController.isPremium.value || subController.isOnFreeTrial) {
+          print("✅ User is Premium or on trial. Going to Dashboard.");
           Get.offAllNamed(Routes.dashboard);
         } else {
           print("❌ User is FREE. Showing Paywall on Dashboard.");
-          // Dashboard par jao aur arguments bhejo
           Get.offAllNamed(
               Routes.dashboard,
               arguments: {'show_paywall': true}
@@ -517,8 +518,8 @@ class LoginController extends BaseController {
       await subController.initData();
 
       // 5. Final Navigation
-      if (subController.isPremium.value == true) {
-        print("✅ User is Premium. Going to Dashboard.");
+      if (subController.isPremium.value || subController.isOnFreeTrial) {
+        print("✅ User is Premium or on trial. Going to Dashboard.");
         Get.offAllNamed(Routes.dashboard);
       } else {
         print("❌ User is FREE. Showing Paywall on Dashboard.");

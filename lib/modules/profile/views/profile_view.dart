@@ -12,7 +12,6 @@ import '../../../localization/lang_extension.dart';
 import '../../../localization/language_controller.dart';
 import '../../../routes/app_pages.dart';
 import '../../../widgets/SubscriptionController.dart';
-import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../language/views/language_view.dart';
 import '../controllers/profile_controller.dart';
@@ -49,18 +48,7 @@ class ProfileScreen extends StatelessWidget {
             return
           (subController.isPremium.value == false)? GestureDetector(
             onTap: () {
-              // 1. Check karein ki spin data exist karta hai aur spin ho chuka hai
-              final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-              final controller = Get.find<HomeController>();
-              if (hasAlreadySpun) {
-                // ✅ Agar spin ho gaya hai toh Direct Discounted Sheet (Sheet 6)
-                // showPremiumOfferSheet6(context);
-                controller.showRotatingPremiumSheet(Get.context!);
-              } else {
-                // ❌ Agar spin nahi hua toh Normal Paywall ya Spin Wheel (Sheet 4 ya 5)
-                // Aapne Sheet 4 kaha hai toh wahi open hogi
-                showPremiumOfferSheet4(context);
-              }
+              Get.find<HomeController>().onProTapped(context);
             },
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),

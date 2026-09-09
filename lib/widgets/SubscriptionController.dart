@@ -139,7 +139,11 @@ class SubscriptionController extends GetxController {
   }
 
   bool get showPaywalls => !isPremium.value;
-  bool get showDreambot => isPremium.value;
+  /// DreamBot is usable on Premium, and once during the 3-day trial.
+  bool get showDreambot => hasAccessTo(trialAllowed: true);
+
+  /// Running 3-day store trial that has not converted to Premium yet.
+  bool get isOnFreeTrial => isTrial.value && !isPremium.value;
 
   Future<void> applyTrialStatus({required bool trial}) async {
     isTrial.value = trial;
@@ -873,7 +877,7 @@ class SubscriptionController extends GetxController {
       }
   }
   void checkAndShowPremiumSheet(BuildContext context) {
-    if (isPremium.value || Platform.isIOS) return;
+    if (isPremium.value || isOnFreeTrial || Platform.isIOS) return;
 
     final spinData = spinInfo.value;
     if (spinData != null && spinData.alreadySpun) {

@@ -181,11 +181,11 @@ class DreamBotScreen extends GetView<DreamBotController> {
     return Obx(() {
       bool isUserReady = controller.userInput.value.trim().isNotEmpty;
       bool isLoading = controller.isFirstAnalyzeLoading.value;
-      String welcomeMsg = controller.welcomeMessage.value.toLowerCase();
-      bool isLimitReached = welcomeMsg.contains(context.lang.upgrade) || welcomeMsg.contains(context.lang.limit);
+      bool isLimitReached = controller.sessionLimitReached.value;
       final subController = Get.isRegistered<SubscriptionController>()
           ? Get.find<SubscriptionController>()
           : Get.put(SubscriptionController());
+      final bool onTrial = subController.isTrial.value && !subController.isPremium.value;
       // Scaffold already resizes for keyboard (resizeToAvoidBottomInset).
       // Do NOT add viewInsets.bottom here - that double-counts and crushes the layout.
       return AnimatedContainer(
@@ -211,9 +211,11 @@ class DreamBotScreen extends GetView<DreamBotController> {
               if (isLoading) return;
 
               if (isLimitReached) {
-                // ✅ Step 1: Upgrade click par Premium Sheet open karein
-                showPremiumOfferSheet4(context);
-                debugPrint("Action: Opening Premium Sheet");
+                if (onTrial) {
+                  Get.toNamed(Routes.mySubscription);
+                } else {
+                  showPremiumOfferSheet4(context);
+                }
               } else if (isUserReady) {
                 controller.handleFirstAction();
               }
@@ -227,7 +229,9 @@ class DreamBotScreen extends GetView<DreamBotController> {
             child: isLoading
                 ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(
-              isLimitReached ? context.lang.upgradePremium : (fromProgress == true ? context.lang.analyzeMyDream : context.lang.analyze),
+              isLimitReached
+                  ? (onTrial ? trialCountdownText(subController) : context.lang.upgradePremium)
+                  : (fromProgress == true ? context.lang.analyzeMyDream : context.lang.analyze),
               style: TextStyle(
                 color: (isUserReady || isLimitReached) ? Colors.white : Colors.white38,
                 fontWeight: FontWeight.bold,

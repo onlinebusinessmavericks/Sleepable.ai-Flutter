@@ -342,13 +342,7 @@ class ProgressScreen extends GetView<ProgressController> {
                             if (isFreeUser)
                               GestureDetector(
                                 onTap: () {
-                                  final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-                                  if (hasAlreadySpun) {
-                                    controller.showRotatingPremiumSheet(context);
-                                    // showPremiumOfferSheet6(context);
-                                  } else {
-                                    showPremiumOfferSheet4(context);
-                                  }
+                                  controller.onProTapped(context);
                                 },
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 12),
