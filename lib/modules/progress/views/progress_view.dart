@@ -20,6 +20,7 @@ import '../model/sleep_audio_response.dart';
 import '../model/sleep_calendar_response.dart';
 import '../model/sleep_quality_response.dart';
 import '../widget/Insights_list.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ProgressScreen extends GetView<ProgressController> {
   const ProgressScreen({super.key});
@@ -1136,7 +1137,7 @@ class ProgressScreen extends GetView<ProgressController> {
                   Get.back();
                 } else {
                   // Optional: Show a snackbar if no data exists for that day
-                  Get.snackbar(
+                  appSnackbar(
                       // "No Data", "No sleep was recorded for this night.",
                       context.lang.noDataLabel, // "No Data"
                       context.lang.noDataRecorded,

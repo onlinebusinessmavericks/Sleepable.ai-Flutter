@@ -4,6 +4,7 @@ import '../../../core/utils/library.dart';
 import '../../../widgets/cached_image_widget.dart';
 import '../controllers/sleep_sound_controller.dart';
 import '../model/sounds_mixed_list_model.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ApiMixCard extends StatelessWidget {
   final Map<String, dynamic> mix;
@@ -139,7 +140,7 @@ void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
                   Get.back();
                   final ok = await controller.deleteMix(mix.id);
                   if (ok) {
-                    Get.snackbar("Removed", "Mix deleted", snackPosition: SnackPosition.BOTTOM);
+                    appSnackbar("Removed", "Mix deleted", snackPosition: SnackPosition.BOTTOM);
                   }
                 }),
             const Divider(color: Colors.white10),
@@ -171,7 +172,7 @@ void showMixOptions(BuildContext context, MixedSoundRecord mix, String name) {
               if (newTitle != null && newTitle.isNotEmpty && newTitle != mix.title) {
                 final ok = await controller.renameMix(mix.id, newTitle);
                 if (ok) {
-                  Get.snackbar("Renamed", "Mix updated", snackPosition: SnackPosition.BOTTOM);
+                  appSnackbar("Renamed", "Mix updated", snackPosition: SnackPosition.BOTTOM);
                 }
               }
             }),

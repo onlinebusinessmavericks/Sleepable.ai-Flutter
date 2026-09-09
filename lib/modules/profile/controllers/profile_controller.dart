@@ -12,6 +12,7 @@ import '../../settings/model/user_settings_model.dart';
 import '../model/UserSettings.dart';
 import '../model/consecutive_streak_response.dart';
 import '../model/user_profile_model.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ProfileController extends GetxController {
 
@@ -231,7 +232,7 @@ class ProfileController extends GetxController {
         notificationEnabled.value = data.notifications ?? false;
 
       } else {
-        Get.snackbar("Error", "Failed to load settings");
+        appSnackbar("Error", "Failed to load settings");
       }
     } catch (e) {
       debugPrint("⚠️ Settings API error → $e");

@@ -25,6 +25,7 @@ import '../../sleep_info/widget/sleeppedia_data.dart';
 import '../../sleep_sound/model/sound_sub_category_model.dart';
 import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../model/home_page_response.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 class HomeController extends GetxController with GetTickerProviderStateMixin {
   // ---------------------------------------------------------------------------
   // 1. SERVICES & CONTROLLERS
@@ -710,8 +711,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         } else {
           // Agar API fail ho gayi toh wapas purani state pe le jao (Rollback)
           isEnabled.value = !newValue;
-          // Get.snackbar("Error", "Sync failed, please try again.");
-          Get.snackbar(
+          // appSnackbar("Error", "Sync failed, please try again.");
+          appSnackbar(
               Get.context?.lang.error ?? "Error",
               Get.context?.lang.syncFailedTryAgain ?? "Sync failed, please try again."
           );

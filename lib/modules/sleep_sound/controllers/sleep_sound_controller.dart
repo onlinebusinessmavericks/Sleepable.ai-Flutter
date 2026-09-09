@@ -28,6 +28,7 @@ import '../model/sound_sub_category_model.dart';
 import '../model/sounds_mixed_list_model.dart';
 import '../widget/PlayerFullSheetUI.dart';
 import '../widget/Sound_bootom_sheet widget.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 enum StopReason { userClose, timerFinished, systemCleanup }
 
@@ -188,7 +189,7 @@ class SleepSoundController extends GetxController {
       }
 
       soundsBySubCategory.refresh();
-      Get.snackbar("Error", "Could not update favorite. Please check your connection.");
+      appSnackbar("Error", "Could not update favorite. Please check your connection.");
       debugPrint("❌ Toggle Like Error: $e");
     }
   }
@@ -1609,7 +1610,7 @@ class SleepSoundController extends GetxController {
     try {
       final response = await SoundsApis.soundsMixedDelete(mixId: mixId);
       if (response.success != true) {
-        Get.snackbar("Error", response.message.isNotEmpty ? response.message : "Could not delete mix");
+        appSnackbar("Error", response.message.isNotEmpty ? response.message : "Could not delete mix");
         return false;
       }
       apiMixes.removeWhere((m) => m.id == mixId);
@@ -1622,7 +1623,7 @@ class SleepSoundController extends GetxController {
       return true;
     } catch (e) {
       debugPrint("❌ deleteMix Error: $e");
-      Get.snackbar("Error", "Could not delete mix");
+      appSnackbar("Error", "Could not delete mix");
       return false;
     }
   }
@@ -1636,7 +1637,7 @@ class SleepSoundController extends GetxController {
         request: {"title": title},
       );
       if (response.success != true) {
-        Get.snackbar("Error", response.message.isNotEmpty ? response.message : "Could not rename mix");
+        appSnackbar("Error", response.message.isNotEmpty ? response.message : "Could not rename mix");
         return false;
       }
       final idx = apiMixes.indexWhere((m) => m.id == mixId);
@@ -1655,7 +1656,7 @@ class SleepSoundController extends GetxController {
       return true;
     } catch (e) {
       debugPrint("❌ renameMix Error: $e");
-      Get.snackbar("Error", "Could not rename mix");
+      appSnackbar("Error", "Could not rename mix");
       return false;
     }
   }
@@ -1790,7 +1791,7 @@ class SleepSoundController extends GetxController {
 
     if (nameExists) {
       print("🚫 Mix name already exists: $mixName");
-      Get.snackbar(
+      appSnackbar(
         // "Duplicate Name",
         // "A mix with this name already exists.",
         lang.duplicateNameTitle,
@@ -1807,7 +1808,7 @@ class SleepSoundController extends GetxController {
 
     if (contentExists) {
       print("⚠️ Mix content already saved (duplicate mix).");
-      Get.snackbar(
+      appSnackbar(
         lang.duplicateMixTitle,
         lang.duplicateMixContent,
         // "Duplicate Mix",
@@ -1825,7 +1826,7 @@ class SleepSoundController extends GetxController {
     // Minimum sounds check
     if (playingSounds.isEmpty || (playingSounds.length == 1 && playingMusic.isEmpty)) {
       print("⚠️ Not enough sounds to save");
-      Get.snackbar(
+      appSnackbar(
         lang.cannotSaveTitle,
         lang.mixMinSoundsError,
         // "Cannot Save Mix",
@@ -1871,7 +1872,7 @@ class SleepSoundController extends GetxController {
           savedMixes.refresh();
         }
         await fetchMixes();
-        Get.snackbar(
+        appSnackbar(
           lang.mixSaved,
           response.message,
           snackPosition: SnackPosition.BOTTOM,

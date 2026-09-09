@@ -14,6 +14,7 @@ import '../../../widgets/timezone.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/model/UserSettings.dart';
 import '../../settings/model/user_settings_model.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ProfileSleepGoalController extends GetxController {
   /// 🔑 FINAL VALUES (24h)
@@ -171,11 +172,11 @@ class ProfileSleepGoalController extends GetxController {
         }
         Get.back();
       } else {
-        Get.snackbar(Get.context?.lang.error ??"Error", response.message ?? "Update failed");
+        appSnackbar(Get.context?.lang.error ??"Error", response.message ?? "Update failed");
       }
     } catch (e) {
       print("❌ Error: $e");
-      Get.snackbar(Get.context?.lang.error ??"Error",Get.context?.lang.someWhat ?? "Something went wrong");
+      appSnackbar(Get.context?.lang.error ??"Error",Get.context?.lang.someWhat ?? "Something went wrong");
     } finally {
       isSaving.value = false; // ✅ Stop loading
     }

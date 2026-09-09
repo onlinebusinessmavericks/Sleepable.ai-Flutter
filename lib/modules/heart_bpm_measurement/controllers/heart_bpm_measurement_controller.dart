@@ -13,6 +13,7 @@ import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.d
 import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../../widgets/showPremiumOfferSheet.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class HeartBpmMeasurementController extends GetxController {
   Timer? _timer;
@@ -168,11 +169,11 @@ class HeartBpmMeasurementController extends GetxController {
         Get.offNamed(Routes.sleepTracker);
       }
       else {
-        Get.snackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
+        appSnackbar(Get.context?.lang.error ??"Error" , response.message ?? "Failed");
       }
 
     } catch (e) {
-      Get.snackbar(Get.context?.lang.error ?? "Error", e.toString());
+      appSnackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
       isLoading.value = false;
     }

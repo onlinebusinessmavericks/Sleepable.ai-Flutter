@@ -19,6 +19,7 @@ import '../../alarm/controllers/alarm_controller.dart';
 import '../../music/views/music_view.dart';
 import '../controllers/sleep_sound_controller.dart';
 import '../model/SoundItem.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 enum SleepOnboardingStep { advanceTracker, setSmartAlarm, trySleepNote, sleepNote, placeDevice } //smartAlarm
 
@@ -757,7 +758,7 @@ void showDeleteNoteDialog({required BuildContext context, required int noteId, r
                 items.removeAt(index);
                 items.refresh();
               } else {
-                Get.snackbar(context.lang.error, context.lang.failedDeleteNote);
+                appSnackbar(context.lang.error, context.lang.failedDeleteNote);
               }
             },
             child:  Text(context.lang.yesDelete, style: TextStyle(color: Colors.white)),

@@ -8,6 +8,7 @@ import '../../../localization/lang_extension.dart';
 import '../../sleep_quiz/model/quiz_result_response.dart';
 import '../model/sleep_quiz_result_model.dart';
 import '../../../data/services/api_sevices.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SleepQuizResultController extends GetxController {
   final result = Rxn<QuizResultData>();
@@ -26,8 +27,8 @@ class SleepQuizResultController extends GetxController {
     final payload = Get.arguments as Map<String, dynamic>?;
     final lang = Get.context!.lang;
     if (payload == null) {
-      // Get.snackbar("Error", "No quiz data found.");
-      Get.snackbar(lang.errorLabel, lang.errorNoQuizData);
+      // appSnackbar("Error", "No quiz data found.");
+      appSnackbar(lang.errorLabel, lang.errorNoQuizData);
       isLoading.value = false;
       return;
     }
@@ -54,12 +55,12 @@ class SleepQuizResultController extends GetxController {
         }
 
       } else {
-        // Get.snackbar("Error", "Could not generate your results. Try again.");
-        Get.snackbar(lang.errorLabel, lang.errorGenerateResult);
+        // appSnackbar("Error", "Could not generate your results. Try again.");
+        appSnackbar(lang.errorLabel, lang.errorGenerateResult);
       }
     } catch (e) {
-      // Get.snackbar("Error", "Network error occurred.");
-      Get.snackbar(lang.errorLabel, lang.errorNetwork);
+      // appSnackbar("Error", "Network error occurred.");
+      appSnackbar(lang.errorLabel, lang.errorNetwork);
     } finally {
       isLoading.value = false;
     }

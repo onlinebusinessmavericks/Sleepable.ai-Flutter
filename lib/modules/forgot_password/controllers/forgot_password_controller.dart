@@ -1,5 +1,6 @@
 import '../../../core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ForgotPasswordController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -27,7 +28,7 @@ class ForgotPasswordController extends GetxController {
 
       final response = await AuthServiceApis.forgotPassword(request: payload);
       if (response.success) {
-        Get.snackbar(
+        appSnackbar(
           "Success",
           response.message.isNotEmpty
               ? response.message
@@ -36,14 +37,14 @@ class ForgotPasswordController extends GetxController {
         );
         step.value = 1;
       } else {
-        Get.snackbar(
+        appSnackbar(
           "Error",
           response.message.isNotEmpty ? response.message : "Could not send reset email",
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      appSnackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -62,7 +63,7 @@ class ForgotPasswordController extends GetxController {
       });
 
       if (response.success) {
-        Get.snackbar(
+        appSnackbar(
           "Success",
           response.message.isNotEmpty
               ? response.message
@@ -71,14 +72,14 @@ class ForgotPasswordController extends GetxController {
         );
         Get.back(); // back to sign in
       } else {
-        Get.snackbar(
+        appSnackbar(
           "Error",
           response.message.isNotEmpty ? response.message : "Could not reset password",
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      appSnackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

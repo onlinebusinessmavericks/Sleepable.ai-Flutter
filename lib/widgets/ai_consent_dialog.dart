@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 import 'package:get/get.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -85,7 +86,7 @@ void handleAiConsentRequired([String? message]) {
   setValue(_kAiConsentKey, false);
 
   if (Get.isSnackbarOpen == true) return;
-  Get.snackbar(
+  appSnackbar(
     _manage('label'),
     (message == null || message.isEmpty) ? _manage('required') : message,
     snackPosition: SnackPosition.BOTTOM,

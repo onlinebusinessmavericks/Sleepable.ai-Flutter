@@ -12,6 +12,7 @@ import '../../../localization/lang_extension.dart';
 import '../../../widgets/custom_loader.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../controllers/profile_sleep_goal_controller.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class ProfileSleepGoalScreen extends StatelessWidget {
   final controller = Get.put(ProfileSleepGoalController());
@@ -247,7 +248,7 @@ class ProfileSleepGoalScreen extends StatelessWidget {
             if (profileCtrl.settings.value != null) {
               controller.saveSleepGoal(profileCtrl.settings.value!);
             } else {
-              Get.snackbar(context.lang.errorLabel,
+              appSnackbar(context.lang.errorLabel,
                 context.lang.errorSettingsNotLoaded,);
             }
           },

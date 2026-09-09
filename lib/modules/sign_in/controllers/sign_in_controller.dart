@@ -1,4 +1,5 @@
 import '../../../core/utils/library.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SignInController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -24,7 +25,7 @@ class SignInController extends GetxController {
       /// 🔥 API CALL
       // await AuthApis.login(payload);
 
-      Get.snackbar(
+      appSnackbar(
         "Success",
         "Logged in successfully",
         snackPosition: SnackPosition.BOTTOM,
@@ -32,7 +33,7 @@ class SignInController extends GetxController {
 
       Get.offAllNamed('/home');
     } catch (e) {
-      Get.snackbar("Error", e.toString());
+      appSnackbar("Error", e.toString());
     } finally {
       isLoading.value = false;
     }

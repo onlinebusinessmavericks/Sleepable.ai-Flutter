@@ -13,6 +13,7 @@ import '../../../localization/lang_extension.dart';
 import '../../login/model/google_social_login_model.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/model/user_profile_model.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class EditProfileController extends GetxController {
   EditProfileController(this.data);
@@ -122,7 +123,7 @@ class EditProfileController extends GetxController {
 
         Get.back();}// close page
 
-      Get.snackbar(
+      appSnackbar(
         Get.context?.lang.success ?? "Success",
         Get.context?.lang.profileUpdatedSuccessfully ?? "Profile updated successfully",
         snackPosition: SnackPosition.BOTTOM,
@@ -132,7 +133,7 @@ class EditProfileController extends GetxController {
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
 
-      Get.snackbar(
+      appSnackbar(
         Get.context?.lang.error ?? "Error",
         e.toString(),
         snackPosition: SnackPosition.BOTTOM,

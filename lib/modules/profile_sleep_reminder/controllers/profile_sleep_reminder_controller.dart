@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
   import '../../../data/services/api_sevices.dart';
   import '../../../localization/lang_extension.dart';
 import '../../../widgets/timezone.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
   import '../../profile/controllers/profile_controller.dart';
   import '../../profile/model/UserSettings.dart';
   import '../../settings/model/user_settings_model.dart';
@@ -121,11 +122,11 @@ import '../../../widgets/timezone.dart';
           }
           Get.back();
         } else {
-          Get.snackbar(Get.context?.lang.errorLabel ?? "Error", response.message ?? "Format Error");
+          appSnackbar(Get.context?.lang.errorLabel ?? "Error", response.message ?? "Format Error");
         }
       } catch (e) {
         debugPrint("❌ API Error: $e");
-        Get.snackbar(
+        appSnackbar(
             // "Error", "Update failed. Check your internet."
           Get.context?.lang.errorLabel ?? "Error",
           Get.context?.lang.updateFailed ?? "Update failed. Check your internet.",

@@ -22,6 +22,7 @@ import '../../profile/model/UserSettings.dart';
 import '../../settings/model/user_settings_model.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
 import '../views/alarm_ringing_view.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class AlarmController extends GetxController with WidgetsBindingObserver {
   // --------------------------
@@ -345,7 +346,7 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
     var status = await Permission.systemAlertWindow.status;
     if (!status.isGranted) {
       // Show a quick message so user knows why they are leaving the app
-      Get.snackbar(
+      appSnackbar(
         Get.context?.lang.permissionRequired ?? "Permission Required",
         Get.context?.lang.pleaseAllowDisplayOverOtherAppsAlarmScreenAppear ?? "Please allow 'Display over other apps' so the alarm screen can appear.",
         // "Permission Required",

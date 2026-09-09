@@ -10,6 +10,7 @@ import '../../home/widget/Youtubeer_view.dart';
 import '../../music/views/music_view.dart';
 import '../controllers/sleep_info_controller.dart';
 import '../widget/sleep_quiz_detail_view.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SleepInfoView extends GetView<SleepInfoController> {
   const SleepInfoView({super.key});
@@ -270,7 +271,7 @@ class SleepInfoView extends GetView<SleepInfoController> {
                   title: snippet['title'] ?? context.lang.untitledVideo,
                 ));
               } else {
-                Get.snackbar(
+                appSnackbar(
                   context.lang.noticeLabel,
                   context.lang.notPlayableVideo,
                   snackPosition: SnackPosition.BOTTOM,

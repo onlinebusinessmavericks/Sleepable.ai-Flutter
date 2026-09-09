@@ -1,4 +1,5 @@
 import '../../../core/utils/library.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SignupController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -40,12 +41,12 @@ class SignupController extends GetxController {
     if (!formKey.currentState!.validate()) return;
 
     if (birthDate.value.isEmpty) {
-      Get.snackbar("Error", "Please select birthdate");
+      appSnackbar("Error", "Please select birthdate");
       return;
     }
 
     if (selectedGender.value.isEmpty) {
-      Get.snackbar("Error", "Please select gender");
+      appSnackbar("Error", "Please select gender");
       return;
     }
 
@@ -66,7 +67,7 @@ class SignupController extends GetxController {
 
       // await AuthApis.signup(payload);
 
-      Get.snackbar(
+      appSnackbar(
         "Success",
         "Account created successfully",
         snackPosition: SnackPosition.BOTTOM,
@@ -74,7 +75,7 @@ class SignupController extends GetxController {
 
       Get.offAllNamed('/login');
     } catch (e) {
-      Get.snackbar("Error", e.toString());
+      appSnackbar("Error", e.toString());
     } finally {
       isLoading.value = false;
     }

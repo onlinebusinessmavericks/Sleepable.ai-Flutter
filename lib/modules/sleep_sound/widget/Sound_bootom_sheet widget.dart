@@ -3,6 +3,7 @@ import 'package:giffy_dialog/giffy_dialog.dart';
 import '../../../core/utils/library.dart';
 import '../controllers/sleep_sound_controller.dart';
 import '../views/sleep_sound_view.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class BlueCenterThumbShape extends SliderComponentShape {
   const BlueCenterThumbShape();
@@ -489,7 +490,7 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                                         if (mixId != null) {
                                           final ok = await controller.deleteMix(mixId);
                                           if (ok) {
-                                            Get.snackbar(
+                                            appSnackbar(
                                               "Removed",
                                               "Mix deleted",
                                               snackPosition: SnackPosition.BOTTOM,
@@ -520,7 +521,7 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                               );
                             } else {
                               if (controller.playingSounds.isEmpty) {
-                                Get.snackbar(
+                                appSnackbar(
                                   "Cannot Save Mix",
                                   "Please add at least one sound before saving.",
                                   snackPosition: SnackPosition.BOTTOM,
@@ -531,7 +532,7 @@ class AnimatedBottomSheetContentState extends State<AnimatedBottomSheetContent> 
                                   duration: const Duration(seconds: 3),
                                 );
                               } else if (controller.playingSounds.length == 1 && controller.playingMusic.isEmpty) {
-                                Get.snackbar(
+                                appSnackbar(
                                   "Add More Sounds",
                                   "Please select at least two sounds to save your mix.",
                                   snackPosition: SnackPosition.BOTTOM,

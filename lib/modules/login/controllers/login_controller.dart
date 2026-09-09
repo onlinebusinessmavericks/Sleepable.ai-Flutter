@@ -28,6 +28,7 @@ import '../../otp_verification/views/otp_verification_view.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../profile/model/user_profile_model.dart';
 import '../model/email_login_resposnse.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class LoginController extends BaseController {
   final isLoading = false.obs;
@@ -169,7 +170,7 @@ class LoginController extends BaseController {
     }
     final ctx = Get.context;
     if (ctx == null) return;
-    Get.snackbar(ctx.lang.error, ctx.lang.somethingWentWrongDuringLogin);
+    appSnackbar(ctx.lang.error, ctx.lang.somethingWentWrongDuringLogin);
   }
 
   // ===================== SING UP =====================
@@ -251,7 +252,7 @@ class LoginController extends BaseController {
     } catch (e) {
       // ⚠️ Yahan login fail hone par user ko error dikhana zaroori hai
       print("❌ Social Login Error: $e");
-      // Get.snackbar("Login Error", e.toString());
+      // appSnackbar("Login Error", e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -373,7 +374,7 @@ class LoginController extends BaseController {
   Future<void> loginWithEmailApi() async {
     String email = emailController.text.trim().toLowerCase();
     if (email.isEmpty || passwordController.text.isEmpty) {
-      Get.snackbar("Error", "Please fill all fields");
+      appSnackbar("Error", "Please fill all fields");
       return;
     }
 
@@ -394,11 +395,11 @@ class LoginController extends BaseController {
 
         Get.toNamed(Routes.otpScreen, arguments: {"email": email});
       } else {
-        Get.snackbar(Get.context!.lang.error, response.message ?? Get.context!.lang.loginFailed);
+        appSnackbar(Get.context!.lang.error, response.message ?? Get.context!.lang.loginFailed);
       }
     } catch (e) {
       print("❌ Email Login Error: $e");
-      Get.snackbar(Get.context!.lang.error, Get.context!.lang.somethingWentWrongDuringLogin);
+      appSnackbar(Get.context!.lang.error, Get.context!.lang.somethingWentWrongDuringLogin);
     } finally {
     isLoading.value = false;
   }}
@@ -413,7 +414,7 @@ class LoginController extends BaseController {
     final String otp = otpController.text.trim();
 
     if (otp.length < 6) {
-      Get.snackbar(Get.context!.lang.error, Get.context!.lang.enter6DigitOTP);
+      appSnackbar(Get.context!.lang.error, Get.context!.lang.enter6DigitOTP);
       return;
     }
 
@@ -439,11 +440,11 @@ class LoginController extends BaseController {
         // await _saveTokensAndNavigate(response);
         await _saveTokensAndNavigate(socialResponse: response);
       } else {
-        Get.snackbar(Get.context!.lang.oTPError, response.message ?? "Invalid OTP");
+        appSnackbar(Get.context!.lang.oTPError, response.message ?? "Invalid OTP");
       }
     } catch (e) {
       dev.log("❌ OTP Verification Error: $e");
-      Get.snackbar(Get.context!.lang.error,Get.context!.lang.somethingWentWrongDuringotpVerification);
+      appSnackbar(Get.context!.lang.error,Get.context!.lang.somethingWentWrongDuringotpVerification);
     } finally { // 👈 Yahan bhi proper 'finally' aayega
       isLoading.value = false;
     }

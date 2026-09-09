@@ -13,6 +13,7 @@ import '../../../widgets/SubscriptionController.dart';
 import '../../../widgets/ai_consent_dialog.dart';
 import '../model/user_settings_model.dart';
 import '../widget/webview.dart';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SettingsController extends GetxController {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -45,8 +46,8 @@ class SettingsController extends GetxController {
       // It is often better to just try launching.
       await launchUrl(emailUri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      // Get.snackbar("Error", "Could not open email app");
-      Get.snackbar(
+      // appSnackbar("Error", "Could not open email app");
+      appSnackbar(
           Get.context?.lang.errorLabel ?? "Error",
           Get.context?.lang.errorNoEmail ?? "Could not open email app"
       );
@@ -103,7 +104,7 @@ class SettingsController extends GetxController {
       }
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
-      Get.snackbar("Error", "Could not open subscription management");
+      appSnackbar("Error", "Could not open subscription management");
     }
   }
 
@@ -225,7 +226,7 @@ class SettingsController extends GetxController {
       if (response.success == true) {
         Get.offAllNamed(Routes.login);
       } else {
-        Get.snackbar(Get.context?.lang.logoutFailed ?? "Logout Failed", response.message ?? "Something went wrong");
+        appSnackbar(Get.context?.lang.logoutFailed ?? "Logout Failed", response.message ?? "Something went wrong");
       }
     } catch (e) {
       debugPrint("🚪 Logout error → $e");
@@ -320,14 +321,14 @@ class SettingsController extends GetxController {
         removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
 
         Get.offAllNamed(Routes.login);
-        Get.snackbar(
+        appSnackbar(
           Get.context?.lang.accountDeletedLabel ?? "Account Deleted",
           response.message ?? Get.context?.lang.accountDeletedSuccess ?? "Your account has been deleted successfully",
           // "Account Deleted",
           // response.message ?? "Your account has been deleted successfully",
         );
       } else {
-        Get.snackbar(
+        appSnackbar(
           Get.context?.lang.deleteFailedLabel ?? "Delete Failed",
           response.message ?? Get.context?.lang.somethingWentWrong ?? "Something went wrong",
           // "Delete Failed",

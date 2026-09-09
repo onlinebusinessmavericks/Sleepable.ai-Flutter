@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -307,7 +308,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
-      Get.snackbar(context.lang.error, _copy("couldNotOpenStore"));
+      appSnackbar(context.lang.error, _copy("couldNotOpenStore"));
     }
   }
 
