@@ -98,6 +98,7 @@ Widget _iosScrollablePaywall(Widget column) =>
     Platform.isIOS ? SingleChildScrollView(child: column) : column;
 
 Widget _trialNotPremiumBanner(BuildContext context) {
+  if (Platform.isIOS) return const SizedBox.shrink();
   final sub = Get.isRegistered<SubscriptionController>()
       ? Get.find<SubscriptionController>()
       : null;
@@ -1111,34 +1112,22 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                       padding: EdgeInsets.only(bottom: sh(16)),
                       child: Column(
                         children: [
-                          if (showOffer && Platform.isIOS && standardPackage != null)
-                            Padding(
-                              padding: EdgeInsets.only(bottom: sh(8)),
-                              child: Text(
-                                standardPackage.storeProduct.priceString,
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white54,
-                                  fontSize: 14 * SizeConfigs.textScale,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(Icons.check_circle, color: Colors.white, size: 22),
                               SizedBox(width: sw(8)),
                               Text(
-                                showOffer
-                                    ? (Platform.isIOS
-                                        ? subController.formatIosYearlyPriceLine(
-                                            prefix: context.lang.just,
-                                            yearlyPrice: yearlyPrice,
-                                            currencySymbol: currencySymbol,
-                                            weeklyAvg: weeklyAvg,
-                                          )
-                                        : "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})")
-                                    : context.lang.noPaymentDue,
+                                Platform.isIOS
+                                    ? subController.formatIosYearlyPriceLine(
+                                        prefix: context.lang.just,
+                                        yearlyPrice: yearlyPrice,
+                                        currencySymbol: currencySymbol,
+                                        weeklyAvg: weeklyAvg,
+                                      )
+                                    : (showOffer
+                                        ? "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})"
+                                        : context.lang.noPaymentDue),
                                 style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
                               ),
                             ],
@@ -1947,7 +1936,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
     return Obx(() {
       final spinData = subController.spinInfo.value;
       bool showOffer = Platform.isIOS
-          ? subController.shouldShowDiscountOnPaywall()
+          ? false
           : spinData?.alreadySpun == true;
 
       final standardAnnual = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
@@ -2503,30 +2492,17 @@ Widget paywallProductsPlaceholder(BuildContext context) {
   });
 }
 
-/// iOS yearly pricing copy.
-///
-/// On iOS there is no free trial: the yearly plan carries an introductory price
-/// for the first year and renews at the full price after that. Both numbers come
-/// straight from the store, so this stays correct in every currency.
+/// iOS yearly pricing copy: the App Store recurring yearly price only.
+/// No introductory / first-year discount line — iOS has no trial or discount.
 String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
   if (yearly == null) return "";
-  final product = yearly.storeProduct;
-  final intro = product.introductoryPrice;
-
-  if (intro == null) {
-    // No introductory offer configured - just the recurring price.
-    return "${product.priceString} / $yearWord";
-  }
-  return "${intro.priceString} for the first $yearWord, "
-      "then ${product.priceString} / $yearWord. Cancel anytime.";
+  return "${yearly.storeProduct.priceString} / $yearWord";
 }
 
-/// The amount actually charged today for the yearly plan on iOS - the
-/// introductory price when there is one, otherwise the standard price.
+/// Amount billed for the iOS yearly plan: App Store yearly priceString.
 String iosYearlyBilledNow(Package? yearly) {
   if (yearly == null) return "";
-  final product = yearly.storeProduct;
-  return product.introductoryPrice?.priceString ?? product.priceString;
+  return yearly.storeProduct.priceString;
 }
 
 /// What a user inside the free trial sees in place of a buy button.

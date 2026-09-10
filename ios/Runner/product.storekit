@@ -93,7 +93,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "5400",
+          "displayPrice" : "5600",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6D8A27CB",
@@ -110,58 +110,6 @@
           "productID" : "yearly_premium",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Sleepable Yearly iOS",
-          "subscriptionGroupID" : "6C80A25B",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
-        },
-        {
-          "adHocOffers" : [
-
-          ],
-          "billingPlans" : [
-            {
-              "billingPlanType" : "BILLED_UPFRONT",
-              "commitmentDisplayPrice" : "0.99",
-              "displayPrice" : "0.99",
-              "internalID" : "36486E30",
-              "isEnabled" : true
-            }
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "2800",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "F91E54E2",
-          "introductoryOffer" : {
-            "billingPlanType" : "BILLED_UPFRONT",
-            "internalID" : "49AE9350",
-            "numberOfPeriods" : 1,
-            "paymentMode" : "free",
-            "subscriptionPeriod" : "P3D"
-          },
-          "introductoryOffers" : [
-            {
-              "billingPlanType" : "BILLED_UPFRONT",
-              "internalID" : "49AE9350",
-              "numberOfPeriods" : 1,
-              "paymentMode" : "free",
-              "subscriptionPeriod" : "P3D"
-            }
-          ],
-          "localizations" : [
-            {
-              "description" : "",
-              "displayName" : "",
-              "locale" : "en_US"
-            }
-          ],
-          "productID" : "yearly_discounted_premium",
-          "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Yearly Discounted Spin",
           "subscriptionGroupID" : "6C80A25B",
           "type" : "RecurringSubscription",
           "winbackOffers" : [

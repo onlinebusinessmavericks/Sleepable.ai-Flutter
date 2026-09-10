@@ -174,13 +174,10 @@ class SubscriptionController extends GetxController {
   /// APPLIED" and the discounted price in front of brand new users.
   bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true;
 
-  /// iOS: show discount upfront on the primary paywall (no spin required).
+  /// iOS: no spin and no discount paywall. Weekly + yearly come from the
+  /// App Store current offering only.
   bool shouldShowDiscountOnPaywall() {
-    if (Platform.isIOS) {
-      // There is no spin on iOS; the introductory offer is applied by the store
-      // to everyone who qualifies, so the paywall always states it.
-      return spinYearlyPackage.value != null || (spinInfo.value?.discountPct ?? 0) > 0;
-    }
+    if (Platform.isIOS) return false;
     return spinInfo.value?.alreadySpun == true;
   }
 
@@ -208,10 +205,9 @@ class SubscriptionController extends GetxController {
   /// Yearly price to show, taken from what the first year actually costs.
   ///
   /// These used to read `storeProduct.priceString`, which is the renewal price.
-  /// Since the discounted offering now points at the same product as the
-  /// standard one, that made the "discounted" price identical to the full price
-  /// - a struck-out 5,600 next to a 5,600. The package arguments are kept so
-  /// call sites do not have to change; only the source of the number moved.
+  /// On Android the discounted offering used to show the same number as full
+  /// price. The package arguments are kept so call sites do not have to change;
+  /// only the source of the number moved.
   String getDisplayYearlyPrice({
     required SpinData? spinData,
     required Package? discountPackage,
@@ -364,7 +360,7 @@ class SubscriptionController extends GetxController {
         Offerings offerings = await Purchases.getOfferings();
         print("🔍 [RC] Total Offerings found: ${offerings.all.keys.toList()}");
 
-        // ✅ 1. Current / Regular Offering Loading (default_new - ₹5,400)
+        // Current offering: weekly + yearly at the store's localized price.
         if (offerings.current != null) {
           final allAvailablePackages = offerings.current!.availablePackages;
 
@@ -378,8 +374,10 @@ class SubscriptionController extends GetxController {
           );
         }
 
-        // ✅ 2. Discount Offering Loading (discount_offering - ₹2,800)
-        if (offerings.all["discount_offering"] != null) {
+        // Android Lucky Spin discount offering. iOS has no discount plan.
+        if (Platform.isIOS) {
+          spinYearlyPackage.value = null;
+        } else if (offerings.all["discount_offering"] != null) {
           final discountOffering = offerings.all["discount_offering"]!;
           spinYearlyPackage.value = discountOffering.annual;
 
@@ -412,9 +410,13 @@ class SubscriptionController extends GetxController {
   /// subscriber must not be promised a trial the store will refuse.
   RxBool yearlyIntroEligible = true.obs;
 
-  Package? get _yearlyPackage =>
-      spinYearlyPackage.value ??
-      packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+  Package? get _yearlyPackage {
+    if (Platform.isIOS) {
+      return packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+    }
+    return spinYearlyPackage.value ??
+        packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+  }
 
   Future<void> refreshTrialEligibility() async {
     if (!isConfigured) return;
@@ -528,6 +530,8 @@ class SubscriptionController extends GetxController {
       return _yearlyPackage?.storeProduct.price ?? 0;
     }
     final product = _yearlyPackage?.storeProduct;
+    // iOS: recurring App Store yearly only (no intro / discount price).
+    if (Platform.isIOS) return product?.price ?? 0;
     return product?.introductoryPrice?.price ?? product?.price ?? 0;
   }
 
@@ -538,7 +542,8 @@ class SubscriptionController extends GetxController {
   String yearlyFirstYearPrice({required bool discounted}) {
     if (Platform.isAndroid) return androidYearlyFirstYearPrice(discounted: discounted);
     final product = _yearlyPackage?.storeProduct;
-    return product?.introductoryPrice?.priceString ?? product?.priceString ?? '';
+    // iOS: App Store yearly priceString so country and plan changes apply automatically.
+    return product?.priceString ?? '';
   }
 
   /// The crossed-out price, or null when there is nothing to cross out.

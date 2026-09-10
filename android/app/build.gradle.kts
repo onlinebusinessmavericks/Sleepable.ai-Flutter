@@ -43,7 +43,7 @@ android {
         applicationId = "com.sleepableai.sleepableai"
         minSdk = 24
         targetSdk = 36
-        versionCode = 21
+        versionCode = 22
         versionName = "1.0.16"
         multiDexEnabled = true
 
