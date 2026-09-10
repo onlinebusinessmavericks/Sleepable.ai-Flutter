@@ -99,6 +99,7 @@ class SleepSoundController extends GetxController {
       isLoadingCategories.value = true;
       final res = await SoundsApis.fetchSoundCategories();
       tabOrder.assignAll(res.data);
+      soundsLoadFailed.value = false;
     } catch (e) {
       debugPrint("Category API Error: $e");
       soundsLoadFailed.value = true;
@@ -114,6 +115,7 @@ class SleepSoundController extends GetxController {
 
       final res = await SoundsApis.fetchSoundSubCategories(categorySlug: categorySlug);
       subCategoryMap[categorySlug] = res.data;
+      soundsLoadFailed.value = false;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _rebuildPages(); // update combinedPages after fetching

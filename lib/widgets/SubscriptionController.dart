@@ -557,10 +557,6 @@ class SubscriptionController extends GetxController {
     return _yearlyPackage?.storeProduct.priceString;
   }
 
-  /// Buys [package]. On Android pass [option] to pick a specific Play offer
-  /// (the discounted year vs the plain free trial); without it the store
-  /// decides, which is not what the spin result should get.
-
   /// The Play offer a purchase should go through when the caller did not name
   /// one.
   ///
@@ -573,6 +569,10 @@ class SubscriptionController extends GetxController {
     if (package.packageType != PackageType.annual) return null;
     return androidYearlyOption(discounted: hasSpecialOffer);
   }
+
+  /// Buys [package]. On Android pass [option] to pick a specific Play offer
+  /// (the discounted year vs the plain free trial); without it one is worked
+  /// out from whether the user has won the spin.
   Future<void> buyProduct(Package package, {SubscriptionOption? option}) async {
     if (!isConfigured) {
       toast("Store not available on this device");

@@ -338,6 +338,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     // without user consent. Consent is granted via the DreamBot dialog or Settings.
     if (!hasAiConsent()) {
       aiInsightsList.clear();
+      // The caller turns this on before firing every fetch at once. Returning
+      // without clearing it left the AI Insights card spinning for ever for
+      // anyone who had not granted consent.
+      isAIInsightsLoading.value = false;
       return;
     }
 
