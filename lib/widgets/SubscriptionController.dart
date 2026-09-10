@@ -560,6 +560,19 @@ class SubscriptionController extends GetxController {
   /// Buys [package]. On Android pass [option] to pick a specific Play offer
   /// (the discounted year vs the plain free trial); without it the store
   /// decides, which is not what the spin result should get.
+
+  /// The Play offer a purchase should go through when the caller did not name
+  /// one.
+  ///
+  /// Only the yearly plan carries offers: `spin` for the discounted year and
+  /// `trial` for the plain three days. Which one applies is decided by whether
+  /// the user has actually won the spin, the same test the paywall uses to
+  /// decide what price to print - so the sheet and the store agree.
+  SubscriptionOption? _defaultOptionFor(Package package) {
+    if (!Platform.isAndroid) return null;
+    if (package.packageType != PackageType.annual) return null;
+    return androidYearlyOption(discounted: hasSpecialOffer);
+  }
   Future<void> buyProduct(Package package, {SubscriptionOption? option}) async {
     if (!isConfigured) {
       toast("Store not available on this device");
@@ -583,6 +596,12 @@ class SubscriptionController extends GetxController {
           print("🔁 [RC] Plan change $oldProductId -> ${package.storeProduct.identifier} (${changeInfo.prorationMode})");
         }
       }
+
+      // The discount lives in the Play offer, not in the product. Five of the
+      // six purchase buttons never passed one, so the store fell back to its
+      // default offer and sold the full-price trial even to someone who had
+      // just won the spin. Work it out here so no call site can forget again.
+      option ??= _defaultOptionFor(package);
 
       final purchaseResult = await Purchases.purchase(
         option != null && Platform.isAndroid

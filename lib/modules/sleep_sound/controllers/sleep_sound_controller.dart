@@ -82,6 +82,18 @@ class SleepSoundController extends GetxController {
   void updateScale(double value) {
     scale.value = value;
   }
+  /// Set when the sound categories could not be loaded.
+  ///
+  /// The Sounds tab shows a loader while `combinedPages` is empty. Both fetches
+  /// only wrote their failure to the debug log, so a dropped request left that
+  /// loader spinning for ever with nothing to read and no way to retry.
+  final RxBool soundsLoadFailed = false.obs;
+
+  Future<void> retryLoadingSounds() async {
+    soundsLoadFailed.value = false;
+    await _initializeData();
+  }
+
   Future<void> fetchSoundCategories() async {
     try {
       isLoadingCategories.value = true;
@@ -89,6 +101,7 @@ class SleepSoundController extends GetxController {
       tabOrder.assignAll(res.data);
     } catch (e) {
       debugPrint("Category API Error: $e");
+      soundsLoadFailed.value = true;
     } finally {
       isLoadingCategories.value = false;
     }
@@ -109,6 +122,7 @@ class SleepSoundController extends GetxController {
       // ❌ Don't force selectedCategorySlug/subCategorySlug here
     } catch (e) {
       debugPrint("SubCategory API Error: $e");
+      soundsLoadFailed.value = true;
     } finally {
       isLoadingSubCategories.value = false;
     }

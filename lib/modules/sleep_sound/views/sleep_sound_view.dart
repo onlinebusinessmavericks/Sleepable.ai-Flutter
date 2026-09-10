@@ -246,7 +246,36 @@ class _SleepSoundViewState extends State<SleepSoundView> {
       if (controller.combinedPages.isEmpty) {
         return Scaffold(
           backgroundColor: const Color(0xFF0C0E1B),
-          body: Center(child: LoaderWidget(size: sw(150))),
+          body: Center(
+            child: controller.soundsLoadFailed.value
+                // A failed call used to leave this loader spinning for ever.
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 34),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.lang.somethingWentWrong,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          onPressed: controller.retryLoadingSounds,
+                          child: Text(context.lang.retry),
+                        ),
+                      ],
+                    ),
+                  )
+                : LoaderWidget(size: sw(150)),
+          ),
         );
       }
 
