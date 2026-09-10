@@ -87,25 +87,37 @@ class ProfileController extends GetxController {
     streakWeekDates.value = List.generate(7, (index) => today.subtract(Duration(days: 6 - index)));
   }
 
-  Future<void> fetchStreakData() async {
-    try {
-      final response = await SettingsApis.getConsecutiveStreak();
-      if (response.success == true && response.data != null) {
-        currentStreak.value = response.data!.currentStreak ?? 0;
-        streakCalendar.assignAll(response.data!.streakCalendar ?? []);
+  /// Loads the streak, retrying a couple of times before giving up.
+  ///
+  /// This runs from onInit, which on a fresh install can fire while the API
+  /// token is still being written. The single attempt it used to make failed
+  /// silently, and the card then read 00 with an empty calendar for the rest
+  /// of the session - which looked like the streak was missing altogether.
+  Future<void> fetchStreakData({int retries = 2}) async {
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final response = await SettingsApis.getConsecutiveStreak();
+        if (response.success == true && response.data != null) {
+          currentStreak.value = response.data!.currentStreak ?? 0;
+          streakCalendar.assignAll(response.data!.streakCalendar ?? []);
 
-        // Update the date objects based on what the API sent
-        _syncDatesWithApi();
-        completedDates.assignAll(
-          streakCalendar
-              .where((d) => d.hasSleep)
-              .map((d) => DateTime.tryParse(d.date))
-              .whereType<DateTime>()
-              .toList(),
-        );
+          // Update the date objects based on what the API sent
+          _syncDatesWithApi();
+          completedDates.assignAll(
+            streakCalendar
+                .where((d) => d.hasSleep)
+                .map((d) => DateTime.tryParse(d.date))
+                .whereType<DateTime>()
+                .toList(),
+          );
+          return;
+        }
+      } catch (e) {
+        print("Error fetching streak (attempt ${attempt + 1}): $e");
       }
-    } catch (e) {
-      print("Error fetching streak: $e");
+      if (attempt < retries) {
+        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
+      }
     }
   }
 

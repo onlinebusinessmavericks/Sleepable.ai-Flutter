@@ -309,7 +309,12 @@ class SettingsController extends GetxController {
       },
     );
   }
+  /// Guards against a second tap while the first delete is still in flight.
+  bool _deleteInFlight = false;
+
   Future<void> onDeleteAccount(BuildContext context) async {
+    if (_deleteInFlight) return;
+    _deleteInFlight = true;
     try {
       final CommonResponse response =
       await AuthServiceApis.deleteAccount();
@@ -324,19 +329,23 @@ class SettingsController extends GetxController {
         appSnackbar(
           Get.context?.lang.accountDeletedLabel ?? "Account Deleted",
           response.message ?? Get.context?.lang.accountDeletedSuccess ?? "Your account has been deleted successfully",
-          // "Account Deleted",
-          // response.message ?? "Your account has been deleted successfully",
         );
       } else {
         appSnackbar(
           Get.context?.lang.deleteFailedLabel ?? "Delete Failed",
           response.message ?? Get.context?.lang.somethingWentWrong ?? "Something went wrong",
-          // "Delete Failed",
-          // response.message ?? "Something went wrong",
         );
       }
     } catch (e) {
-      debugPrint("❌ Delete account error → $e");
+      // The failure used to go only to the debug log, so tapping "Yes, delete"
+      // did nothing at all and looked like a dead button.
+      debugPrint("Delete account error: $e");
+      appSnackbar(
+        Get.context?.lang.deleteFailedLabel ?? "Delete Failed",
+        e.toString().replaceFirst('Exception:', '').trim(),
+      );
+    } finally {
+      _deleteInFlight = false;
     }
   }
 }
