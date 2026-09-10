@@ -2492,17 +2492,27 @@ Widget paywallProductsPlaceholder(BuildContext context) {
   });
 }
 
-/// iOS yearly pricing copy: the App Store recurring yearly price only.
-/// No introductory / first-year discount line — iOS has no trial or discount.
+/// iOS yearly pricing copy.
+///
+/// The App Store applies the introductory offer by itself, so when one is
+/// configured the first year and the renewal are different amounts and both
+/// have to be stated - Apple 3.1.2 wants the renewal terms visible next to
+/// what is charged today.
 String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
   if (yearly == null) return "";
-  return "${yearly.storeProduct.priceString} / $yearWord";
+  final product = yearly.storeProduct;
+  final intro = product.introductoryPrice;
+  if (intro == null) return "${product.priceString} / $yearWord";
+  return "${intro.priceString} for the first $yearWord, "
+      "then ${product.priceString} / $yearWord. Cancel anytime.";
 }
 
-/// Amount billed for the iOS yearly plan: App Store yearly priceString.
+/// Amount actually billed today for the iOS yearly plan - the introductory
+/// price when there is one, otherwise the standard price.
 String iosYearlyBilledNow(Package? yearly) {
   if (yearly == null) return "";
-  return yearly.storeProduct.priceString;
+  final product = yearly.storeProduct;
+  return product.introductoryPrice?.priceString ?? product.priceString;
 }
 
 /// What a user inside the free trial sees in place of a buy button.

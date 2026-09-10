@@ -183,23 +183,35 @@ class SubscriptionController extends GetxController {
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
 
-  /// iOS paywall price line: "Just {price} / year ({symbol}{weekly} / week)"
+  /// iOS paywall price line.
+  ///
+  /// The App Store applies an introductory offer on its own, so the first year
+  /// and the renewal are different amounts. The line has to say "for the first
+  /// year" rather than "/ year" whenever that is the case.
   String formatIosYearlyPriceLine({
     required String prefix,
     required String yearlyPrice,
     required String currencySymbol,
     required String weeklyAvg,
   }) {
-    return '$prefix $yearlyPrice / year ($currencySymbol$weeklyAvg / week)';
+    final period = yearlyHasFirstYearDiscount ? 'for the first year' : '/ year';
+    return '$prefix $yearlyPrice $period ($currencySymbol$weeklyAvg / week)';
   }
 
-  /// iOS trial footer: "3 days free, then {price} / year ({symbol}{weekly} / week)"
+  /// iOS paywall footer: what happens once the first year is up.
+  ///
+  /// iOS has no free trial, so this must never promise one - it used to open
+  /// with "3 days free", which was true only on Android.
   String formatIosTrialSubtext({
     required String yearlyPrice,
     required String currencySymbol,
     required String weeklyAvg,
   }) {
-    return '3 days free, then $yearlyPrice / year ($currencySymbol$weeklyAvg / week)';
+    if (!yearlyHasFirstYearDiscount) {
+      return '$yearlyPrice / year. Cancel anytime.';
+    }
+    final renewal = _yearlyPackage?.storeProduct.priceString ?? '';
+    return '$yearlyPrice for the first year, then $renewal / year. Cancel anytime.';
   }
 
   /// Yearly price to show, taken from what the first year actually costs.
@@ -529,21 +541,24 @@ class SubscriptionController extends GetxController {
       if (intro != null) return intro.price.amountMicros / 1000000.0;
       return _yearlyPackage?.storeProduct.price ?? 0;
     }
+    // iOS: the App Store applies the introductory offer by itself to everyone
+    // who qualifies, so the first year costs the intro price when one exists.
     final product = _yearlyPackage?.storeProduct;
-    // iOS: recurring App Store yearly only (no intro / discount price).
-    if (Platform.isIOS) return product?.price ?? 0;
     return product?.introductoryPrice?.price ?? product?.price ?? 0;
   }
 
   /// What the plan costs every year after the first one.
   double yearlyRenewalAmount() => _yearlyPackage?.storeProduct.price ?? 0;
 
+  /// Whether the yearly plan's first year is cheaper than its renewal.
+  bool get yearlyHasFirstYearDiscount =>
+      yearlyRenewalAmount() > yearlyFirstYearAmount(discounted: hasSpecialOffer);
+
   /// Formatted first-year price for either platform.
   String yearlyFirstYearPrice({required bool discounted}) {
     if (Platform.isAndroid) return androidYearlyFirstYearPrice(discounted: discounted);
     final product = _yearlyPackage?.storeProduct;
-    // iOS: App Store yearly priceString so country and plan changes apply automatically.
-    return product?.priceString ?? '';
+    return product?.introductoryPrice?.priceString ?? product?.priceString ?? '';
   }
 
   /// The crossed-out price, or null when there is nothing to cross out.
