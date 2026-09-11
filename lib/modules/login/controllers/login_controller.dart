@@ -16,6 +16,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/base/base_controller.dart';
 import '../../../core/constants/shared_prefences.dart';
+import '../../../core/utils/auth_navigation.dart';
 import '../../../core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../generated/assets.dart';
@@ -233,19 +234,7 @@ class LoginController extends BaseController {
         // Agar Paywall dikhana hai to ye zaroori hai
         await subController.initData();
 
-        // 🚀 FINAL NAVIGATION
-        // Start-trial paywall is only for free users who have not begun the
-        // 3-day trial. Trial and Premium both go straight to Dashboard.
-        if (subController.isPremium.value || subController.isOnFreeTrial) {
-          print("✅ User is Premium or on trial. Going to Dashboard.");
-          Get.offAllNamed(Routes.dashboard);
-        } else {
-          print("❌ User is FREE. Showing Paywall on Dashboard.");
-          Get.offAllNamed(
-              Routes.dashboard,
-              arguments: {'show_paywall': true}
-          );
-        }
+        await navigateAfterAuth(showPaywall: shouldShowStartTrialPaywall());
       } else {
         throw Exception(response.message);
       }
@@ -314,8 +303,7 @@ class LoginController extends BaseController {
     }
 
     String deviceTimezone = await getCurrentTimezone();
-    final String onboardingRaw = getStringAsync(AppSharedPreferenceKeys.onboardingData, defaultValue: "{}");
-    final Map<String, dynamic> onboardingData = onboardingRaw.isNotEmpty ? jsonDecode(onboardingRaw) : {};
+    final Map<String, dynamic> onboardingData = localOnboardingPayload();
 
     /// ✅ FINAL API BODY
     return {
@@ -518,14 +506,7 @@ class LoginController extends BaseController {
 
       await subController.initData();
 
-      // 5. Final Navigation
-      if (subController.isPremium.value || subController.isOnFreeTrial) {
-        print("✅ User is Premium or on trial. Going to Dashboard.");
-        Get.offAllNamed(Routes.dashboard);
-      } else {
-        print("❌ User is FREE. Showing Paywall on Dashboard.");
-        Get.offAllNamed(Routes.dashboard, arguments: {'show_paywall': true});
-      }
+      await navigateAfterAuth(showPaywall: shouldShowStartTrialPaywall());
     } catch (e) {
       print("❌ Token Saving Error: $e");
     }

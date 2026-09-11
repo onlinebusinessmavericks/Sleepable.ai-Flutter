@@ -1,4 +1,3 @@
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
@@ -8,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
+import '../../../data/services/session_clear.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../../widgets/ai_consent_dialog.dart';
@@ -16,7 +16,6 @@ import '../widget/webview.dart';
 import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class SettingsController extends GetxController {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   void onShareApp() {
     final String localizedSubject = Get.context?.lang.shareSubject ?? "Check out this awesome app!";
     print("object");
@@ -188,54 +187,22 @@ class SettingsController extends GetxController {
     }
   Future<void> logout() async {
     try {
-      // 1. First, sign out from Google Sign-In to clear the cached account
-      // This is what forces the account selector to show next time
-      await _googleSignIn.signOut();
-
-      // Optional: If you use Firebase, sign out from there too
-      // await FirebaseAuth.instance.signOut();
-
       final token = getStringAsync(AppSharedPreferenceKeys.fcmToken);
       final request = {
         if (token.isNotEmpty) "fcm_token": token,
       };
 
-      final CommonResponse response = await AuthServiceApis.logOut(request: request);
-      if (Get.isRegistered<SubscriptionController>()) {
-        final subCtrl = Get.find<SubscriptionController>();
-        subCtrl.isPremium.value = false;
-        subCtrl.isTrial.value = false;
-        // Detach RevenueCat so the next account does not inherit this
-        // customer's entitlements.
-        await subCtrl.resetUser();
+      try {
+        await AuthServiceApis.logOut(request: request);
+      } catch (e) {
+        debugPrint("🚪 Logout API error → $e");
       }
 
-      // 5. 🔥 Clear ALL Sensitive Local Storage
-      // nb_utils ke individual keys remove karein ya total clear karein
-      await removeKey(AppSharedPreferenceKeys.apiToken);
-      await removeKey(AppSharedPreferenceKeys.refreshToken);
-      await removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
-      await removeKey(AppSharedPreferenceKeys.isSocialLogin);
-      await removeKey(AppSharedPreferenceKeys.currentUserData);
-
-      // 🟢 PREMIUM CACHE CLEAR (Sabse important)
-      await removeKey(SubscriptionController.PREM_KEY); // "is_user_premium_cache"
-      await removeKey(SubscriptionController.TRIAL_KEY);
-      await removeKey(SubscriptionController.FIRST_REPORT_KEY);
-      await removeKey("cached_home_data"); // Home screen ka purana data bhi saaf karein
-      if (response.success == true) {
-        Get.offAllNamed(Routes.login);
-      } else {
-        appSnackbar(Get.context?.lang.logoutFailed ?? "Logout Failed", response.message ?? "Something went wrong");
-      }
+      await SessionClear.clearForLogout();
+      Get.offAllNamed(Routes.login);
     } catch (e) {
       debugPrint("🚪 Logout error → $e");
-
-      // Safety fallback: Even if the API fails, clear local data so user isn't stuck
-      removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
-      await removeKey(SubscriptionController.PREM_KEY);
-      await removeKey(SubscriptionController.TRIAL_KEY);
-      await removeKey(SubscriptionController.FIRST_REPORT_KEY);
+      await SessionClear.clearForLogout();
       Get.offAllNamed(Routes.login);
     }
   }
@@ -320,11 +287,7 @@ class SettingsController extends GetxController {
       await AuthServiceApis.deleteAccount();
 
       if (response.success == true) {
-        // Clear local data
-        removeKey(AppSharedPreferenceKeys.apiToken);
-        removeKey(AppSharedPreferenceKeys.refreshToken);
-        removeKey(AppSharedPreferenceKeys.isUserLoggedIn);
-
+        await SessionClear.clearForDelete();
         Get.offAllNamed(Routes.login);
         appSnackbar(
           Get.context?.lang.accountDeletedLabel ?? "Account Deleted",
@@ -337,8 +300,6 @@ class SettingsController extends GetxController {
         );
       }
     } catch (e) {
-      // The failure used to go only to the debug log, so tapping "Yes, delete"
-      // did nothing at all and looked like a dead button.
       debugPrint("Delete account error: $e");
       appSnackbar(
         Get.context?.lang.deleteFailedLabel ?? "Delete Failed",

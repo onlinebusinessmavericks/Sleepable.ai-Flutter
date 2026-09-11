@@ -51,6 +51,22 @@ class AppSharedPreferenceKeys {
   // ===================== CACHE / TEMP =====================
 
   static const String lastApiSyncTime = 'last_api_sync_time';
+  static const String cachedHomeData = 'cached_home_data';
+  static const String insightMessageIndex = 'insight_message_index';
+  static const String insightLastMessage = 'insight_last_message';
+
+  /// Device-level onboarding flags. Cleared on account delete so the next
+  /// login on this phone is treated as a first-time user. Kept on logout.
+  static const List<String> onboardingKeys = [
+    isWalkthroughDone,
+    onboardingData,
+    onboardingCompleted,
+    bodyScannerCompleted,
+    sleepReportCompleted,
+    accurateSleepRecorderCompleted,
+    patentedSleepTrackerCompleted,
+    bestSoundMachineCompleted,
+  ];
 
   // ===================== TRACKER =====================
   static const String isSleepTrackingActive = "is_sleep_tracking_active";

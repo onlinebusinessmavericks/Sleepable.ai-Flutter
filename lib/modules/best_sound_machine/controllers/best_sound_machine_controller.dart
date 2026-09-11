@@ -3,9 +3,9 @@ import 'package:video_player/video_player.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/shared_prefences.dart';
+import '../../../core/utils/auth_navigation.dart';
 import '../../../generated/assets.dart';
 import '../../../routes/app_pages.dart';
-import '../../../widgets/showPremiumOfferSheet.dart';
 
 class BestSoundMachineController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -29,9 +29,16 @@ class BestSoundMachineController extends GetxController
       });
   }
 
-  void goNext() {
+  Future<void> goNext() async {
     setValue(AppSharedPreferenceKeys.bestSoundMachineCompleted, true);
     videoController.pause();
+    final loggedIn = getBoolAsync(AppSharedPreferenceKeys.isUserLoggedIn);
+    final token = getStringAsync(AppSharedPreferenceKeys.apiToken);
+    if (loggedIn && token.isNotEmpty) {
+      await syncOnboardingToBackend();
+      await navigateAfterAuth(showPaywall: shouldShowStartTrialPaywall());
+      return;
+    }
     Get.offNamed(Routes.login, arguments: {"hideBack": true});
   }
 

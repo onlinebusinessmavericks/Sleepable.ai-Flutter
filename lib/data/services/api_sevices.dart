@@ -94,6 +94,18 @@ class AuthServiceApis {
 
     return CommonResponse.fromJson(response);
   }
+
+  /// Saves quiz answers after a logged-in user re-onboards (delete → login).
+  static Future<CommonResponse> saveOnboardingData({
+    required Map<String, dynamic> onboardingData,
+  }) async {
+    final response = await buildHttpResponse(
+      endPoint: APIEndPoints.updateProfile,
+      method: MethodType.put,
+      request: {'onboarding_data': onboardingData},
+    );
+    return CommonResponse.fromJson(response);
+  }
   /// 1. Email Login API
   static Future<EmailLoginResponse> emailLogin({required Map<String, dynamic> request}) async {
     final responseMap = await buildHttpResponse(

@@ -342,6 +342,23 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  /// Clears cached entitlements and detaches RevenueCat so the next account
+  /// does not inherit this customer's premium / trial state.
+  Future<void> clearSessionState() async {
+    isPremium.value = false;
+    isTrial.value = false;
+    firstReportDate.value = '';
+    trialNightsUsed.value = 0;
+    trialEndsAt.value = null;
+    spinInfo.value = null;
+    backendPlanName.value = '';
+    backendPlanPrice.value = '';
+    backendStartsAt.value = '';
+    backendExpiresAt.value = '';
+    isInitialSyncDone.value = true;
+    await resetUser();
+  }
+
   /// Detaches RevenueCat from this user on logout so the next account does not
   /// inherit the previous customer's entitlements.
   Future<void> resetUser() async {

@@ -6,6 +6,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 import '../../../core/constants/shared_prefences.dart';
+import '../../../core/utils/auth_navigation.dart';
 import '../../../localization/lang_extension.dart';
 import '../../common/controllers/selection_flow_controller.dart';
 
@@ -306,6 +307,8 @@ class SleepGoalController extends GetxController with GetTickerProviderStateMixi
         jsonEncode(payload),
       );
       setValue(AppSharedPreferenceKeys.onboardingCompleted, true);
+      // Already logged in (delete → login → re-onboard): persist quiz now.
+      syncOnboardingToBackend();
       // Save selection in flow controller (existing logic)
       flowController.saveSelection(
         "sleep_survey",

@@ -137,13 +137,13 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     loadUserFromPrefs();
     updateGreeting();
     initTodayDate();
-    // 2. 🔥 INSTANT CACHE LOAD (The "No-Delay" Fix)
-    String cachedJson = getStringAsync("cached_home_data");
+    // 2. Instant cache for THIS user only — never paint another account's home.
+    final cachedJson = getStringAsync(_homeCacheKey());
     if (cachedJson.isNotEmpty) {
       try {
         final decoded = jsonDecode(cachedJson);
         homeData.value = HomePageResponse.fromJson(decoded);
-        _syncHomeState(); // UI fills up instantly here
+        _syncHomeState();
         print("📦 Home screen loaded from cache");
       } catch (e) {
         print("❌ Cache load failed: $e");
@@ -163,9 +163,9 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 // At the top of your controller
   RxString currentInsight = "".obs;
   // Define a key for the index
-   String insightIndexKey = "insight_message_index";
+   String insightIndexKey = AppSharedPreferenceKeys.insightMessageIndex;
 
-  String insightLastMessageKey = "insight_last_message";
+  String insightLastMessageKey = AppSharedPreferenceKeys.insightLastMessage;
 
   void updateInsightMessage() {
     final insights = homeData.value?.data?.sleepInsights ?? [];
@@ -481,6 +481,25 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     });
   }
 
+  String _homeCacheKey() {
+    final uuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+    if (uuid.isNotEmpty) {
+      return '${AppSharedPreferenceKeys.cachedHomeData}_$uuid';
+    }
+    try {
+      final raw = getStringAsync(AppSharedPreferenceKeys.currentUserData);
+      if (raw.isNotEmpty) {
+        final fromProfile = (jsonDecode(raw)['uuid'] ?? '').toString();
+        if (fromProfile.isNotEmpty) {
+          return '${AppSharedPreferenceKeys.cachedHomeData}_$fromProfile';
+        }
+      }
+    } catch (_) {}
+    // No user id yet — do not fall back to a shared key (that would show
+    // the previous account's home).
+    return '${AppSharedPreferenceKeys.cachedHomeData}_pending';
+  }
+
   Future<void> fetchHomePageData() async {
     try {
       // Only show loader if we don't have cached data yet
@@ -491,7 +510,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       if (response != null && response.success && response.data != null) {
         // ✅ 1. Save the entire response to cache
         // Ensure your HomePageResponse has a toJson() method!
-        setValue("cached_home_data", jsonEncode(response.toJson()));
+        setValue(_homeCacheKey(), jsonEncode(response.toJson()));
 
         // 2. Update the UI model
         homeData.value = response;

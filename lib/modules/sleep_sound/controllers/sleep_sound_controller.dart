@@ -949,6 +949,27 @@ class SleepSoundController extends GetxController {
     // Sync the reactive variable with SharedPreferences
     isTrackingActive.value = prefs.getBool(AppSharedPreferenceKeys.isSleepTrackingActive) ?? false;
   }
+
+  /// Drops playback and user-specific lists so a newly logged-in account does
+  /// not inherit the previous user's mixes, favorites, or tracker flags.
+  Future<void> resetForNewSession() async {
+    try {
+      await stopAllAudio();
+    } catch (_) {}
+    try {
+      await clearAllSounds();
+    } catch (_) {}
+    apiMixes.clear();
+    savedMixes.clear();
+    isTrackingActive.value = false;
+    isRunning.value = false;
+    isBottomSheetOpen.value = false;
+    isAnyPlayerVisible.value = false;
+    soundsBySubCategory.removeWhere(
+      (key, _) => key.contains('favorites') || key.contains('mixes'),
+    );
+    soundsBySubCategory.refresh();
+  }
   Future<void> _preWarmCache() async {
     final prefs = await SharedPreferences.getInstance();
 
