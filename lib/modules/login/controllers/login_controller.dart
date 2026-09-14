@@ -217,18 +217,10 @@ class LoginController extends BaseController {
         // purchases, otherwise the customer stays anonymous.
         await subController.identifyUser(response.data.uuid);
 
-        // Pehle Login response se update karein
-        bool loginPremiumStatus = response.data.isPremium;
-        await subController.updatePremiumStatus(loginPremiumStatus, isFromBackend: true);
-
-        // 🔥 DOUBLE CHECK & DATA PREP
-        if (!loginPremiumStatus) {
-          print("🔄 Login said false, double checking...");
-          await Future.wait([
-            subController.getBackendSubscriptionStatus(),
-            subController.checkSpinStatus(),
-          ]);
-        }
+        // Access comes from the login body first, before any navigation.
+        // initData() then refreshes it from /users/subscription/; if that call
+        // fails the login body's state stays in place.
+        await subController.applyAccess(response.data.access?.raw);
 
         // 🔥 Navigation se pehle Products load karna trigger karein
         // Agar Paywall dikhana hai to ye zaroori hai
@@ -492,17 +484,10 @@ class LoginController extends BaseController {
       // purchases, otherwise the customer stays anonymous.
       await subController.identifyUser(targetData.uuid ?? '');
 
-      // Backend response se immediate premium status sync karein
-      bool loginPremiumStatus = targetData.isPremium ?? false;
-      await subController.updatePremiumStatus(loginPremiumStatus, isFromBackend: true);
-
-      if (!loginPremiumStatus) {
-        print("🔄 Login said false, double checking...");
-        await Future.wait([
-          subController.getBackendSubscriptionStatus(),
-          subController.checkSpinStatus(),
-        ]);
-      }
+      // Access comes from the login body first, before any navigation.
+      // initData() then refreshes it from /users/subscription/; if that call
+      // fails the login body's state stays in place.
+      await subController.applyAccess(targetData.access?.raw);
 
       await subController.initData();
 

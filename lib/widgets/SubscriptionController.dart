@@ -15,28 +15,33 @@ import '../core/utils/library.dart';
 import '../data/services/api_end_point.dart';
 import '../data/services/network_utils.dart';
 import '../modules/sleep_sound/controllers/sleep_sound_controller.dart';
+import '../modules/subscription/model/access_state.dart';
 import '../modules/subscription/model/spin_data.dart';
 import '../localization/lang_extension.dart';
 
-class SubscriptionController extends GetxController {
+class SubscriptionController extends GetxController with WidgetsBindingObserver {
   RxList<Package> packages = <Package>[].obs;
   Rx<Package?> spinPackage = Rx<Package?>(null);
   Rx<Package?> spinYearlyPackage = Rx<Package?>(null);
   Rx<Package?> spinWeeklyPackage = Rx<Package?>(null);
+  /// What this user may do, as the backend last reported it. The single
+  /// source for every lock and every paywall decision.
+  final Rx<AccessState> access = AccessState.unknown().obs;
+  static const String ACCESS_CACHE_KEY = "access_state_cache";
+  DateTime? _lastAccessRefresh;
+
+  // Mirrors of [access], kept so existing Obx/ever listeners keep working.
+  // Written only by [_setAccess]; never set them anywhere else.
   RxBool isPremium = false.obs;
   RxBool isTrial = false.obs;
   RxString firstReportDate = ''.obs;
   RxInt trialNightsUsed = 0.obs;
-  static const String PREM_KEY = "is_user_premium_cache";
   /// Plan description from the backend, used when the store has no record of
   /// the purchase - Premium granted by support, for instance.
   RxString backendPlanName = ''.obs;
   RxString backendPlanPrice = ''.obs;
   RxString backendStartsAt = ''.obs;
   RxString backendExpiresAt = ''.obs;
-  static const String TRIAL_KEY = "is_user_trial_cache";
-  static const String FIRST_REPORT_KEY = "trial_first_report_date";
-  static const String TRIAL_ENDS_KEY = "trial_ends_at";
 
   /// Exactly when the store will charge for the trial, straight from the store
   /// via the backend - not a date counted locally. Null unless a trial is running.
@@ -54,12 +59,10 @@ class SubscriptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Start from the cached value so a paying user is not shown the free/paywall
-    // state for the second or two the network sync takes.
-    isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
-    isTrial.value = getBoolAsync(TRIAL_KEY, defaultValue: false);
-    firstReportDate.value = getStringAsync(FIRST_REPORT_KEY);
-    _restoreTrialEndFromCache();
+    WidgetsBinding.instance.addObserver(this);
+    // Start from the last access block the backend sent, so a paying user is
+    // not shown the locked state for the second or two the network sync takes.
+    _restoreAccessFromCache();
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -113,23 +116,55 @@ class SubscriptionController extends GetxController {
     }
   }
 
-// SubscriptionController.dart mein isse update karein
-  Future<void> updatePremiumStatus(bool status, {bool isFromBackend = false}) async {
-    // Blocking accidental downgrade: only the backend may turn premium off, so a
-    // slow/failed RevenueCat lookup cannot lock a paying user out.
-    if (isPremium.value == true && status == false && !isFromBackend) {
-      print("🛡️ Blocking accidental downgrade");
-      return;
-    }
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
 
-    isPremium.value = status;
-    await setValue(PREM_KEY, status);
-    isPremium.refresh();
-    if (status) {
-      isTrial.value = false;
-      await setValue(TRIAL_KEY, false);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // Trial ends, purchases on another device and admin grants all happen
+    // while the app is in the background.
+    final last = _lastAccessRefresh;
+    if (last != null && DateTime.now().difference(last) < const Duration(minutes: 1)) return;
+    if (getStringAsync(AppSharedPreferenceKeys.apiToken).isEmpty) return;
+    _lastAccessRefresh = DateTime.now();
+    getBackendSubscriptionStatus(retries: 0);
+  }
+
+  /// Takes an access block from any backend response that carries one: the
+  /// login body, GET /users/subscription/, `data.access` on the home page, or
+  /// the restore / verify response. Returns false and changes nothing when
+  /// [json] is not an access block, so a partial response never resets the
+  /// user to "free".
+  Future<bool> applyAccess(dynamic json) async {
+    final parsed = AccessState.tryParse(json);
+    if (parsed == null) return false;
+    _setAccess(parsed);
+    await setValue(ACCESS_CACHE_KEY, jsonEncode(parsed.raw));
+    return true;
+  }
+
+  void _setAccess(AccessState state) {
+    access.value = state;
+    isPremium.value = state.isPremium;
+    isTrial.value = state.isTrial;
+    firstReportDate.value = state.firstReportDate ?? '';
+    trialNightsUsed.value = state.trialNightsUsed;
+    trialEndsAt.value = state.trialEndsAt;
+  }
+
+  void _restoreAccessFromCache() {
+    final cached = getStringAsync(ACCESS_CACHE_KEY);
+    if (cached.isEmpty) return;
+    try {
+      final parsed = AccessState.tryParse(jsonDecode(cached));
+      if (parsed != null) _setAccess(parsed);
+    } catch (e) {
+      log("Could not read cached access state: $e");
     }
-    print("🔔 Cache Updated to: $status");
   }
 
   bool get showPaywalls => !isPremium.value;
@@ -139,10 +174,6 @@ class SubscriptionController extends GetxController {
   /// Running 3-day store trial that has not converted to Premium yet.
   bool get isOnFreeTrial => isTrial.value && !isPremium.value;
 
-  Future<void> applyTrialStatus({required bool trial}) async {
-    isTrial.value = trial;
-    await setValue(TRIAL_KEY, trial);
-  }
   /// Whether the user can open a premium feature.
   ///
   /// DreamBot allows one dream during the trial, so those call sites pass
@@ -310,21 +341,12 @@ class SubscriptionController extends GetxController {
     Get.find<SubscriptionController>().applyCustomerInfo(info);
   }
 
+  /// The store's view changed (renewal, cancellation, a purchase finishing).
+  /// Access is still the backend's call, so ask it again rather than reading
+  /// the receipt.
   Future<void> applyCustomerInfo(CustomerInfo customerInfo) async {
-    final entitlement = customerInfo.entitlements.all['pro'];
-    final active = entitlement?.isActive ?? false;
-    if (!active) {
-      // Backend remains source of truth for access; RC only reports store period.
-      return;
-    }
-    final trial = entitlement!.periodType == PeriodType.trial;
-    if (trial) {
-      await applyTrialStatus(trial: true);
-      await updatePremiumStatus(false, isFromBackend: true);
-    } else {
-      await applyTrialStatus(trial: false);
-      await updatePremiumStatus(true, isFromBackend: true);
-    }
+    if (getStringAsync(AppSharedPreferenceKeys.apiToken).isEmpty) return;
+    await getBackendSubscriptionStatus();
   }
 
   /// Tells RevenueCat which backend user this is.
@@ -414,11 +436,9 @@ class SubscriptionController extends GetxController {
   /// Clears cached entitlements and detaches RevenueCat so the next account
   /// does not inherit this customer's premium / trial state.
   Future<void> clearSessionState() async {
-    isPremium.value = false;
-    isTrial.value = false;
-    firstReportDate.value = '';
-    trialNightsUsed.value = 0;
-    trialEndsAt.value = null;
+    _setAccess(AccessState.unknown());
+    _lastAccessRefresh = null;
+    await removeKey(ACCESS_CACHE_KEY);
     spinInfo.value = null;
     backendPlanName.value = '';
     backendPlanPrice.value = '';
@@ -698,7 +718,7 @@ class SubscriptionController extends GetxController {
     }
     // Someone who already has access must never reach checkout: for the plan
     // they hold, Play rejects the request outright.
-    if (isPremium.value || isTrial.value) {
+    if (access.value.hasAccess) {
       toast(Get.context?.lang.purchaseAlreadyHasAccess ??
           "You already have access to Sleepable. You can manage your plan in My Subscription.");
       return;
@@ -769,7 +789,7 @@ class SubscriptionController extends GetxController {
         // the purchase even when our own verify call failed. Access is whatever
         // the backend says, never what the store receipt implies.
         await getBackendSubscriptionStatus();
-        if (!(isPremium.value || isTrial.value)) {
+        if (!access.value.hasAccess) {
           toast(Get.context?.lang.purchaseActivationError ??
               "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.");
           return;
@@ -1069,7 +1089,10 @@ class SubscriptionController extends GetxController {
           method: MethodType.post,
           request: payload,
         );
-        if (response is Map && response['success'] == true) return true;
+        if (response is Map && response['success'] == true) {
+          await applyAccess(response['data']);
+          return true;
+        }
         log("verify-purchase rejected: ${response is Map ? response['message'] : response}");
       } catch (e) {
         log("verify-purchase attempt ${attempt + 1} failed: $e");
@@ -1086,42 +1109,9 @@ class SubscriptionController extends GetxController {
   ///
   /// Retries before giving up: a failed call must not lock a paying or
   /// admin-granted user out, so on total failure the cached value is kept.
-  /// Stores the trial end sent by the backend. Accepts both plain and
-  /// microsecond ISO timestamps; anything unparseable is treated as "no trial"
-  /// rather than crashing the status sync.
-  void _applyTrialEnd(dynamic raw) {
-    final text = (raw ?? '').toString();
-    if (text.isEmpty || text == 'null') {
-      trialEndsAt.value = null;
-      removeKey(TRIAL_ENDS_KEY);
-      return;
-    }
-    final parsed = DateTime.tryParse(text);
-    if (parsed == null) {
-      log("Could not parse trial_ends_at: $text");
-      return;
-    }
-    trialEndsAt.value = parsed.toUtc();
-    setValue(TRIAL_ENDS_KEY, text);
-  }
-
-  void _restoreTrialEndFromCache() {
-    final cached = getStringAsync(TRIAL_ENDS_KEY);
-    if (cached.isEmpty) return;
-    trialEndsAt.value = DateTime.tryParse(cached)?.toUtc();
-  }
-
   Future<void> _applySubscriptionPayload(dynamic raw) async {
     final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-    final backendStatus = data['is_premium'] == true;
-    final trialStatus = data['is_trial'] == true;
-    await applyTrialStatus(trial: trialStatus && !backendStatus);
-    await updatePremiumStatus(backendStatus, isFromBackend: true);
-    final first = (data['first_report_date'] ?? '').toString();
-    firstReportDate.value = first == 'null' ? '' : first;
-    await setValue(FIRST_REPORT_KEY, firstReportDate.value);
-    trialNightsUsed.value = data['trial_nights_used'] ?? 0;
-    _applyTrialEnd(data['trial_ends_at']);
+    await applyAccess(data);
     // The backend describes the plan too. It is the only source for a
     // user whose Premium was granted outside the store, where there is
     // no purchase for RevenueCat to report.
@@ -1147,16 +1137,20 @@ class SubscriptionController extends GetxController {
     return left.isNegative ? 0 : left.inDays;
   }
 
-  Future<void> getBackendSubscriptionStatus({int retries = 2}) async {
+  /// Refreshes [access] from GET /users/subscription/. On failure the current
+  /// state is kept as it is - a network error must never turn a paying or
+  /// trial user into a free one. Returns whether the refresh succeeded.
+  Future<bool> getBackendSubscriptionStatus({int retries = 2}) async {
     for (int attempt = 0; attempt <= retries; attempt++) {
       try {
         final response = await buildHttpResponse(
             endPoint: APIEndPoints.subscriptionStatus,
             method: MethodType.get
         );
-        if (response['success']) {
+        if (response['success'] == true) {
           await _applySubscriptionPayload(response['data'] ?? {});
-          return;
+          _lastAccessRefresh = DateTime.now();
+          return true;
         }
       } catch (e) {
         log("Backend subscription check attempt ${attempt + 1} failed: $e");
@@ -1165,38 +1159,9 @@ class SubscriptionController extends GetxController {
         await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
       }
     }
+    return false;
   }
 
-  Future<void> checkPremiumStatus() async {
-    if (!isConfigured) {
-      print("⚠️ [RC] Skipping status check: Not configured");
-      return;
-    }
-
-    try {
-      print("⏳ [RC] Fetching CustomerInfo...");
-      CustomerInfo customerInfo = await Purchases.getCustomerInfo().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          print("⏰ [RC] CustomerInfo Timeout - Moving on");
-          throw TimeoutException("RC Timeout");
-        },
-      );
-
-      print("✅ [RC] CustomerInfo received");
-      bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
-      final trial = customerInfo.entitlements.all['pro']?.periodType == PeriodType.trial;
-      if (isActive && trial) {
-        await applyTrialStatus(trial: true);
-        await updatePremiumStatus(false, isFromBackend: true);
-      } else if (isActive) {
-        await applyTrialStatus(trial: false);
-        updatePremiumStatus(true, isFromBackend: false);
-      }
-    } catch (e) {
-      print("❌ [RC] Error in checkPremiumStatus: $e");
-      }
-  }
   /// Opens the exit offer after a paywall is dismissed.
   ///
   /// [context] is deliberately ignored. Every caller pops its own sheet on the

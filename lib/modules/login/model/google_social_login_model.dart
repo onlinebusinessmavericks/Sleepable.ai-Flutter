@@ -1,4 +1,6 @@
 
+import '../../subscription/model/access_state.dart';
+
 class SocialLoginResponse {
   final bool success;
   final String message;
@@ -47,6 +49,9 @@ class SocialLoginResponseData {
   final String type;
   final bool isPremium;
 
+  /// Access block sent with the login body; null if the body had none.
+  final AccessState? access;
+
   SocialLoginResponseData({
     required this.userId,
     required this.uuid,
@@ -66,6 +71,7 @@ class SocialLoginResponseData {
     required this.tokens,
     required this.type,
     required this.isPremium,
+    this.access,
   });
 
   factory SocialLoginResponseData.fromJson(Map<String, dynamic> json) {
@@ -88,6 +94,7 @@ class SocialLoginResponseData {
       tokens: json['tokens'] != null ? Tokens.fromJson(json['tokens']) : Tokens.empty(),
       type: json['type'] ?? '',
       isPremium: json['is_premium'] ?? json['isPremium'] ?? false,
+      access: AccessState.tryParse(json),
     );
   }
 

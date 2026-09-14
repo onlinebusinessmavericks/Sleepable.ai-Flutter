@@ -515,6 +515,13 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         // 2. Update the UI model
         homeData.value = response;
 
+        // The home payload carries the same access block as
+        // /users/subscription/; a fresh one replaces the current state.
+        final accessJson = response.data!.accessJson;
+        if (accessJson != null && Get.isRegistered<SubscriptionController>()) {
+          await Get.find<SubscriptionController>().applyAccess(accessJson);
+        }
+
         // 3. Sync all UI variables
         _syncHomeState();
         WidgetsBinding.instance.addPostFrameCallback((_) {

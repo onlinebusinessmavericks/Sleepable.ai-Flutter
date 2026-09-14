@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../subscription/model/access_state.dart';
+
 class EmailLoginResponse {
   final bool? success;
   final String? message;
@@ -45,6 +47,9 @@ class UserLoginData {
   // Dynamic fields handle karne ke liye agar runtime par backend extra boolean bhejta hai
   final bool isPremium;
 
+  /// Access block sent with the login body; null if the body had none.
+  final AccessState? access;
+
   UserLoginData({
     this.userId,
     this.uuid,
@@ -64,6 +69,7 @@ class UserLoginData {
     this.tokens,
     this.type,
     this.isPremium = false,
+    this.access,
   });
 
   factory UserLoginData.fromJson(Map<String, dynamic> json) {
@@ -86,6 +92,7 @@ class UserLoginData {
       type: json['type'],
       isPremium: json['is_premium'] ?? false, // Check safely
       tokens: json['tokens'] != null ? TokenData.fromJson(json['tokens']) : null,
+      access: AccessState.tryParse(json),
     );
   }
 
