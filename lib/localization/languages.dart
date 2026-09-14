@@ -1002,4 +1002,5 @@ abstract class BaseLanguage {
   // Purchases
   String get purchaseIdentityError;
   String get purchaseActivationError;
+  String get purchaseAlreadyHasAccess;
 }

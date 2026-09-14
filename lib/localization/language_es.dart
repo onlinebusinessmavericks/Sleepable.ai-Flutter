@@ -1843,4 +1843,6 @@ class LanguageEs extends BaseLanguage {
   String get purchaseIdentityError => "No pudimos confirmar su cuenta con la tienda. Revise su conexión e inténtelo de nuevo.";
   @override
   String get purchaseActivationError => "Su compra se realizó, pero aún no pudimos activarla. Toque Restaurar compras en un momento.";
+  @override
+  String get purchaseAlreadyHasAccess => "Ya tiene acceso a Sleepable. Puede gestionar su plan en Mi suscripción.";
 }

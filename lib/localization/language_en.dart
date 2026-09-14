@@ -2568,4 +2568,6 @@ class LanguageEn extends BaseLanguage {
   String get purchaseIdentityError => "We couldn't confirm your account with the store. Please check your connection and try again.";
   @override
   String get purchaseActivationError => "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.";
+  @override
+  String get purchaseAlreadyHasAccess => "You already have access to Sleepable. You can manage your plan in My Subscription.";
 }

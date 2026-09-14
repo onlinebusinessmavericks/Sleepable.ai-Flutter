@@ -1843,4 +1843,6 @@ class LanguageDe extends BaseLanguage {
   String get purchaseIdentityError => "Wir konnten Ihr Konto nicht mit dem Store bestätigen. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.";
   @override
   String get purchaseActivationError => "Ihr Kauf war erfolgreich, konnte aber noch nicht aktiviert werden. Bitte tippen Sie gleich auf Käufe wiederherstellen.";
+  @override
+  String get purchaseAlreadyHasAccess => "Sie haben bereits Zugriff auf Sleepable. Ihr Abo verwalten Sie unter Mein Abo.";
 }

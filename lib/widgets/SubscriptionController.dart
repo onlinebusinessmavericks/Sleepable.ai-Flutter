@@ -539,12 +539,28 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  /// The product the user is subscribed to right now, if any.
-  Future<String?> _activeProductId() async {
+  /// Full store id of a purchase: `product:basePlan` on Google Play, the plain
+  /// product id on the App Store.
+  ///
+  /// On Android the entitlement keeps the base plan in a separate field, so
+  /// `productIdentifier` alone ("sleepable_yearly") never equals the id of the
+  /// package being bought ("sleepable_yearly:yearly-base").
+  static String _storeIdOf(EntitlementInfo entitlement) {
+    final product = entitlement.productIdentifier;
+    final plan = entitlement.productPlanIdentifier;
+    if (plan == null || plan.isEmpty || product.contains(':')) return product;
+    return '$product:$plan';
+  }
+
+  /// The subscription a store id belongs to, without its base plan.
+  static String _subscriptionIdOf(String storeId) => storeId.split(':').first;
+
+  /// Full store id of the subscription the user holds right now, if any.
+  Future<String?> _activeStoreProductId() async {
     try {
       final info = await Purchases.getCustomerInfo();
       final entitlement = info.entitlements.all['pro'];
-      if (entitlement?.isActive ?? false) return entitlement!.productIdentifier;
+      if (entitlement?.isActive ?? false) return _storeIdOf(entitlement!);
     } catch (e) {
       print("❌ [RC] Could not read active product: $e");
     }
@@ -680,6 +696,13 @@ class SubscriptionController extends GetxController {
       print("Store not available on this device");
       return;
     }
+    // Someone who already has access must never reach checkout: for the plan
+    // they hold, Play rejects the request outright.
+    if (isPremium.value || isTrial.value) {
+      toast(Get.context?.lang.purchaseAlreadyHasAccess ??
+          "You already have access to Sleepable. You can manage your plan in My Subscription.");
+      return;
+    }
     try {
       isLoading.value = true;
 
@@ -696,13 +719,18 @@ class SubscriptionController extends GetxController {
       // between plans falls back to whatever the billing library defaults to.
       GoogleProductChangeInfo? changeInfo;
       if (Platform.isAndroid) {
-        final oldProductId = await _activeProductId();
-        if (oldProductId != null && oldProductId != package.storeProduct.identifier) {
+        final activeStoreId = await _activeStoreProductId();
+        final targetStoreId = package.storeProduct.identifier;
+        // A change request that names the user's own current subscription is
+        // what Play answers with "One or more of the arguments provided are
+        // invalid". Only a genuinely different subscription gets one.
+        if (activeStoreId != null &&
+            _subscriptionIdOf(activeStoreId) != _subscriptionIdOf(targetStoreId)) {
           changeInfo = GoogleProductChangeInfo(
-            oldProductId,
-            prorationMode: _prorationModeFor(package, oldProductId),
+            _subscriptionIdOf(activeStoreId),
+            prorationMode: _prorationModeFor(package, activeStoreId),
           );
-          print("🔁 [RC] Plan change $oldProductId -> ${package.storeProduct.identifier} (${changeInfo.prorationMode})");
+          print("🔁 [RC] Plan change $activeStoreId -> $targetStoreId (${changeInfo.prorationMode})");
         }
       }
 
@@ -812,7 +840,7 @@ class SubscriptionController extends GetxController {
           final CustomerInfo customerInfo = await Purchases.restorePurchases();
           final entitlement = customerInfo.entitlements.all['pro'];
           if (entitlement?.isActive ?? false) {
-            productId = entitlement!.productIdentifier;
+            productId = _storeIdOf(entitlement!);
             periodType = entitlement.periodType.name;
           }
         } on PlatformException catch (e) {
