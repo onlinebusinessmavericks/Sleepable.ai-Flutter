@@ -662,6 +662,31 @@ class SleepSoundController extends GetxController {
     return '$categorySlug::$subCategorySlug';
   }
 
+  bool _isPaidCatalogCacheKey(String key) {
+    final k = key.toLowerCase();
+    return k.startsWith('music::') ||
+        k.startsWith('story::') ||
+        k.startsWith('cache_sounds_music') ||
+        k.startsWith('cache_sounds_story');
+  }
+
+  /// Drop in-memory and disk Music/Story lists so paid Premium does not keep old locks.
+  Future<void> invalidatePaidCatalogCache() async {
+    soundsBySubCategory.removeWhere((key, _) => _isPaidCatalogCacheKey(key));
+    soundsBySubCategory.refresh();
+    final prefs = await SharedPreferences.getInstance();
+    for (final k in prefs.getKeys().toList()) {
+      if (_isPaidCatalogCacheKey(k)) {
+        await prefs.remove(k);
+      }
+    }
+  }
+
+  Future<void> refreshCatalogAfterPaidPremium() async {
+    await invalidatePaidCatalogCache();
+    refreshCurrentTabSilently();
+  }
+
   List<SoundItem> soundsFor(String category, String sub) {
     final key = soundKey(category, sub);
     return soundsBySubCategory[key] ?? [];
@@ -739,8 +764,19 @@ class SleepSoundController extends GetxController {
 
   bool get isUserPremium => subController.isPremium.value;
 
+  bool _isStorySound(SoundItem sound) =>
+      subController.isStoryLabel(sound.categoryName) ||
+      subController.isStoryLabel(sound.subcategoryName) ||
+      sound.slug.toLowerCase().contains('story');
+
   bool isTrackLockedForUser(SoundItem sound) =>
-      sound.isPremium == true && !isUserPremium;
+      subController.isPremiumItemLocked(
+        itemIsPremium: sound.isPremium == true,
+        isStory: _isStorySound(sound),
+      );
+
+  /// Premium Music and Story stay locked until paid Premium.
+  bool get canUseFullPlaylist => isUserPremium;
 
   /// Non-pro rotation: free tracks only (used by next/prev / auto-advance).
   List<SoundItem> get freePlaylist =>
@@ -935,8 +971,8 @@ class SleepSoundController extends GetxController {
     ever(subController.isPremium, (bool premium) {
       print("💎 Worker Triggered: Premium is $premium");
 
-      // Jab status change ho, toh old memory clear karke re-fetch karein
-      // Isse locked icons turant gayab honge
+      // Paid Premium: Music padlocks must drop without an app reboot.
+      // Trial does not change isPremium, so this does not run on trial start.
       soundsBySubCategory.clear();
       onSoundTabVisible();
     });
@@ -2147,9 +2183,9 @@ class SleepSoundController extends GetxController {
 
   /// ⏭ Unified Skip Next (non-pro: free tracks only)
   Future<void> skipNext() async {
-    final list = isUserPremium ? activePlaylist : freePlaylist;
+    final list = canUseFullPlaylist ? activePlaylist : freePlaylist;
     if (list.isEmpty) {
-      if (!isUserPremium && activePlaylist.any((s) => s.isPremium == true)) {
+      if (!canUseFullPlaylist && activePlaylist.any((s) => s.isPremium == true)) {
         presentPremiumPaywall();
       }
       return;
@@ -2163,9 +2199,9 @@ class SleepSoundController extends GetxController {
 
   /// ⏮ Unified Skip Previous (non-pro: free tracks only)
   Future<void> skipPrevious() async {
-    final list = isUserPremium ? activePlaylist : freePlaylist;
+    final list = canUseFullPlaylist ? activePlaylist : freePlaylist;
     if (list.isEmpty) {
-      if (!isUserPremium && activePlaylist.any((s) => s.isPremium == true)) {
+      if (!canUseFullPlaylist && activePlaylist.any((s) => s.isPremium == true)) {
         presentPremiumPaywall();
       }
       return;

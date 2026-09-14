@@ -51,14 +51,9 @@ class HeartBPMController extends GetxController {
   RxDouble progress = 0.0.obs;
   RxDouble previousProgress = 0.0.obs;
 
-  /// detection buffers
+  /// PPG waveform buffers (red when available, else luma)
   final List<double> _redValues = [];
   final List<int> _timestamps = [];
-
-  /// baseline ambient
-  final List<double> _baseline = [];
-  double _baselineAvg = 0;
-  bool _baselineReady = false;
 
   Timer? _countdownTimer;
   Timer? _bpmTimer;
@@ -230,49 +225,50 @@ class HeartBPMController extends GetxController {
   /// turned back on.
   Future<void> openCameraSettings() => ph.openAppSettings();
   // -----------------------------------------------------------
-  // LIGHT + RED DETECTION STREAM
+  // PPG STREAM: bright-red fingertip, not a dark frame
   // -----------------------------------------------------------
   void _startStream() {
-    cameraController!.startImageStream((image) {
-      double brightness = _averageBrightness(image); // FAST
-      double redValue = _averageRed(image); // SAFE SAMPLING
+    final cam = cameraController;
+    if (cam == null || !cam.value.isInitialized) return;
+    if (cam.value.isStreamingImages) return;
 
-      if (!_baselineReady) {
-        _baseline.add(brightness);
-        if (_baseline.length >= 40) {
-          _baselineAvg = _baseline.reduce((a, b) => a + b) / _baseline.length;
-          _baselineReady = true;
+    unawaited(cam.startImageStream((image) {
+      try {
+        final sample = _sampleFrame(image);
+        _updateFingerState(sample);
+
+        if (fingerOn.value) {
+          if (!isMeasuring.value && !showRestartButton.value) {
+            _startMeasurement();
+          }
+          if (isMeasuring.value) {
+            _redValues.add(sample.ppg);
+            _timestamps.add(DateTime.now().millisecondsSinceEpoch);
+          }
         }
-        return;
+      } catch (e) {
+        debugPrint("Heart rate frame skipped: $e");
       }
-
-      bool detected = brightness < (_baselineAvg * 0.70);
-
-      _updateFingerState(detected, redValue);
-
-
-      if (fingerOn.value) {
-        if (!isMeasuring.value && !showRestartButton.value) {
-          _startMeasurement();
-        }
-        if (isMeasuring.value) {
-          _redValues.add(redValue);
-          _timestamps.add(DateTime.now().millisecondsSinceEpoch);
-        }
-      }
-    });
+    }).catchError((Object e) {
+      debugPrint("Heart rate image stream failed: $e");
+    }));
   }
 
   // -----------------------------------------------------------
   // FINGER STATE (debounce)
   // -----------------------------------------------------------
   int _yes = 0, _no = 0;
-  void _updateFingerState(bool detected, double redValue) {
-    // Finger should have high RED + low BRIGHTNESS
-    bool fingerLikely =
-        detected &&             // low brightness (covering flash)
-            redValue > 120 &&       // enough red signal
-            redValue < 240;         // avoid white/light objects
+  void _updateFingerState(_PpgSample sample) {
+    // Torch through a fingertip: high red (including 240–255), red > green/blue,
+    // fairly uniform frame. A dark room / uncovered lens must not count.
+    final bool redGlow = sample.red >= 140 &&
+        sample.red >= sample.green + 8 &&
+        sample.red >= sample.blue + 8;
+    final bool lumaGlow = sample.red < 1 &&
+        sample.brightness >= 140 &&
+        sample.stddev < 40;
+    final bool uniform = sample.stddev < 55;
+    final bool fingerLikely = (redGlow && (uniform || sample.red >= 200)) || lumaGlow;
 
     if (fingerLikely) {
       _yes++;
@@ -389,6 +385,10 @@ class HeartBPMController extends GetxController {
     /// ✅ FINAL BPM CALCULATION
     /// -------------------------------
     finalBpm.value = bpm.value;
+    // Persist before Start Sleep can run so the tracker API gets this BPM.
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('heart_rate', finalBpm.value);
+    });
     showSaveButton.value = true;
     showRestartButton.value = true;
 
@@ -446,61 +446,113 @@ class HeartBPMController extends GetxController {
   }
 
   // -----------------------------------------------------------
-  // FAST BRIGHTNESS (Y-PLANE)
+  // FRAME SAMPLING (BGRA on iOS, YUV with pixelStride on Android)
   // -----------------------------------------------------------
-  double _averageBrightness(CameraImage img) {
-    final bytes = img.planes[0].bytes;
-    int step = 50;
-    int sum = 0, count = 0;
-
-    for (int i = 0; i < bytes.length; i += step) {
-      sum += bytes[i];
-      count++;
+  _PpgSample _sampleFrame(CameraImage img) {
+    if (img.planes.isEmpty) return _PpgSample.empty;
+    if (Platform.isIOS || img.format.group == ImageFormatGroup.bgra8888) {
+      return _sampleBgra(img);
     }
-    return sum / count;
+    return _sampleYuv(img);
   }
 
-  // -----------------------------------------------------------
-  // SAFE RED SAMPLING (NO CRASH)
-  // -----------------------------------------------------------
-  double _averageRed(CameraImage img) {
-    if (Platform.isIOS || img.planes.length < 3) {
-      final bytes = img.planes[0].bytes;
-      int sum = 0;
-      int count = 0;
-      // BGRA format mein har 4th byte Red hota hai (ya Blue/Green depending on alignment)
-      // Hum sample karke average nikalenge
-      for (int i = 0; i < bytes.length; i += 40) { // step 40 for performance
-        sum += bytes[i + 2]; // Index 2 is usually Red in BGRA
-        count++;
-      }
-      return count > 0 ? (sum / count).toDouble() : 0;
-    }
-    int w = img.width;
-    int h = img.height;
+  _PpgSample _sampleBgra(CameraImage img) {
+    final plane = img.planes[0];
+    final bytes = plane.bytes;
+    final stride = plane.bytesPerRow;
+    final pixelStride = plane.bytesPerPixel ?? 4;
+    const step = 8;
+    double sumR = 0, sumG = 0, sumB = 0, sumY = 0, sumY2 = 0;
+    int count = 0;
 
-    Plane Yp = img.planes[0];
-    Plane Up = img.planes[1];
-    Plane Vp = img.planes[2];
-
-    int sum = 0, count = 0;
-    const step = 40;
-
-    for (int y = 0; y < h; y += step) {
-      for (int x = 0; x < w; x += step) {
-        int yi = y * Yp.bytesPerRow + x;
-        int uv = (y ~/ 2) * Up.bytesPerRow + (x ~/ 2);
-
-        int Y = Yp.bytes[yi];
-        int U = Up.bytes[uv] - 128;
-        int V = Vp.bytes[uv] - 128;
-
-        int R = (Y + 1.402 * V).clamp(0, 255).toInt();
-        sum += R;
+    for (int y = 0; y < img.height; y += step) {
+      final row = y * stride;
+      for (int x = 0; x < img.width; x += step) {
+        final i = row + x * pixelStride;
+        if (i + 2 >= bytes.length) continue;
+        final b = bytes[i].toDouble();
+        final g = bytes[i + 1].toDouble();
+        final r = bytes[i + 2].toDouble();
+        final luma = 0.299 * r + 0.587 * g + 0.114 * b;
+        sumR += r;
+        sumG += g;
+        sumB += b;
+        sumY += luma;
+        sumY2 += luma * luma;
         count++;
       }
     }
-    return count > 0 ? (sum / count) : 0;
+    return _ppgFromSums(sumR, sumG, sumB, sumY, sumY2, count);
+  }
+
+  _PpgSample _sampleYuv(CameraImage img) {
+    final yPlane = img.planes[0];
+    const step = 8;
+    double sumR = 0, sumG = 0, sumB = 0, sumY = 0, sumY2 = 0;
+    int count = 0;
+
+    for (int y = 0; y < img.height; y += step) {
+      for (int x = 0; x < img.width; x += step) {
+        final yi = _planeIndex(yPlane, x, y);
+        if (yi < 0) continue;
+        final Y = yPlane.bytes[yi];
+        sumY += Y;
+        sumY2 += Y * Y.toDouble();
+
+        int u = 128;
+        int v = 128;
+        if (img.planes.length >= 3) {
+          final ui = _planeIndex(img.planes[1], x, y, xSub: 2, ySub: 2);
+          final vi = _planeIndex(img.planes[2], x, y, xSub: 2, ySub: 2);
+          if (ui >= 0) u = img.planes[1].bytes[ui];
+          if (vi >= 0) v = img.planes[2].bytes[vi];
+        } else if (img.planes.length == 2) {
+          // NV21-style interleaved chroma (V, U). Not BGRA.
+          final uv = img.planes[1];
+          final pixelStride = uv.bytesPerPixel ?? 2;
+          final idx = (y ~/ 2) * uv.bytesPerRow + (x ~/ 2) * pixelStride;
+          if (idx >= 0 && idx + 1 < uv.bytes.length) {
+            v = uv.bytes[idx];
+            u = uv.bytes[idx + 1];
+          }
+        }
+
+        final ud = u - 128.0;
+        final vd = v - 128.0;
+        sumR += (Y + 1.402 * vd).clamp(0, 255);
+        sumG += (Y - 0.344136 * ud - 0.714136 * vd).clamp(0, 255);
+        sumB += (Y + 1.772 * ud).clamp(0, 255);
+        count++;
+      }
+    }
+    return _ppgFromSums(sumR, sumG, sumB, sumY, sumY2, count);
+  }
+
+  int _planeIndex(Plane plane, int x, int y, {int xSub = 1, int ySub = 1}) {
+    final pixelStride = plane.bytesPerPixel ?? 1;
+    final idx = (y ~/ ySub) * plane.bytesPerRow + (x ~/ xSub) * pixelStride;
+    if (idx < 0 || idx >= plane.bytes.length) return -1;
+    return idx;
+  }
+
+  _PpgSample _ppgFromSums(
+    double sumR,
+    double sumG,
+    double sumB,
+    double sumY,
+    double sumY2,
+    int count,
+  ) {
+    if (count <= 0) return _PpgSample.empty;
+    final meanY = sumY / count;
+    final variance = max(0.0, (sumY2 / count) - meanY * meanY);
+    return _PpgSample(
+      red: sumR / count,
+      green: sumG / count,
+      blue: sumB / count,
+      brightness: meanY,
+      stddev: sqrt(variance),
+    );
   }
 
   // -----------------------------------------------------------
@@ -545,4 +597,32 @@ class HeartBPMController extends GetxController {
     _countdownTimer?.cancel();
     super.onClose();
   }
+}
+
+/// One sampled camera frame for fingertip PPG detection and BPM waveform.
+class _PpgSample {
+  final double red;
+  final double green;
+  final double blue;
+  final double brightness;
+  final double stddev;
+
+  const _PpgSample({
+    required this.red,
+    required this.green,
+    required this.blue,
+    required this.brightness,
+    required this.stddev,
+  });
+
+  static const empty = _PpgSample(
+    red: 0,
+    green: 0,
+    blue: 0,
+    brightness: 0,
+    stddev: 999,
+  );
+
+  /// Pulse waveform: red channel when RGB is available, else luma.
+  double get ppg => red > 1 ? red : brightness;
 }

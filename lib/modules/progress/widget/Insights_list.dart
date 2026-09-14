@@ -30,7 +30,7 @@ class InsightsList extends StatelessWidget {
 
       if (controller.aiInsightsList.isEmpty) {
         final tab = controller.selectedTab.value;
-        final emptyMsg = (subController.isPremium.value == false)
+        final emptyMsg = (!subController.isPremium.value && !subController.isTrial.value)
             ? context.lang.proInsightsPrompt
             : (tab == context.lang.week)
                 ? context.lang.noInsightsWeek

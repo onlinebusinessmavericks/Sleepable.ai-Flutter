@@ -13,6 +13,7 @@ import '../../../core/constants/shared_prefences.dart';
 import '../../../generated/assets.dart';
 import '../../../localization/lang_extension.dart';
 import '../../alarm/controllers/alarm_controller.dart';
+import '../../home/controllers/home_controller.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../../progress/controllers/progress_controller.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
@@ -469,22 +470,22 @@ class WavePainter extends CustomPainter {
 }
 
 void _showQuitSheet(BuildContext context) {
-  final homeController = Get.isRegistered<HomeController>()
-      ? Get.find<HomeController>()
-      : Get.put(HomeController());
-
-  print("----title----${homeController.sleepStatus.value?.title}");
-  print("----title----${homeController.sleepStatus.value?.subtitle}");
-  // final title = homeController.sleepStatus.value?.title ?? "Your sleep wasn’t proper last night";
-  // final subtitle = homeController.sleepStatus.value?.subtitle ??
-  //     "Keep tracking to improve your sleep pattern.\nStay consistent for better results.";
-  // 1. Title Default: A friendly but firm observation
-  final title = homeController.sleepStatus.value?.title ??
-      "Your sleep wasn’t quite right";
-
-// 2. Subtitle Default: Focus on the "Consistency" benefit
-  final subtitle = homeController.sleepStatus.value?.subtitle ??
-      "Tracking every night helps us provide better insights for your rest.";
+  Duration tracked = Duration.zero;
+  final startedRaw = getStringAsync(AppSharedPreferenceKeys.sleepTrackingStartedAt);
+  if (startedRaw.isNotEmpty) {
+    final started = DateTime.tryParse(startedRaw);
+    if (started != null) {
+      tracked = DateTime.now().difference(started);
+    }
+  }
+  final bool isActive = getBoolAsync(AppSharedPreferenceKeys.isSleepTrackingActive);
+  final bool longEnough = tracked.inMinutes >= 60 || (startedRaw.isEmpty && isActive);
+  final title = longEnough
+      ? context.lang.saveTonightSleep
+      : context.lang.stopShortSession;
+  final subtitle = longEnough
+      ? context.lang.saveTonightSleepSub
+      : context.lang.stopShortSessionSub;
   Get.bottomSheet(
     SafeArea(
       child: Container(
@@ -625,7 +626,7 @@ openNotBedTimeAlarmBottomSheet(BuildContext context) {
             SizedBox(height: 20 * SizeConfigs.paddingScale),
     
             Text(
-              context.lang.notBedtimeYet,// "Not bedtime yet",
+              context.lang.setTonightBedtime,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.white,
@@ -633,7 +634,7 @@ openNotBedTimeAlarmBottomSheet(BuildContext context) {
               ),
             ),
             Text(
-              context.lang.sleepableWillRemind,// "Sleepable will remind you to sleep at:",
+              context.lang.sleepableWillRemind,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: Colors.white70,
@@ -881,10 +882,17 @@ void _handleSetReminder(BuildContext context, dynamic controller) async {
 
   Future(() async {
     try {
-      if (Get.isRegistered<ProfileController>()) {
-        final profileCtrl = Get.find<ProfileController>();
-        profileCtrl.updateSettings(
-          customNewData: profileCtrl.settings.value?.copyWith(
+      final profileCtrl = Get.isRegistered<ProfileController>()
+          ? Get.find<ProfileController>()
+          : Get.put(ProfileController());
+      if (profileCtrl.settings.value == null) {
+        await profileCtrl.fetchSettings();
+      }
+      final current = profileCtrl.settings.value;
+      if (current != null) {
+        await profileCtrl.updateSettings(
+          customNewData: current.copyWith(
+            bedtime: formattedBedtime,
             remindAt: formattedBedtime,
             sleepReminders: enableReminders,
           ),
@@ -894,8 +902,10 @@ void _handleSetReminder(BuildContext context, dynamic controller) async {
       if (sleepCtrl != null) {
         sleepCtrl.trackerState.value = TrackerState.idle;
         await sleepCtrl.performCleanup(sleepCtrl).timeout(
-          const Duration(seconds: 12),
-          onTimeout: () {},
+          const Duration(seconds: 20),
+          onTimeout: () async {
+            await SleepTrackerController.emergencyStopOrphanTracker();
+          },
         );
       } else {
         await SleepTrackerController.emergencyStopOrphanTracker();
@@ -908,7 +918,11 @@ void _handleSetReminder(BuildContext context, dynamic controller) async {
     } finally {
       TrackerExitGuard.endExitNavigation();
       await TrackerExitGuard.showRatingOnceAfterExit();
-      // Defer Progress refresh so Home stays responsive after Quit
+      try {
+        if (Get.isRegistered<HomeController>()) {
+          await Get.find<HomeController>().fetchHomePageData();
+        }
+      } catch (_) {}
       Future.delayed(const Duration(seconds: 3), () async {
         try {
           if (!Get.isRegistered<ProgressController>()) {

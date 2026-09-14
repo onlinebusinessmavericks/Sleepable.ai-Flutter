@@ -847,6 +847,12 @@ abstract class BaseLanguage {
   String get quitNow;
   String get notBedtimeYet;
   String get sleepableWillRemind;
+  String get saveTonightSleep;
+  String get saveTonightSleepSub;
+  String get stopShortSession;
+  String get stopShortSessionSub;
+  String get setTonightBedtime;
+  String get notEnoughNights;
   String get notNow;
 
   /// Rating

@@ -1235,7 +1235,7 @@ class LanguageEn extends BaseLanguage {
   String get duration => 'duration';
 
   @override
-  String get environment => 'environment';
+  String get environment => 'Environment';
 
   @override
   String get deepSleep => 'deep sleep';
@@ -2123,6 +2123,24 @@ class LanguageEn extends BaseLanguage {
 
   @override
   String get sleepableWillRemind => 'Sleepable will remind you to sleep at:';
+
+  @override
+  String get saveTonightSleep => "Save tonight's sleep?";
+
+  @override
+  String get saveTonightSleepSub => "We'll generate your sleep report after you stop tracking.";
+
+  @override
+  String get stopShortSession => 'Stop this session?';
+
+  @override
+  String get stopShortSessionSub => 'This session is too short to generate a sleep score.';
+
+  @override
+  String get setTonightBedtime => "Set tonight's bedtime";
+
+  @override
+  String get notEnoughNights => 'Not enough nights yet';
 
   @override
   String get notNow => 'Not now';

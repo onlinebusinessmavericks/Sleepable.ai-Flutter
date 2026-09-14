@@ -1488,6 +1488,18 @@ class LanguagePt extends BaseLanguage {
   @override
   String get sleepableWillRemind => 'Sleepable irá lembrá-lo de dormir às:';
   @override
+  String get saveTonightSleep => 'Guardar o sono desta noite?';
+  @override
+  String get saveTonightSleepSub => 'Vamos gerar o seu relatório quando você parar o rastreamento.';
+  @override
+  String get stopShortSession => 'Parar esta sessão?';
+  @override
+  String get stopShortSessionSub => 'Esta sessão é curta demais para gerar uma pontuação.';
+  @override
+  String get setTonightBedtime => 'Definir a hora de dormir de hoje';
+  @override
+  String get notEnoughNights => 'Ainda não há noites suficientes';
+  @override
   String get notNow => 'Agora não';
   @override
   String get ratingTitle => 'Que bom que você gostou de Sleepable!';

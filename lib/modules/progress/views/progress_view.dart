@@ -334,13 +334,15 @@ class ProgressScreen extends GetView<ProgressController> {
                     height: 300,
                     child: Center(
                       child: Obx(() {
-                        final bool isFreeUser = subController.isPremium.value == false;
+                        final bool isPaid = subController.isPremium.value;
+                        final bool isTrial = subController.isTrial.value;
                         final controller = Get.find<HomeController>();
+                        final bool showProUpsell = !isPaid && !isTrial;
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // 1. Icon ya PRO Button Logic
-                            if (isFreeUser)
+                            if (showProUpsell)
                               GestureDetector(
                                 onTap: () {
                                   controller.onProTapped(context);
@@ -384,8 +386,8 @@ class ProgressScreen extends GetView<ProgressController> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 40),
                               child: Text(
-                                isFreeUser
-                        ? context.lang.proPrompt // Localized Premium prompt
+                                showProUpsell
+                        ? context.lang.proPrompt
                             : "${context.lang.noDataToday}\n${context.lang.noDataToday1}",
                                     // ? "No sleep data yet. Unlock deep analytics and AI insights with Sleepable Premium ✨"
                                     // : "No sleep data for today yet.\nStart your sleep tracker tonight!",
@@ -574,6 +576,19 @@ class ProgressScreen extends GetView<ProgressController> {
                           _buildCircleChart(context, "${context.lang.wakeTimePattern}\n${context.lang.wakeTimePattern1}", controller.wakeTimePattern.value, AppColors.glowPinkColor),
                         ],
                       ),
+                      if (controller.bedtimeRegularity.value == 0 &&
+                          controller.wakeTimePattern.value == 0 &&
+                          controller.avgBedtime.value != "--" &&
+                          controller.avgBedtime.value.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Center(
+                            child: Text(
+                              context.lang.notEnoughNights,
+                              style: const TextStyle(color: Colors.white38, fontSize: 12),
+                            ),
+                          ),
+                        ),
 
                       SizedBox(height: 16 * SizeConfigs.paddingScale),
 
@@ -913,7 +928,7 @@ class ProgressScreen extends GetView<ProgressController> {
                       final t = title.toLowerCase();
                       if (t.contains( context.lang.bedtime)) return Icons.schedule_rounded;
                       if (t.contains(context.lang.duration)) return Icons.timer_outlined;
-                      if (t.contains(context.lang.environment)) return Icons.nights_stay_rounded;
+                      if (t.contains(context.lang.environment.toLowerCase())) return Icons.nights_stay_rounded;
                       if (t.contains(context.lang.deepSleep)) return Icons.bolt_rounded;
                       if (t.contains(context.lang.quality1)) return Icons.star_rounded;
                       return Icons.lightbulb_outline_rounded;

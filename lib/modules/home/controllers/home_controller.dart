@@ -55,7 +55,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   var toDayDate = "".obs;
 
   // --- Sleep Goals & Bedtime ---
-  var bedtime = TimeOfDay(hour: 1, minute: 0).obs;
+  var bedtime = TimeOfDay(hour: 22, minute: 30).obs;
   var targetBedtime = "".obs;
   var targetWakeTime = "".obs;
   var sleepGoalHours = 8.0.obs;

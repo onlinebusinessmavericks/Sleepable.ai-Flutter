@@ -1523,6 +1523,18 @@ class LanguageFr extends BaseLanguage {
   @override
   String get sleepableWillRemind => 'Sleepable vous rappellera de dormir à :';
   @override
+  String get saveTonightSleep => 'Enregistrer le sommeil de cette nuit ?';
+  @override
+  String get saveTonightSleepSub => 'Nous générerons votre rapport dès que vous arrêterez le suivi.';
+  @override
+  String get stopShortSession => 'Arrêter cette session ?';
+  @override
+  String get stopShortSessionSub => 'Cette session est trop courte pour générer un score.';
+  @override
+  String get setTonightBedtime => 'Définir l\'heure du coucher pour ce soir';
+  @override
+  String get notEnoughNights => 'Pas encore assez de nuits';
+  @override
   String get notNow => 'Pas maintenant';
   @override
   String get ratingTitle => 'Je suis ravi que Sleepable vous plaise !';

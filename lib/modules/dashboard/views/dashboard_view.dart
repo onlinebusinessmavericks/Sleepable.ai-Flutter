@@ -48,7 +48,12 @@ class DashboardScreen extends StatelessWidget {
           body: Column(
             children: [
               // 🔹 Main Page Content
-              Expanded(child: pages[controller.currentIndex.value]),
+              Expanded(
+                child: IndexedStack(
+                  index: controller.currentIndex.value,
+                  children: pages,
+                ),
+              ),
             ],
           ),
 

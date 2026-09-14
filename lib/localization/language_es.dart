@@ -1484,9 +1484,21 @@ class LanguageEs extends BaseLanguage {
   String get quitNow => 'Renuncia ahora';
   @override 
   String get notBedtimeYet => 'Todavía no es hora de ir a la cama.';
-  @override 
+  @override
   String get sleepableWillRemind => 'Sleepable te recordará que debes dormir a las:';
-  @override 
+  @override
+  String get saveTonightSleep => '¿Guardar el sueño de esta noche?';
+  @override
+  String get saveTonightSleepSub => 'Generaremos tu informe de sueño cuando dejes de registrar.';
+  @override
+  String get stopShortSession => '¿Detener esta sesión?';
+  @override
+  String get stopShortSessionSub => 'Esta sesión es demasiado corta para generar una puntuación.';
+  @override
+  String get setTonightBedtime => 'Define la hora de dormir de esta noche';
+  @override
+  String get notEnoughNights => 'Aún no hay suficientes noches';
+  @override
   String get notNow => 'Ahora no';
   @override 
   String get ratingTitle => '¡Me alegra que te guste Sleepable!';

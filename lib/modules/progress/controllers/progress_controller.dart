@@ -165,6 +165,36 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     super.onClose();
   }
 
+  /// Trial can only open the first report night. If that night is today or
+  /// yesterday (IST post-midnight sessions), keep the caller's date so Today
+  /// still resolves last night instead of a stale UTC first_report_date.
+  String? _trialAwareDate(SubscriptionController? sub, bool paid, String? dateToFetch) {
+    if (sub == null || !sub.isTrial.value || paid) return dateToFetch;
+    final first = sub.firstReportDate.value;
+    if (first.isEmpty) return dateToFetch;
+    final firstDt = DateTime.tryParse(first);
+    if (firstDt == null) return first;
+    final now = DateTime.now();
+    final firstDay = DateTime(firstDt.year, firstDt.month, firstDt.day);
+    final today = DateTime(now.year, now.month, now.day);
+    if ((today.difference(firstDay).inDays).abs() <= 1) {
+      return dateToFetch;
+    }
+    return first;
+  }
+
+  bool _lockTrialToFirstNight(SubscriptionController? sub, bool paid) {
+    if (sub == null || !sub.isTrial.value || paid) return false;
+    final first = sub.firstReportDate.value;
+    if (first.isEmpty) return false;
+    final firstDt = DateTime.tryParse(first);
+    if (firstDt == null) return true;
+    final now = DateTime.now();
+    final firstDay = DateTime(firstDt.year, firstDt.month, firstDt.day);
+    final today = DateTime(now.year, now.month, now.day);
+    return (today.difference(firstDay).inDays).abs() > 1;
+  }
+
   Future<void> loadAllData() async {
     String type;
     String? dateToFetch;
@@ -186,9 +216,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         : null;
     final paid = sub?.isPremium.value ?? false;
     final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
-    if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
+    dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
+    if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";
-      dateToFetch = sub.firstReportDate.value;
     }
 
     final calls = <Future>[
@@ -268,9 +298,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         : null;
     final paid = sub?.isPremium.value ?? false;
     final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
-    if (sub != null && sub.isTrial.value && !paid && sub.firstReportDate.value.isNotEmpty) {
+    dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
+    if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";
-      dateToFetch = sub.firstReportDate.value;
     }
     isChartLoading.value = true;
     isQualityLoading.value = true;

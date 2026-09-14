@@ -1191,7 +1191,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           ),
                         ] else
                           Text(
-                            "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($weeklyAvg / ${context.lang.perWeek})",
+                            "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})",
                             style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
                           ),
                         buildIosSubscriptionLegalLinks(context),
@@ -1524,7 +1524,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                                       strikePrice,
                                       style: TextStyle(
                                         fontSize: 30,
-                                        letterSpacing: 2.5,
+                                        letterSpacing: 0,
                                         decoration: TextDecoration.lineThrough,
                                         decorationColor: Colors.red,
                                         decorationThickness: 1.5,
@@ -1545,7 +1545,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                                         TextSpan(
                                           // text: "$currency$finalDailyPriceDisplay/${context.lang.day}",
                                           text: "$currencySymbol$finalDailyPriceDisplay/${context.lang.day}",
-                                          style: const TextStyle(fontSize: 50, color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 2.0),
+                                          style: const TextStyle(fontSize: 50, color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 0),
                                         ),
                                       ],
                                     ),
@@ -1987,15 +1987,21 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       );
 
       // Weekly card price from App Store
-      String weeklyPriceText = weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString;
+      String weeklyPriceText = SubscriptionController.compactPriceString(
+        weeklyPackage?.storeProduct.priceString ?? yearlyPackage.storeProduct.priceString,
+      );
       String? weeklyOriginalPrice;
       String? yearlyOriginalPrice;
       if (showOffer && Platform.isIOS) {
         if (standardAnnual != null) {
-          yearlyOriginalPrice = standardAnnual.storeProduct.priceString;
+          yearlyOriginalPrice = SubscriptionController.compactPriceString(
+            standardAnnual.storeProduct.priceString,
+          );
         }
         if (weeklyPackage != null) {
-          weeklyOriginalPrice = weeklyPackage.storeProduct.priceString;
+          weeklyOriginalPrice = SubscriptionController.compactPriceString(
+            weeklyPackage.storeProduct.priceString,
+          );
         }
       }
 
@@ -2502,9 +2508,9 @@ String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
   if (yearly == null) return "";
   final product = yearly.storeProduct;
   final intro = product.introductoryPrice;
-  if (intro == null) return "${product.priceString} / $yearWord";
-  return "${intro.priceString} for the first $yearWord, "
-      "then ${product.priceString} / $yearWord. Cancel anytime.";
+  if (intro == null) return "${SubscriptionController.compactPriceString(product.priceString)} / $yearWord";
+  return "${SubscriptionController.compactPriceString(intro.priceString)} for the first $yearWord, "
+      "then ${SubscriptionController.compactPriceString(product.priceString)} / $yearWord. Cancel anytime.";
 }
 
 /// Amount actually billed today for the iOS yearly plan - the introductory
@@ -2512,7 +2518,9 @@ String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
 String iosYearlyBilledNow(Package? yearly) {
   if (yearly == null) return "";
   final product = yearly.storeProduct;
-  return product.introductoryPrice?.priceString ?? product.priceString;
+  return SubscriptionController.compactPriceString(
+    product.introductoryPrice?.priceString ?? product.priceString,
+  );
 }
 
 /// What a user inside the free trial sees in place of a buy button.

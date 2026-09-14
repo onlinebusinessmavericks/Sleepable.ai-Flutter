@@ -89,7 +89,6 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
             child: Obx(() {
               // 🔥 Uses the dynamic list we created above
               final list = controller.activePlaylist;
-              final isPro = controller.isUserPremium;
 
               if (list.isEmpty) {
                 return  Center(
@@ -111,7 +110,7 @@ void openSoundListBottomSheet(BuildContext context, SleepSoundController control
                       final sound = list[index];
                       final bool isCurrent = controller.playingMusic.any((m) => m.id == sound.id);
                       final bool isPlayingIcon = isCurrent && !controller.isPaused.value;
-                      final bool isLocked = !isPro && sound.isPremium == true;
+                      final bool isLocked = controller.isTrackLockedForUser(sound);
 
                       return Container(
                         margin: EdgeInsets.symmetric(vertical: 6 * SizeConfigs.paddingScale, horizontal: 4 * SizeConfigs.paddingScale),

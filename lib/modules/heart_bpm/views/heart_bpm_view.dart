@@ -12,6 +12,7 @@ import '../../breathwork/controllers/breathwork_controller.dart';
 import '../../breathwork/views/breathwork_view.dart';
 import '../../music/views/music_view.dart';
 import '../controllers/heart_bpm_controller.dart';
+import '../../heart_bpm_measurement/controllers/heart_bpm_measurement_controller.dart';
 import 'package:camera/camera.dart';
 
 
@@ -441,7 +442,12 @@ class _HeartBPMViewState extends State<HeartBPMView> with TickerProviderStateMix
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                             ),
-                            onPressed: () => Get.toNamed(Routes.sleepTracker),
+                            onPressed: () {
+                              if (!Get.isRegistered<HeartBpmMeasurementController>()) {
+                                Get.put(HeartBpmMeasurementController());
+                              }
+                              Get.find<HeartBpmMeasurementController>().startWithoutMeasuring();
+                            },
                             child: Text(
                               context.lang.startSleep,
                               // "Start Sleep",

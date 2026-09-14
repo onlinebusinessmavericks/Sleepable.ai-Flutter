@@ -16,6 +16,7 @@ import '../data/services/api_end_point.dart';
 import '../data/services/network_utils.dart';
 import '../modules/sleep_sound/controllers/sleep_sound_controller.dart';
 import '../modules/subscription/model/spin_data.dart';
+import '../localization/lang_extension.dart';
 
 class SubscriptionController extends GetxController {
   RxList<Package> packages = <Package>[].obs;
@@ -41,6 +42,7 @@ class SubscriptionController extends GetxController {
   /// via the backend - not a date counted locally. Null unless a trial is running.
   Rx<DateTime?> trialEndsAt = Rx<DateTime?>(null);
   RxBool isLoading = false.obs;
+  bool _restoreInFlight = false;
   static const String SPIN_CACHE_KEY = "spin_status_cache";
   Rx<SpinData?> spinInfo = Rx<SpinData?>(null);
   // RxBool isReady = false.obs;
@@ -157,13 +159,32 @@ class SubscriptionController extends GetxController {
   }
   /// Whether the user can open a premium feature.
   ///
-  /// A few features are usable during the trial in a limited form - DreamBot
-  /// allows one dream - so those pass [trialAllowed]. Everything else stays
-  /// locked until the trial converts and the user is actually premium. The
-  /// per-feature limit itself is enforced by the backend, not here.
+  /// DreamBot allows one dream during the trial, so those call sites pass
+  /// [trialAllowed]. Music and Story on the Sounds tab stay locked until paid Premium.
   bool hasAccessTo({bool trialAllowed = false}) {
     if (isPremium.value) return true;
     return trialAllowed && isTrial.value;
+  }
+
+  /// Story is paid Premium only. Trial keeps the same catalog as free.
+  bool get hasStoryAccess => isPremium.value;
+
+  bool isStoryLabel(String? value) {
+    final v = (value ?? '').trim().toLowerCase();
+    if (v.isEmpty) return false;
+    if (v == 'story' || v == 'sleep story' || v == 'sleepstory') return true;
+    final lang = Get.context?.lang;
+    if (lang == null) return false;
+    return v == lang.story.toLowerCase() ||
+        v == lang.storyLabel.toLowerCase() ||
+        v == lang.sleepStory.toLowerCase();
+  }
+
+  /// Music and Story stay locked on free and during trial.
+  /// Paid Premium unlocks every premium track in those categories.
+  bool isPremiumItemLocked({required bool itemIsPremium, required bool isStory}) {
+    if (!itemIsPremium) return false;
+    return !isPremium.value;
   }
 
   /// True once the user has actually won the spin discount.
@@ -183,6 +204,21 @@ class SubscriptionController extends GetxController {
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
 
+  /// Store / backend prices often arrive as "₹ 1,990.00" or "$ 39.99".
+  /// Every on-screen amount should be sign immediately against the number.
+  static String compactPriceString(String? price) {
+    if (price == null || price.isEmpty) return '';
+    var s = price
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u202F', ' ')
+        .replaceAll('\u2007', ' ')
+        .trim();
+    s = s.replaceFirstMapped(RegExp(r'^(\D+?)\s+(\d)'), (m) => '${m[1]}${m[2]}');
+    // Suffix currencies only ("9,99 €") — do not eat " / year" or similar copy.
+    s = s.replaceFirstMapped(RegExp(r'(\d)\s+([^\d\s/]+)$'), (m) => '${m[1]}${m[2]}');
+    return s;
+  }
+
   /// iOS paywall price line.
   ///
   /// The App Store applies an introductory offer on its own, so the first year
@@ -195,7 +231,7 @@ class SubscriptionController extends GetxController {
     required String weeklyAvg,
   }) {
     final period = yearlyHasFirstYearDiscount ? 'for the first year' : '/ year';
-    return '$prefix $yearlyPrice $period ($currencySymbol$weeklyAvg / week)';
+    return '$prefix ${compactPriceString(yearlyPrice)} $period ($currencySymbol$weeklyAvg / week)';
   }
 
   /// iOS paywall footer: what happens once the first year is up.
@@ -208,10 +244,10 @@ class SubscriptionController extends GetxController {
     required String weeklyAvg,
   }) {
     if (!yearlyHasFirstYearDiscount) {
-      return '$yearlyPrice / year. Cancel anytime.';
+      return '${compactPriceString(yearlyPrice)} / year. Cancel anytime.';
     }
-    final renewal = _yearlyPackage?.storeProduct.priceString ?? '';
-    return '$yearlyPrice for the first year, then $renewal / year. Cancel anytime.';
+    final renewal = compactPriceString(_yearlyPackage?.storeProduct.priceString);
+    return '${compactPriceString(yearlyPrice)} for the first year, then $renewal / year. Cancel anytime.';
   }
 
   /// Yearly price to show, taken from what the first year actually costs.
@@ -229,7 +265,7 @@ class SubscriptionController extends GetxController {
     final price = yearlyFirstYearPrice(discounted: showOffer);
     if (price.isNotEmpty) return price;
     // Last resort only if offerings failed to load
-    return spinData?.discountedPrice ?? '';
+    return compactPriceString(spinData?.discountedPrice);
   }
 
   double getDisplayYearlyRawPrice({
@@ -537,13 +573,13 @@ class SubscriptionController extends GetxController {
   String androidYearlyFirstYearPrice({required bool discounted}) {
     final option = androidYearlyOption(discounted: discounted);
     final intro = option?.introPhase;
-    if (intro != null) return intro.price.formatted;
-    return _yearlyPackage?.storeProduct.priceString ?? '';
+    if (intro != null) return compactPriceString(intro.price.formatted);
+    return compactPriceString(_yearlyPackage?.storeProduct.priceString);
   }
 
   /// The price the yearly plan renews at once any offer has run out.
   String androidYearlyRenewalPrice() =>
-      _yearlyPackage?.storeProduct.priceString ?? '';
+      compactPriceString(_yearlyPackage?.storeProduct.priceString);
 
   /// What the first year actually costs, as a number, on either platform.
   ///
@@ -575,7 +611,7 @@ class SubscriptionController extends GetxController {
   String yearlyFirstYearPrice({required bool discounted}) {
     if (Platform.isAndroid) return androidYearlyFirstYearPrice(discounted: discounted);
     final product = _yearlyPackage?.storeProduct;
-    return product?.introductoryPrice?.priceString ?? product?.priceString ?? '';
+    return compactPriceString(product?.introductoryPrice?.priceString ?? product?.priceString);
   }
 
   /// The crossed-out price, or null when there is nothing to cross out.
@@ -586,7 +622,7 @@ class SubscriptionController extends GetxController {
     final renewal = yearlyRenewalAmount();
     final first = yearlyFirstYearAmount(discounted: discounted);
     if (renewal <= first) return null;
-    return _yearlyPackage?.storeProduct.priceString;
+    return compactPriceString(_yearlyPackage?.storeProduct.priceString);
   }
 
   /// The Play offer a purchase should go through when the caller did not name
@@ -663,15 +699,15 @@ class SubscriptionController extends GetxController {
           await applyTrialStatus(trial: true);
           await updatePremiumStatus(false, isFromBackend: true);
           toast("3-day trial started. You are not Premium yet.");
+          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
         } else {
           await applyTrialStatus(trial: false);
+          if (Get.isRegistered<SleepSoundController>()) {
+            await Get.find<SleepSoundController>().invalidatePaidCatalogCache();
+          }
           await updatePremiumStatus(true, isFromBackend: true);
           toast("Success! Premium Activated.");
-        }
-        if (Get.isRegistered<SleepSoundController>()) {
-          final soundCtrl = Get.find<SleepSoundController>();
-          soundCtrl.soundsBySubCategory.clear();
-          soundCtrl.refreshCurrentTabSilently();
+          await _reloadCatalogAfterPaidPremium();
         }
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
@@ -696,34 +732,115 @@ class SubscriptionController extends GetxController {
 
   /// Apple Guideline 3.1.1: users must be able to restore a subscription they
   /// already own (after reinstalling or on a new device). Wired to the "Restore
-  /// Purchases" button in Settings and on the iOS paywall.
+  /// Purchases" button in Settings, My Subscription, and the iOS paywall.
+  ///
+  /// Store restore alone is not enough: Premium is granted by our backend. After
+  /// RevenueCat re-links the receipt we POST /users/restore-purchase/ so the
+  /// subscription row and is_premium flag are rebuilt for this account.
   Future<void> restorePurchases() async {
-    if (!isConfigured) {
+    if (_restoreInFlight) return;
+    final loggedIn = getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty;
+    if (!isConfigured && !loggedIn) {
       toast("Store not available on this device");
       return;
     }
-    try {
-      isLoading.value = true;
-      final CustomerInfo customerInfo = await Purchases.restorePurchases();
-      final entitlement = customerInfo.entitlements.all['pro'];
-      final bool active = entitlement?.isActive ?? false;
 
-      if (active) {
-        final storeTrial = entitlement!.periodType == PeriodType.trial;
-        if (storeTrial) {
-          await applyTrialStatus(trial: true);
-          await updatePremiumStatus(false, isFromBackend: true);
-        } else {
-          await applyTrialStatus(trial: false);
-          isPremium.value = true;
+    _restoreInFlight = true;
+    isLoading.value = true;
+    try {
+      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+      if (storedUuid.isNotEmpty) {
+        await identifyUser(storedUuid);
+      }
+
+      String appUserId = storedUuid;
+      String productId = '';
+      String periodType = '';
+
+      if (isConfigured) {
+        try {
+          await Purchases.invalidateCustomerInfoCache();
+          final CustomerInfo customerInfo = await Purchases.restorePurchases();
+          if (customerInfo.originalAppUserId.isNotEmpty) {
+            appUserId = customerInfo.originalAppUserId;
+          }
+          try {
+            final currentId = await Purchases.appUserID;
+            // Prefer an id that is not the backend uuid, so the server has a
+            // second lookup for purchases still sitting on an anonymous customer.
+            if (currentId.isNotEmpty &&
+                storedUuid.isNotEmpty &&
+                appUserId == storedUuid &&
+                currentId != storedUuid) {
+              appUserId = currentId;
+            }
+          } catch (_) {}
+          final entitlement = customerInfo.entitlements.all['pro'];
+          if (entitlement?.isActive ?? false) {
+            productId = entitlement!.productIdentifier;
+            periodType = entitlement.periodType == PeriodType.trial ? 'trial' : 'normal';
+          }
+        } on PlatformException catch (e) {
+          log("Store restore failed: ${e.message}");
+          if (!loggedIn) {
+            toast("Restore failed: ${e.message}");
+            return;
+          }
         }
-        await getBackendSubscriptionStatus();
-        if (Get.isRegistered<SleepSoundController>()) {
-          final soundCtrl = Get.find<SleepSoundController>();
-          soundCtrl.soundsBySubCategory.clear();
-          soundCtrl.refreshCurrentTabSilently();
+      }
+
+      if (!loggedIn) {
+        toast("Restore failed. Please try again.");
+        return;
+      }
+
+      final payload = <String, dynamic>{
+        if (appUserId.isNotEmpty) "app_user_id": appUserId,
+        if (productId.isNotEmpty) "product_id": productId,
+        if (periodType.isNotEmpty) "period_type": periodType,
+      };
+
+      Map? response;
+      Object? lastError;
+      for (int attempt = 0; attempt <= 2; attempt++) {
+        try {
+          response = await buildHttpResponse(
+            endPoint: APIEndPoints.restorePurchase,
+            method: MethodType.post,
+            request: payload,
+          );
+          lastError = null;
+          break;
+        } catch (e) {
+          lastError = e;
+          log("Restore API attempt ${attempt + 1} failed: $e");
+          if (attempt < 2) {
+            await Future.delayed(Duration(seconds: 1 << attempt));
+          }
         }
-        toast(storeTrial
+      }
+
+      if (response == null || response['success'] != true) {
+        final reason = lastError?.toString().replaceFirst('Exception:', '').trim() ?? '';
+        toast(reason.isNotEmpty
+            ? "Restore failed: $reason"
+            : "Restore failed. Please try again.");
+        return;
+      }
+
+      final data = (response['data'] is Map)
+          ? Map<String, dynamic>.from(response['data'] as Map)
+          : <String, dynamic>{};
+      await _applySubscriptionPayload(data);
+      await getBackendSubscriptionStatus();
+      await refreshEntitlementDetails();
+      if (isPremium.value) {
+        await _reloadCatalogAfterPaidPremium();
+      }
+
+      final restored = response['restored'] == true;
+      if (restored) {
+        toast(isOnFreeTrial
             ? "Trial restored. You are not Premium yet."
             : "Purchases restored. Premium is active.");
         Get.until((route) => Get.isOverlaysClosed);
@@ -731,13 +848,19 @@ class SubscriptionController extends GetxController {
       } else {
         toast("No active subscription found to restore.");
       }
-    } on PlatformException catch (e) {
-      toast("Restore failed: ${e.message}");
     } catch (e) {
       toast("Restore failed. Please try again.");
     } finally {
       isLoading.value = false;
+      _restoreInFlight = false;
     }
+  }
+
+  /// Paid Premium: drop cached Music/Story locks and refetch so padlocks go without a reboot.
+  /// Trial must not call this — those lists stay the free catalog.
+  Future<void> _reloadCatalogAfterPaidPremium() async {
+    if (!Get.isRegistered<SleepSoundController>()) return;
+    await Get.find<SleepSoundController>().refreshCatalogAfterPaidPremium();
   }
 
   /// The store's own record of the active subscription: which product, when it
@@ -909,6 +1032,34 @@ class SubscriptionController extends GetxController {
     trialEndsAt.value = DateTime.tryParse(cached)?.toUtc();
   }
 
+  Future<void> _applySubscriptionPayload(dynamic raw) async {
+    final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final backendStatus = data['is_premium'] == true;
+    final trialStatus = data['is_trial'] == true;
+    await applyTrialStatus(trial: trialStatus && !backendStatus);
+    await updatePremiumStatus(backendStatus, isFromBackend: true);
+    final first = (data['first_report_date'] ?? '').toString();
+    firstReportDate.value = first == 'null' ? '' : first;
+    await setValue(FIRST_REPORT_KEY, firstReportDate.value);
+    trialNightsUsed.value = data['trial_nights_used'] ?? 0;
+    _applyTrialEnd(data['trial_ends_at']);
+    // The backend describes the plan too. It is the only source for a
+    // user whose Premium was granted outside the store, where there is
+    // no purchase for RevenueCat to report.
+    if (data.containsKey('plan_name')) {
+      backendPlanName.value = (data['plan_name'] ?? '').toString();
+    }
+    if (data.containsKey('price')) {
+      backendPlanPrice.value = compactPriceString((data['price'] ?? '').toString());
+    }
+    if (data.containsKey('starts_at')) {
+      backendStartsAt.value = (data['starts_at'] ?? '').toString();
+    }
+    if (data.containsKey('expires_at')) {
+      backendExpiresAt.value = (data['expires_at'] ?? '').toString();
+    }
+  }
+
   /// Whole days left before the trial converts. Null when no trial is running.
   int? get trialDaysRemaining {
     final end = trialEndsAt.value;
@@ -925,23 +1076,7 @@ class SubscriptionController extends GetxController {
             method: MethodType.get
         );
         if (response['success']) {
-          final data = response['data'] ?? {};
-          bool backendStatus = data['is_premium'] ?? false;
-          bool trialStatus = data['is_trial'] ?? false;
-          await applyTrialStatus(trial: trialStatus && !backendStatus);
-          await updatePremiumStatus(backendStatus, isFromBackend: true);
-          final first = (data['first_report_date'] ?? '').toString();
-          firstReportDate.value = first;
-          await setValue(FIRST_REPORT_KEY, first);
-          trialNightsUsed.value = data['trial_nights_used'] ?? 0;
-          _applyTrialEnd(data['trial_ends_at']);
-          // The backend describes the plan too. It is the only source for a
-          // user whose Premium was granted outside the store, where there is
-          // no purchase for RevenueCat to report.
-          backendPlanName.value = (data['plan_name'] ?? '').toString();
-          backendPlanPrice.value = (data['price'] ?? '').toString();
-          backendStartsAt.value = (data['starts_at'] ?? '').toString();
-          backendExpiresAt.value = (data['expires_at'] ?? '').toString();
+          await _applySubscriptionPayload(response['data'] ?? {});
           return;
         }
       } catch (e) {
@@ -1013,7 +1148,7 @@ class SubscriptionController extends GetxController {
 
     try {
       var format = NumberFormat.simpleCurrency(name: currencyCode);
-      return format.currencySymbol;
+      return format.currencySymbol.trim();
     } catch (e) {
       final Map<String, String> currencyMap = {
         'USD': '\$',

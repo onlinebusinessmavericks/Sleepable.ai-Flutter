@@ -35,6 +35,9 @@ class _SleepSoundViewState extends State<SleepSoundView> {
   final Map<String, GlobalKey> tabKeys = {};
 
   late final bool isFromMixBar;
+  Worker? _categoryWorker;
+  Worker? _subCategoryWorker;
+  Worker? _musicNavWorker;
 
   @override
   void initState() {
@@ -48,15 +51,20 @@ class _SleepSoundViewState extends State<SleepSoundView> {
       tabKeys[tab.slug] = GlobalKey();
     }
 
-    ever(controller.selectedCategorySlug, (_) {
+    _categoryWorker = ever(controller.selectedCategorySlug, (_) {
+      if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _centerActiveTab();
+        if (mounted) _centerActiveTab();
       });
     });
-    ever(controller.selectedSubCategorySlug, (_) => _centerActiveChip());
+    _subCategoryWorker = ever(controller.selectedSubCategorySlug, (_) {
+      if (mounted) _centerActiveChip();
+    });
     // Jump to Music when "Add Music" is pressed from the mix sheet
-    ever(controller.musicNavRequest, (_) async {
+    _musicNavWorker = ever(controller.musicNavRequest, (_) async {
+      if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
         await controller.fetchSubCategories("music");
         final filters = controller.getCurrentFilters("music");
         final firstFilterSlug = filters.isNotEmpty ? filters.first.slug : SleepSoundController.allSubSlug;
@@ -80,6 +88,9 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
   @override
   void dispose() {
+    _categoryWorker?.dispose();
+    _subCategoryWorker?.dispose();
+    _musicNavWorker?.dispose();
     pageController.dispose();
     chipScrollController.dispose();
     tabScrollController.dispose();
@@ -87,7 +98,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
   }
 
   void jumpToTab(String tab, {String? filter}) {
-    if (!pageController.hasClients) return;
+    if (!mounted || !pageController.hasClients) return;
 
     final index = controller.combinedPages.indexWhere((page) {
       final matchesTab = page["categorySlug"] == tab;
@@ -108,9 +119,10 @@ class _SleepSoundViewState extends State<SleepSoundView> {
   }
 
   void _waitAndJump(String tab, String? filter) {
+    if (!mounted) return;
     if (controller.combinedPages.isEmpty || !pageController.hasClients) {
       Future.delayed(const Duration(milliseconds: 200), () {
-        _waitAndJump(tab, filter);
+        if (mounted) _waitAndJump(tab, filter);
       });
 
       return;
@@ -651,7 +663,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                                       onTap: () {
                                         final controller1 = Get.find<HomeController>();
-                                        if (s.isPremium == true && subController.isPremium.value == false) {
+                                        if (controller.isTrackLockedForUser(s)) {
                                           final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
                                           if (hasAlreadySpun) {
                                             // showPremiumOfferSheet6(context);
@@ -741,7 +753,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                         //           )
                                         //         : Positioned(top: 12, right: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20)),
 // Condition: Agar sound Premium hai AUR user ke paas subscription NAHI hai, toh LOCK dikhao
-                                            (s.isPremium == true && subController.isPremium.value == false)
+                                            (controller.isTrackLockedForUser(s))
                                                 ? Positioned(
                                               top: 12,
                                               right: 16,
@@ -958,7 +970,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                         // bool userHasNoPremium = true; // Replace with your actual premium status check
                                         // print("isPremium----$isPremium");
                                         print("subController.isPremium.value----${subController.isPremium.value}");
-                                        if (s.isPremium == true && subController.isPremium.value == false) {
+                                        if (controller.isTrackLockedForUser(s)) {
                                           // 1. Check karein ki user ne spin kar liya hai ya nahi
                                           final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -1043,7 +1055,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                             ),
 
 
-                                            (s.isPremium == true && subController.isPremium.value == false)
+                                            (controller.isTrackLockedForUser(s))
                                                 ? Positioned(top: 12, right: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20))
 
                                             :Positioned(
@@ -1136,7 +1148,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                       onTap: () {
                                         final controller1 = Get.find<HomeController>();
                                         // 🛡️ Logic: If it's locked, show premium sheet instead of playing
-                                        if (s.isPremium == true && subController.isPremium.value == false) {
+                                        if (controller.isTrackLockedForUser(s)) {
                                           // 1. Check karein ki user ne spin kar liya hai ya nahi
                                           final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -1189,7 +1201,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                                                 /// 3. PREMIUM BADGE (Optional: Small star in corner)
 
-                                                if (s.isPremium && subController.isPremium.value == false)
+                                                if (controller.isTrackLockedForUser(s))
                                                   Positioned(
                                                     bottom: -7,
                                                     right: -8,

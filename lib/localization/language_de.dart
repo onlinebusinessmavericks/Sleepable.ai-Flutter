@@ -1487,6 +1487,18 @@ class LanguageDe extends BaseLanguage {
   @override
   String get sleepableWillRemind => 'Sleepable erinnert Sie daran, zu folgenden Zeiten zu schlafen:';
   @override
+  String get saveTonightSleep => 'Schlaf von heute Nacht speichern?';
+  @override
+  String get saveTonightSleepSub => 'Wir erstellen deinen Schlafbericht, sobald du das Tracking beendest.';
+  @override
+  String get stopShortSession => 'Diese Sitzung beenden?';
+  @override
+  String get stopShortSessionSub => 'Diese Sitzung ist zu kurz für eine Schlafbewertung.';
+  @override
+  String get setTonightBedtime => 'Schlafenszeit für heute Nacht festlegen';
+  @override
+  String get notEnoughNights => 'Noch nicht genug Nächte';
+  @override
   String get notNow => 'Nicht jetzt.';
   @override
   String get ratingTitle => 'Freut mich, dass dir Sleepable gefällt!';

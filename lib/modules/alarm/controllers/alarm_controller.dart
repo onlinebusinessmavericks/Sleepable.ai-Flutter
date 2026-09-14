@@ -127,6 +127,23 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
   void prepareBedtimePicker() {
     nextAlarmTime.value = '';
     bedTimeWheelsSynced = false;
+    _hydrateBedTimeFromSettings();
+  }
+
+  void _hydrateBedTimeFromSettings() {
+    String raw = '';
+    if (Get.isRegistered<ProfileController>()) {
+      raw = Get.find<ProfileController>().settings.value?.bedtime ?? '';
+    }
+    if (!raw.contains(':')) return;
+    try {
+      final parts = raw.split(':');
+      int h24 = int.parse(parts[0]);
+      int m = int.parse(parts[1]);
+      bedHour.value = h24 % 12 == 0 ? 12 : h24 % 12;
+      bedMinute.value = m;
+      bedIsAm.value = h24 < 12;
+    } catch (_) {}
   }
   void syncBedTimeWheels() {
     // 🟢 Safety Check: If controllers are disposed or not in UI, stop immediately.
@@ -185,11 +202,21 @@ class AlarmController extends GetxController with WidgetsBindingObserver {
       minute.value = m;
       isAm.value = isMorning;
 
-      // 🔥 CRITICAL FIX: Force the wheels to jump to the new data
       Future.delayed(const Duration(milliseconds: 300), () {
         syncWheels();
         syncWakeUpWheels();
       });
+    }
+
+    if (data.bedtime.contains(":")) {
+      try {
+        final parts = data.bedtime.split(":");
+        int h24 = int.parse(parts[0]);
+        int m = int.parse(parts[1]);
+        bedHour.value = h24 % 12 == 0 ? 12 : h24 % 12;
+        bedMinute.value = m;
+        bedIsAm.value = h24 < 12;
+      } catch (_) {}
     }
   }
   Future<void> saveWakeUpTime() async {

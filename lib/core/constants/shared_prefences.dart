@@ -77,4 +77,7 @@ class AppSharedPreferenceKeys {
 
   /// Epoch ms when a snooze should re-ring (survives route clears / brief background).
   static const String snoozeFireAtMs = "alarm_snooze_fire_at_ms";
+
+  /// ISO timestamp when the current sleep session started (for quit copy + duration).
+  static const String sleepTrackingStartedAt = "sleep_tracking_started_at";
 }

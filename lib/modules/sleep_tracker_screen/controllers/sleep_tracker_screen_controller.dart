@@ -1029,6 +1029,7 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       await prefs.setInt('sleep_tracker_id', 0);
       await prefs.remove('sleep_note_ids');
       await prefs.remove('sleep_description');
+      await prefs.remove(AppSharedPreferenceKeys.sleepTrackingStartedAt);
       try {
         await FlutterForegroundTask.stopService();
       } catch (_) {}
@@ -1055,17 +1056,29 @@ class SleepTrackerController extends GetxController with WidgetsBindingObserver 
       } catch (_) {}
 
       if (savedSleepTrackerId > 0) {
-        try {
-          // Prefer direct API so we are not blocked by isStopping / stopRecording loops
-          await TrackerApis.stopSleepTracker(sleepTrackerId: savedSleepTrackerId)
-              .timeout(const Duration(seconds: 8));
-        } catch (e) {
-          debugPrint("performCleanup stop API error: $e");
+        Object? lastError;
+        for (int attempt = 0; attempt < 2; attempt++) {
+          try {
+            await TrackerApis.stopSleepTracker(sleepTrackerId: savedSleepTrackerId)
+                .timeout(const Duration(seconds: 12));
+            lastError = null;
+            break;
+          } catch (e) {
+            lastError = e;
+            debugPrint("performCleanup stop API error (attempt $attempt): $e");
+            if (attempt == 0) {
+              await Future.delayed(const Duration(seconds: 2));
+            }
+          }
+        }
+        if (lastError != null) {
+          debugPrint("performCleanup stop API failed after retries: $lastError");
         }
       }
 
       await prefs.remove('sleep_note_ids');
       await prefs.remove('sleep_description');
+      await prefs.remove(AppSharedPreferenceKeys.sleepTrackingStartedAt);
       debugPrint("Cleanup successful for tracker $savedSleepTrackerId");
     } catch (e) {
       debugPrint("Cleanup error: $e");

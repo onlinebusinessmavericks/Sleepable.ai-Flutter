@@ -45,6 +45,7 @@ class HeartBpmMeasurementController extends GetxController {
   }
   /// Start sleep without heart measurement
   Future<void> startWithoutMeasuring() async {
+    if (isLoading.value) return;
     if (!Get.isRegistered<AlarmController>()) {
       Get.put(AlarmController(), permanent: true);
     }
@@ -135,6 +136,7 @@ class HeartBpmMeasurementController extends GetxController {
       if (response.success == true) {
         await prefs.setInt('sleep_tracker_id', response.data!.sleepTrackerId);
         await setValue(AppSharedPreferenceKeys.isSleepTrackingActive, true);
+        await setValue(AppSharedPreferenceKeys.sleepTrackingStartedAt, DateTime.now().toIso8601String());
         TrackerExitGuard.resetForNewSession();
 
         if (Get.isRegistered<SleepSoundController>()) {

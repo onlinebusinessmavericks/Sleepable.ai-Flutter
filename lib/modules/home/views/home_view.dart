@@ -99,20 +99,21 @@ class HomeScreen extends GetView<HomeController> {
                           right: 0,
                           top: 80 * SizeConfigs.paddingScale,
                           child: Obx(() {
-                            return Text(
-                              "${controller.greeting.value}, ${controller.userName}",
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 21 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
-                            ).paddingSymmetric(horizontal: 17 * SizeConfigs.paddingScale);
-                          }),
-                        ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          top: 106 * SizeConfigs.paddingScale,
-                          child: Obx(() {
-                            return Text(
-                              controller.toDayDate.value.isNotEmpty ? DateFormat('d MMMM, y').format(DateTime.parse(controller.toDayDate.value)) : context.lang.loading,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textBoldColor, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "${controller.greeting.value}, ${controller.userName}",
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.white, fontSize: 21 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
+                                ),
+                                Text(
+                                  controller.toDayDate.value.isNotEmpty ? DateFormat('d MMMM, y').format(DateTime.parse(controller.toDayDate.value)) : context.lang.loading,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textBoldColor, fontSize: 14 * SizeConfigs.textScale, fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ).paddingSymmetric(horizontal: 17 * SizeConfigs.paddingScale);
                           }),
                         ),
@@ -185,8 +186,8 @@ class HomeScreen extends GetView<HomeController> {
                                                 // ✅ Hamesha ID check karein, Label nahi
                                                 final String itemId = item['id'];
 
-                                                // Premium-only chips: free users see the paywall. Trial users
-                                                // can open DreamBot (trialAllowed); other premium chips stay locked.
+                                                // Premium-only chips: free and trial users see the paywall.
+                                                // DreamBot stays trialAllowed; Story waits for paid Premium.
                                                 if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
                                                   controller.showRotatingPremiumSheet(context);
                                                   return;
@@ -1167,7 +1168,7 @@ class HomeScreen extends GetView<HomeController> {
                         GestureDetector(
                           onTap: () {
                             // 3. Premium Paywall Check
-                            if (item.isPremium && subController.isPremium.value == false) {
+                            if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story')) {
                               // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
                               final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -1273,7 +1274,7 @@ class HomeScreen extends GetView<HomeController> {
                           ),
 
                         /// 🟢 Lock Icon (Shows if Premium)
-                        if (item.isPremium && subController.isPremium.value == false)
+                        if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story'))
                           Positioned(
                             top: 12,
                             right: 16,
@@ -1388,7 +1389,7 @@ class HomeScreen extends GetView<HomeController> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              if (item.isPremium && subController.isPremium.value == false) {
+                              if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: true)) {
                                 // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
                                 final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -1558,7 +1559,7 @@ class HomeScreen extends GetView<HomeController> {
                             ),
 
                             // 🔹 Lock Icon for Premium Content
-                            if (item.isPremium && subController.isPremium.value == false)// Assuming isPremium controls locks
+                            if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: true))// Assuming isPremium controls locks
                               Padding(
                                 padding: const EdgeInsets.only(left: 4, top: 2),
                                 child: Icon(Icons.lock, color: Colors.amber.withOpacity(0.8), size: 16),
@@ -1700,7 +1701,7 @@ class HomeScreen extends GetView<HomeController> {
                             GestureDetector(
                               onTap: () {
                                 // 3. Premium Paywall Check
-                                if (item.isPremium && subController.isPremium.value == false) {
+                                if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story')) {
                                   // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
                                   final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -1792,7 +1793,7 @@ class HomeScreen extends GetView<HomeController> {
                             ),
 
                             /// 🟢 Lock Icon (Shows if Premium)
-                            if (item.isPremium && subController.isPremium.value == false) Positioned(top: 12, right: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20)),
+                            if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story')) Positioned(top: 12, right: 16, child: Icon(Icons.lock, color: AppColors.white, size: 20)),
 
                             /// 🟢 Play/Pause Overlay (Shows if Active)
                             if (isPlaying)
@@ -1909,8 +1910,8 @@ class HomeScreen extends GetView<HomeController> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                // 3. Premium Paywall Check
-                                if (item.isPremium && subController.isPremium.value == false) {
+                                // 3. Premium Paywall Check — Sleep Story section
+                                if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: true)) {
                                   // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
                                   final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -2000,7 +2001,7 @@ class HomeScreen extends GetView<HomeController> {
                             ),
 
                             /// 🟢 Lock Icon (Shows if Premium)
-                            if (item.isPremium && subController.isPremium.value == false) Positioned(top: 12, right: 16, child: const Icon(Icons.lock, color: Colors.white, size: 20)),
+                            if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: true)) Positioned(top: 12, right: 16, child: const Icon(Icons.lock, color: Colors.white, size: 20)),
 
                             /// 🟢 Play/Pause Overlay (Shows if Active)
                             if (isPlaying)
@@ -2118,7 +2119,7 @@ class HomeScreen extends GetView<HomeController> {
                               onTap: () {
 
                                 // 3. Premium Paywall Check
-                                if (item.isPremium && subController.isPremium.value == false) {
+                                if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story')) {
                                   // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
                                   final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
@@ -2209,7 +2210,7 @@ class HomeScreen extends GetView<HomeController> {
                             ),
 
                             /// 🟢 Lock Icon (Shows if Premium)
-                            if (item.isPremium && subController.isPremium.value == false) Positioned(top: 12, right: 16, child: const Icon(Icons.lock, color: Colors.white, size: 20)),
+                            if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium, isStory: (item.type ?? '').toLowerCase() == 'story')) Positioned(top: 12, right: 16, child: const Icon(Icons.lock, color: Colors.white, size: 20)),
 
                             /// 🟢 Play/Pause Overlay (Shows if Active)
                             if (isPlaying)

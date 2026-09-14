@@ -59,6 +59,7 @@ class APIEndPoints {
   /// Subscription & Spin Wheel
   static const String spinWheel = 'users/spin-wheel/';
   static const String verifyPurchase = 'users/verify-purchase/';
+  static const String restorePurchase = 'users/restore-purchase/';
   static const String subscriptionStatus = 'users/subscription/';
 }
 
