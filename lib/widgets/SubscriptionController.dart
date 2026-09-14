@@ -184,26 +184,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     return trialAllowed && isTrial.value;
   }
 
-  /// Story is paid Premium only. Trial keeps the same catalog as free.
-  bool get hasStoryAccess => isPremium.value;
-
-  bool isStoryLabel(String? value) {
-    final v = (value ?? '').trim().toLowerCase();
-    if (v.isEmpty) return false;
-    if (v == 'story' || v == 'sleep story' || v == 'sleepstory') return true;
-    final lang = Get.context?.lang;
-    if (lang == null) return false;
-    return v == lang.story.toLowerCase() ||
-        v == lang.storyLabel.toLowerCase() ||
-        v == lang.sleepStory.toLowerCase();
-  }
-
-  /// Music and Story stay locked on free and during trial.
-  /// Paid Premium unlocks every premium track in those categories.
-  bool isPremiumItemLocked({required bool itemIsPremium, required bool isStory}) {
-    if (!itemIsPremium) return false;
-    return !isPremium.value;
-  }
+  /// A track's padlock. The backend sends `is_premium` per user - it already
+  /// means "locked for this user" - so it is used as it is.
+  bool isPremiumItemLocked({required bool itemIsPremium}) => itemIsPremium;
 
   /// True once the user has actually won the spin discount.
   ///
@@ -801,11 +784,10 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
 
         if (isPremium.value) {
           toast("Success! Premium Activated.");
-          await _reloadCatalogAfterPaidPremium();
         } else {
-          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
           toast("3-day trial started. You are not Premium yet.");
         }
+        await _reloadAfterAccessChange();
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
       }
@@ -921,9 +903,7 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       await _applySubscriptionPayload(data);
       await getBackendSubscriptionStatus();
       await refreshEntitlementDetails();
-      if (isPremium.value) {
-        await _reloadCatalogAfterPaidPremium();
-      }
+      await _reloadAfterAccessChange();
 
       final restored = response['restored'] == true;
       if (restored) {
@@ -945,9 +925,16 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
 
   /// Paid Premium: drop cached Music/Story locks and refetch so padlocks go without a reboot.
   /// Trial must not call this — those lists stay the free catalog.
-  Future<void> _reloadCatalogAfterPaidPremium() async {
-    if (!Get.isRegistered<SleepSoundController>()) return;
-    await Get.find<SleepSoundController>().refreshCatalogAfterPaidPremium();
+  /// Track padlocks come from the backend per user, so after a purchase or
+  /// restore every list that carries them is fetched again: the Sounds tab
+  /// lists, favorites, mixes, and the home payload.
+  Future<void> _reloadAfterAccessChange() async {
+    if (Get.isRegistered<SleepSoundController>()) {
+      await Get.find<SleepSoundController>().refreshCatalogAfterAccessChange();
+    }
+    if (Get.isRegistered<HomeController>()) {
+      await Get.find<HomeController>().fetchHomePageData();
+    }
   }
 
   /// The store's own record of the active subscription: which product, when it

@@ -99,6 +99,9 @@ class MixedSoundItem {
   final String image;
   final String file;
 
+  /// Locked for this user, as the backend reports it per user.
+  final bool isPremium;
+
   MixedSoundItem({
     required this.id,
     required this.name,
@@ -106,6 +109,7 @@ class MixedSoundItem {
     this.thumbnail,
     required this.image,
     required this.file,
+    this.isPremium = false,
   });
 
   factory MixedSoundItem.fromJson(Map<String, dynamic> json) {
@@ -116,6 +120,7 @@ class MixedSoundItem {
       thumbnail: json['thumbnail'],
       image: json['image'] ?? '',
       file: json['file'] ?? '',
+      isPremium: json['is_premium'] == true,
     );
   }
 }
