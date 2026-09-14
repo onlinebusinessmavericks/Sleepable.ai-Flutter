@@ -334,10 +334,8 @@ class ProgressScreen extends GetView<ProgressController> {
                     height: 300,
                     child: Center(
                       child: Obx(() {
-                        final bool isPaid = subController.isPremium.value;
-                        final bool isTrial = subController.isTrial.value;
                         final controller = Get.find<HomeController>();
-                        final bool showProUpsell = !isPaid && !isTrial;
+                        final bool showProUpsell = subController.access.value.showPaywall;
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

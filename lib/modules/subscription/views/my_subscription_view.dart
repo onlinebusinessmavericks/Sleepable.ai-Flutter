@@ -89,7 +89,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
               const SizedBox(height: 20),
               if (isPremium || isTrial) ..._details(ent: ent, isTrial: isTrial),
               const SizedBox(height: 8),
-              ..._actions(isPremium: isPremium, isTrial: isTrial, ent: ent),
+              ..._actions(isPremium: isPremium, isTrial: isTrial, showPaywall: sub.access.value.showPaywall, ent: ent),
               const SizedBox(height: 28),
               Text(
                 _copy("storeNote"),
@@ -270,10 +270,10 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
   // Actions
   // ---------------------------------------------------------------------------
 
-  List<Widget> _actions({required bool isPremium, required bool isTrial, EntitlementInfo? ent}) {
+  List<Widget> _actions({required bool isPremium, required bool isTrial, required bool showPaywall, EntitlementInfo? ent}) {
     final buttons = <Widget>[];
 
-    if (!isPremium && !isTrial) {
+    if (showPaywall) {
       buttons.add(_primaryButton(_copy("seePlans"), () => showPremiumOfferSheet(context)));
     }
 

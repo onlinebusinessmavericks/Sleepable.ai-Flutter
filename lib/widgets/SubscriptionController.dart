@@ -167,7 +167,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  bool get showPaywalls => !isPremium.value;
+  /// Whether a paywall may be shown - the backend's `features.show_paywall`.
+  bool get showPaywalls => access.value.showPaywall;
   /// DreamBot is usable on Premium, and once during the 3-day trial.
   bool get showDreambot => hasAccessTo(trialAllowed: true);
 
@@ -716,11 +717,14 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       print("Store not available on this device");
       return;
     }
-    // Someone who already has access must never reach checkout: for the plan
-    // they hold, Play rejects the request outright.
-    if (access.value.hasAccess) {
-      toast(Get.context?.lang.purchaseAlreadyHasAccess ??
-          "You already have access to Sleepable. You can manage your plan in My Subscription.");
+    // Checkout only opens where a paywall may: never for trial or paid users,
+    // and not before the backend has said so. For the plan someone already
+    // holds, Play would reject the request outright.
+    if (!access.value.showPaywall) {
+      if (access.value.hasAccess) {
+        toast(Get.context?.lang.purchaseAlreadyHasAccess ??
+            "You already have access to Sleepable. You can manage your plan in My Subscription.");
+      }
       return;
     }
     try {
@@ -1171,7 +1175,7 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// paywall was closed. Go through the navigator's own context instead, once
   /// the pop has been through a frame.
   void checkAndShowPremiumSheet(BuildContext context) {
-    if (isPremium.value || isOnFreeTrial || Platform.isIOS) return;
+    if (!access.value.showPaywall || Platform.isIOS) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = Get.context;

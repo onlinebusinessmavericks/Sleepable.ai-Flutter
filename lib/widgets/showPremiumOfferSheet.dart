@@ -22,6 +22,12 @@ import '../localization/lang_extension.dart';
 import '../modules/settings/widget/webview.dart';
 import 'SubscriptionController.dart';
 
+/// Whether any paywall may open. Only the backend decides this
+/// (`features.show_paywall`); trial and paid users never get one.
+bool paywallAllowed() =>
+    Get.isRegistered<SubscriptionController>() &&
+    Get.find<SubscriptionController>().access.value.showPaywall;
+
 const String _kPrivacyPolicyUrl = 'https://sleepable.ai/privacy.html';
 const String _kTermsOfUseUrl = 'https://sleepable.ai/terms.html';
 
@@ -114,6 +120,7 @@ Widget _trialNotPremiumBanner(BuildContext context) {
 }
 
 showPremiumOfferSheet(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen());
 }
@@ -322,6 +329,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
 }
 
 showPremiumOfferSheet2(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen2());
 }
@@ -567,6 +575,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet3(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen3());
 }
@@ -853,10 +862,8 @@ Future showPremiumOfferSheet4(BuildContext context) {
   final sub = Get.isRegistered<SubscriptionController>()
       ? Get.find<SubscriptionController>()
       : null;
-  // Trial users already started this plan. Opening the carousel would promise
-  // another 3-day trial and can lead to Lucky Spin on close of checkout.
-  if (sub != null && sub.isOnFreeTrial) {
-    return Get.toNamed(Routes.mySubscription) ?? Future.value();
+  if (sub == null || !sub.access.value.showPaywall) {
+    return Future.value();
   }
   return showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen4());
 }
@@ -1210,6 +1217,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet5(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const LuckySpinScreen());
 }
@@ -1402,6 +1410,7 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 }
 
 showPremiumOfferSheet6(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const OneTimeOfferSheet());
 }
@@ -1744,6 +1753,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 }
 
 showPremiumOfferSheet7(BuildContext context) {
+  if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const FreeTrialReminderScreen());
 }
@@ -1905,6 +1915,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
 }
 
 showPremiumOfferSheet8(BuildContext context) {
+  if (!paywallAllowed()) return null;
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const UnifiedPremiumSheet());
 }
 

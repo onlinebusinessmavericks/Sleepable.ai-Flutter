@@ -69,8 +69,9 @@ Future<void> navigateAfterAuth({required bool showPaywall}) async {
   }
 }
 
+/// The backend's `features.show_paywall`, from the login body or the
+/// subscription refresh that follows it.
 bool shouldShowStartTrialPaywall() {
-  if (!Get.isRegistered<SubscriptionController>()) return true;
-  final sub = Get.find<SubscriptionController>();
-  return !(sub.isPremium.value || sub.isOnFreeTrial);
+  if (!Get.isRegistered<SubscriptionController>()) return false;
+  return Get.find<SubscriptionController>().access.value.showPaywall;
 }
