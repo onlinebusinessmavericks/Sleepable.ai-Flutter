@@ -1837,4 +1837,10 @@ class LanguageDe extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Bitte geben Sie den an gesendeten 6-stelligen Code ein.';
   @override
   String get verifyLogin => 'Verifizieren & Anmelden';
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "Wir konnten Ihr Konto nicht mit dem Store bestätigen. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.";
+  @override
+  String get purchaseActivationError => "Ihr Kauf war erfolgreich, konnte aber noch nicht aktiviert werden. Bitte tippen Sie gleich auf Käufe wiederherstellen.";
 }

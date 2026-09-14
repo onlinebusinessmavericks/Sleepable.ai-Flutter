@@ -1837,4 +1837,10 @@ class LanguageEs extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Por favor, introduzca el código de 6 dígitos enviado a';
   @override
   String get verifyLogin => 'Verificar e iniciar sesión';
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "No pudimos confirmar su cuenta con la tienda. Revise su conexión e inténtelo de nuevo.";
+  @override
+  String get purchaseActivationError => "Su compra se realizó, pero aún no pudimos activarla. Toque Restaurar compras en un momento.";
 }

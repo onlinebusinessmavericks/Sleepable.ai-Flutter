@@ -73,25 +73,11 @@ class SubscriptionController extends GetxController {
     try {
       // Re-identify on every launch: a user who logged in before this build (or
       // before RevenueCat finished configuring) would otherwise stay anonymous.
-      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
-      if (storedUuid.isNotEmpty) {
-        await identifyUser(storedUuid);
+      final uuid = _signedInUuid();
+      if (uuid.isNotEmpty) {
+        await identifyUser(uuid);
       } else {
-        // Anyone already logged in when this build ships never passed through
-        // the login path, and will not log in again. Recover their uuid from the
-        // cached profile so they do not stay anonymous forever.
-        final cachedProfile = getStringAsync(AppSharedPreferenceKeys.currentUserData);
-        if (cachedProfile.isNotEmpty) {
-          try {
-            final uuid = (jsonDecode(cachedProfile)['uuid'] ?? '').toString();
-            print("🔑 [RC] Recovered uuid from cached profile: '$uuid'");
-            if (uuid.isNotEmpty) await identifyUser(uuid);
-          } catch (e) {
-            print("❌ [RC] Could not read uuid from cached profile: $e");
-          }
-        } else {
-          print("⚠️ [RC] No stored uuid and no cached profile - user stays anonymous");
-        }
+        print("⚠️ [RC] No stored uuid and no cached profile - user stays anonymous");
       }
 
       await Purchases.invalidateCustomerInfoCache();
@@ -378,6 +364,53 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  /// The backend uuid of the signed-in user, or '' when nobody is signed in.
+  ///
+  /// Users who logged in before the uuid was persisted only have it inside the
+  /// cached profile, so fall back to that.
+  String _signedInUuid() {
+    final stored = getStringAsync(AppSharedPreferenceKeys.userUuid);
+    if (stored.isNotEmpty) return stored;
+    final cachedProfile = getStringAsync(AppSharedPreferenceKeys.currentUserData);
+    if (cachedProfile.isEmpty) return '';
+    try {
+      return (jsonDecode(cachedProfile)['uuid'] ?? '').toString();
+    } catch (e) {
+      log("Could not read uuid from cached profile: $e");
+      return '';
+    }
+  }
+
+  /// Play offer id of the spin discount. The coupon only belongs to a purchase
+  /// made through this offer.
+  static const String _spinOfferId = 'yearly-spin-offer';
+
+  /// Confirms RevenueCat is attached to the signed-in user before a purchase or
+  /// restore, and returns that app user id.
+  ///
+  /// A receipt bought on an anonymous customer lands where the backend webhook
+  /// can never match it, so this retries logIn once and returns null if the id
+  /// still is not the user's uuid. Callers must not open checkout on null.
+  Future<String?> _ensureIdentity() async {
+    if (!isConfigured) return null;
+    final uuid = _signedInUuid();
+    if (uuid.isEmpty) return null;
+
+    for (int attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (await Purchases.appUserID == uuid) return uuid;
+        await Purchases.logIn(uuid);
+        if (await Purchases.appUserID == uuid) {
+          await setValue(AppSharedPreferenceKeys.userUuid, uuid);
+          return uuid;
+        }
+      } catch (e) {
+        log("RevenueCat identity attempt ${attempt + 1} failed: $e");
+      }
+    }
+    return null;
+  }
+
   /// Clears cached entitlements and detaches RevenueCat so the next account
   /// does not inherit this customer's premium / trial state.
   Future<void> clearSessionState() async {
@@ -650,6 +683,14 @@ class SubscriptionController extends GetxController {
     try {
       isLoading.value = true;
 
+      // Checkout only opens once RevenueCat is attached to this account.
+      final appUserId = await _ensureIdentity();
+      if (appUserId == null) {
+        toast(Get.context?.lang.purchaseIdentityError ??
+            "We couldn't confirm your account with the store. Please check your connection and try again.");
+        return;
+      }
+
       // Step 1: RevenueCat Purchase
       // Android needs the plan change spelled out. Without this a switch
       // between plans falls back to whatever the billing library defaults to.
@@ -686,28 +727,32 @@ class SubscriptionController extends GetxController {
       final entitlement = customerInfo.entitlements.all['pro'];
 
       if (entitlement?.isActive ?? false) {
-        final storeTrial = entitlement!.periodType == PeriodType.trial;
-        await verifyPurchaseWithBackend(
-            package.storeProduct.identifier,
-            customerInfo.originalAppUserId,
-            spinInfo.value?.couponCode,
-            periodType: storeTrial ? 'trial' : 'normal',
-            offerId: _playOfferId(option),
+        final offerId = _playOfferId(option);
+        final verified = await verifyPurchaseWithBackend(
+          productId: package.storeProduct.identifier,
+          appUserId: appUserId,
+          periodType: entitlement!.periodType.name,
+          offerId: offerId,
+          couponCode: offerId == _spinOfferId ? spinInfo.value?.couponCode : null,
         );
+        if (!verified) log("verify-purchase did not succeed; relying on the status refresh");
 
-        if (storeTrial) {
-          await applyTrialStatus(trial: true);
-          await updatePremiumStatus(false, isFromBackend: true);
-          toast("3-day trial started. You are not Premium yet.");
-          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
-        } else {
-          await applyTrialStatus(trial: false);
-          if (Get.isRegistered<SleepSoundController>()) {
-            await Get.find<SleepSoundController>().invalidatePaidCatalogCache();
-          }
-          await updatePremiumStatus(true, isFromBackend: true);
+        // Refresh either way: the RevenueCat webhook may already have credited
+        // the purchase even when our own verify call failed. Access is whatever
+        // the backend says, never what the store receipt implies.
+        await getBackendSubscriptionStatus();
+        if (!(isPremium.value || isTrial.value)) {
+          toast(Get.context?.lang.purchaseActivationError ??
+              "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.");
+          return;
+        }
+
+        if (isPremium.value) {
           toast("Success! Premium Activated.");
           await _reloadCatalogAfterPaidPremium();
+        } else {
+          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
+          toast("3-day trial started. You are not Premium yet.");
         }
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
@@ -748,37 +793,27 @@ class SubscriptionController extends GetxController {
     _restoreInFlight = true;
     isLoading.value = true;
     try {
-      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
-      if (storedUuid.isNotEmpty) {
-        await identifyUser(storedUuid);
-      }
-
-      String appUserId = storedUuid;
+      String appUserId = '';
       String productId = '';
       String periodType = '';
 
       if (isConfigured) {
+        // Restoring onto an anonymous customer would re-link the receipt to
+        // the wrong place, so identity has to be settled first.
+        final confirmedId = await _ensureIdentity();
+        if (confirmedId == null) {
+          toast(Get.context?.lang.purchaseIdentityError ??
+              "We couldn't confirm your account with the store. Please check your connection and try again.");
+          return;
+        }
+        appUserId = confirmedId;
         try {
           await Purchases.invalidateCustomerInfoCache();
           final CustomerInfo customerInfo = await Purchases.restorePurchases();
-          if (customerInfo.originalAppUserId.isNotEmpty) {
-            appUserId = customerInfo.originalAppUserId;
-          }
-          try {
-            final currentId = await Purchases.appUserID;
-            // Prefer an id that is not the backend uuid, so the server has a
-            // second lookup for purchases still sitting on an anonymous customer.
-            if (currentId.isNotEmpty &&
-                storedUuid.isNotEmpty &&
-                appUserId == storedUuid &&
-                currentId != storedUuid) {
-              appUserId = currentId;
-            }
-          } catch (_) {}
           final entitlement = customerInfo.entitlements.all['pro'];
           if (entitlement?.isActive ?? false) {
             productId = entitlement!.productIdentifier;
-            periodType = entitlement.periodType == PeriodType.trial ? 'trial' : 'normal';
+            periodType = entitlement.periodType.name;
           }
         } on PlatformException catch (e) {
           log("Store restore failed: ${e.message}");
@@ -975,31 +1010,47 @@ class SubscriptionController extends GetxController {
     }
   }
 
-  // 5. Backend Verification API
-  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon,
-      {String periodType = 'normal', String? offerId}) async {
-    try {
-      final payload = {
-        "product_id": productId,
-        "app_user_id": token,
-        "purchase_token": token,
-        "coupon_code": coupon ?? "",
-        "period_type": periodType,
-        // Play offer the purchase actually went through, so the backend can
-        // tell a spin discount apart from a plain trial. Empty on iOS, where
-        // the store applies the introductory offer without an offer id.
-        "offer_id": offerId ?? "",
-      };
+  /// Records a store purchase on the backend. Returns true when it was accepted.
+  ///
+  /// Retries, because this is what creates the subscription row: a single
+  /// failed call used to be swallowed and left a paying user with no record.
+  /// The caller refreshes the subscription status either way.
+  Future<bool> verifyPurchaseWithBackend({
+    required String productId,
+    required String appUserId,
+    required String periodType,
+    String? offerId,
+    String? couponCode,
+    int retries = 2,
+  }) async {
+    final payload = <String, dynamic>{
+      "product_id": productId,
+      "app_user_id": appUserId,
+      "period_type": periodType,
+      // Play offer the purchase actually went through, so the backend can
+      // tell a spin discount apart from a plain trial. Empty on iOS, where
+      // the store applies the introductory offer without an offer id.
+      "offer_id": offerId ?? "",
+      if (couponCode != null && couponCode.isNotEmpty) "coupon_code": couponCode,
+    };
 
-      await buildHttpResponse(
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        final response = await buildHttpResponse(
           endPoint: APIEndPoints.verifyPurchase,
           method: MethodType.post,
-          request: payload
-      );
-      await getBackendSubscriptionStatus(); // Refresh status
-    } catch (e) {
-      log("Verification Sync Error: $e");
+          request: payload,
+        );
+        if (response is Map && response['success'] == true) return true;
+        log("verify-purchase rejected: ${response is Map ? response['message'] : response}");
+      } catch (e) {
+        log("verify-purchase attempt ${attempt + 1} failed: $e");
+      }
+      if (attempt < retries) {
+        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
+      }
     }
+    return false;
   }
 
   // 6. Get Status from Backend

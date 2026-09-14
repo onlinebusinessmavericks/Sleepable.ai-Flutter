@@ -2562,4 +2562,10 @@ class LanguageEn extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Please enter the 6-digit code sent to';
   @override
   String get verifyLogin => 'Verify & Login';
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "We couldn't confirm your account with the store. Please check your connection and try again.";
+  @override
+  String get purchaseActivationError => "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.";
 }

@@ -998,4 +998,8 @@ abstract class BaseLanguage {
   String get verificationCode;
   String get pleaseEnterThe6DigitCodeSentTo;
   String get verifyLogin;
+
+  // Purchases
+  String get purchaseIdentityError;
+  String get purchaseActivationError;
 }

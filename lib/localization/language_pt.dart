@@ -1838,4 +1838,10 @@ class LanguagePt extends BaseLanguage {
   @override
   String get verifyLogin => 'Verificar e iniciar sessão';
 
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "Não foi possível confirmar sua conta na loja. Verifique sua conexão e tente novamente.";
+  @override
+  String get purchaseActivationError => "Sua compra foi concluída, mas ainda não foi possível ativá-la. Toque em Restaurar compras em instantes.";
 }

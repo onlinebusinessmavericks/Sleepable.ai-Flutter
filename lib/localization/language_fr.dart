@@ -1873,4 +1873,10 @@ class LanguageFr extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Veuillez saisir le code à 6 chiffres envoyé à';
   @override
   String get verifyLogin => 'Vérifier et se connecter';
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "Impossible de confirmer votre compte auprès du store. Vérifiez votre connexion et réessayez.";
+  @override
+  String get purchaseActivationError => "Votre achat a bien été effectué, mais nous n'avons pas encore pu l'activer. Appuyez sur Restaurer les achats dans un instant.";
 }
