@@ -1846,4 +1846,8 @@ class LanguagePt extends BaseLanguage {
   String get purchaseActivationError => "Sua compra foi concluída, mas ainda não foi possível ativá-la. Toque em Restaurar compras em instantes.";
   @override
   String get purchaseAlreadyHasAccess => "Você já tem acesso ao Sleepable. Você pode gerenciar seu plano em Minha assinatura.";
+  @override
+  String get requestNotAllowed => "Você não tem acesso a isso no momento.";
+  @override
+  String get sessionExpired => "Sua sessão expirou. Entre novamente.";
 }

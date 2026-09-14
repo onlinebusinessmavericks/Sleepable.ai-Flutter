@@ -1003,4 +1003,8 @@ abstract class BaseLanguage {
   String get purchaseIdentityError;
   String get purchaseActivationError;
   String get purchaseAlreadyHasAccess;
+
+  // Network
+  String get requestNotAllowed;
+  String get sessionExpired;
 }

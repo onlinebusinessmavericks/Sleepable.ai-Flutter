@@ -1845,4 +1845,8 @@ class LanguageDe extends BaseLanguage {
   String get purchaseActivationError => "Ihr Kauf war erfolgreich, konnte aber noch nicht aktiviert werden. Bitte tippen Sie gleich auf Käufe wiederherstellen.";
   @override
   String get purchaseAlreadyHasAccess => "Sie haben bereits Zugriff auf Sleepable. Ihr Abo verwalten Sie unter Mein Abo.";
+  @override
+  String get requestNotAllowed => "Darauf haben Sie gerade keinen Zugriff.";
+  @override
+  String get sessionExpired => "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.";
 }

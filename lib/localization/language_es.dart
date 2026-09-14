@@ -1845,4 +1845,8 @@ class LanguageEs extends BaseLanguage {
   String get purchaseActivationError => "Su compra se realizó, pero aún no pudimos activarla. Toque Restaurar compras en un momento.";
   @override
   String get purchaseAlreadyHasAccess => "Ya tiene acceso a Sleepable. Puede gestionar su plan en Mi suscripción.";
+  @override
+  String get requestNotAllowed => "No tiene acceso a esto en este momento.";
+  @override
+  String get sessionExpired => "Su sesión ha caducado. Inicie sesión de nuevo.";
 }

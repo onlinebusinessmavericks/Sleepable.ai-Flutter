@@ -1881,4 +1881,8 @@ class LanguageFr extends BaseLanguage {
   String get purchaseActivationError => "Votre achat a bien été effectué, mais nous n'avons pas encore pu l'activer. Appuyez sur Restaurer les achats dans un instant.";
   @override
   String get purchaseAlreadyHasAccess => "Vous avez déjà accès à Sleepable. Vous pouvez gérer votre abonnement dans Mon abonnement.";
+  @override
+  String get requestNotAllowed => "Vous n'avez pas accès à ce contenu pour le moment.";
+  @override
+  String get sessionExpired => "Votre session a expiré. Veuillez vous reconnecter.";
 }

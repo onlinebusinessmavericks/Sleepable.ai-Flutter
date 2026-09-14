@@ -2570,4 +2570,8 @@ class LanguageEn extends BaseLanguage {
   String get purchaseActivationError => "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.";
   @override
   String get purchaseAlreadyHasAccess => "You already have access to Sleepable. You can manage your plan in My Subscription.";
+  @override
+  String get requestNotAllowed => "You don't have access to this right now.";
+  @override
+  String get sessionExpired => "Your session has expired. Please sign in again.";
 }

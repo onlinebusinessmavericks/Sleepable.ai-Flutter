@@ -2,6 +2,7 @@ class APIEndPoints {
   ///Auth & User
   static const String socialLogin = 'users/auth/';
   static const String logOut = 'users/logout/';
+  static const String refreshToken = 'users/refresh-token/';
   static const String deleteAccount = 'users/delete-account/';
   static const String updateFCMToken = 'users/update-fcm-token/';
   /// AI data-sharing consent (Apple Guideline 5.1.1(i) / 5.1.2(i))

@@ -64,10 +64,11 @@ class DreamBotController extends GetxController {
       ? Get.find<SubscriptionController>()
       : null;
 
-  /// Prefers the flag the backend sends with its 403 - that one is current,
-  /// where the controller's copy is only as fresh as the last status sync.
-  bool _isOnTrial() {
-    final serverFlag = lastForbiddenDetail?['is_trial'];
+  /// Prefers the flag the backend sent with this request's 403 - that one is
+  /// current, where the controller's copy is only as fresh as the last sync.
+  bool _isOnTrial([Object? error]) {
+    Object? serverFlag;
+    if (error is ApiError) serverFlag = error.body?['is_trial'];
     if (serverFlag is bool) return serverFlag;
     final sub = _sub;
     return sub != null && sub.isTrial.value && !sub.isPremium.value;
@@ -127,33 +128,22 @@ class DreamBotController extends GetxController {
                 : table["in"]!.replaceAll("{days}", "$days");
     return "${table["used"]!} $wait";
   }
-  /// Whether an error came back from a 403.
-  ///
-  /// The network layer throws the English literal "Access forbidden", but
-  /// lang.forbidden is translated - so on a German or Spanish device the old
-  /// check never matched and the user was shown the raw error text instead of
-  /// the limit message. Match the literal, the translation, and the parsed body.
-  bool _isForbiddenError(String raw) {
-    if (lastForbiddenDetail != null) return true;
-    final text = raw.toLowerCase();
-    if (text.contains("forbidden") || text.contains("not found")) return true;
-    for (final word in [Get.context?.lang.forbidden, Get.context?.lang.pageNotFound]) {
-      final w = (word ?? "").toLowerCase();
-      if (w.isNotEmpty && text.contains(w)) return true;
-    }
-    return false;
-  }
+  /// Whether this request itself came back with a 403.
+  bool _isForbiddenError(Object e) => e is ApiError && e.isForbidden;
 
   /// The dream limit comes back as a 403. The chat and the analysis used to
   /// swallow it, so the screen just froze with no explanation. Returns true
   /// when the error was a limit and a message has been shown.
   bool _reportLimitError(Object e) {
-    if (!_isForbiddenError(e.toString())) return false;
-    _showToast(_limitMessage());
+    if (!_isForbiddenError(e)) return false;
+    _showToast(_limitMessage(e));
     return true;
   }
 
-  String _limitMessage() => _isOnTrial()
+  /// The backend's own message for this 403 when it sent one.
+  String _limitMessage(Object e) => (e is ApiError && e.hasBackendMessage)
+      ? e.message
+      : _isOnTrial(e)
       ? _trialDreamLimitMessage()
       : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
           "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
@@ -216,8 +206,6 @@ class DreamBotController extends GetxController {
     }
 
     try {
-      // A stale 403 body from an earlier call must not decide this one.
-      lastForbiddenDetail = null;
       sessionLimitReached.value = false;
 
       // Don't clear if we already have messages (to avoid flickering)
@@ -257,12 +245,9 @@ class DreamBotController extends GetxController {
       debugPrint("🛑 API Error Caught: $e");
       String rawError = e.toString().replaceAll("${Get.context?.lang.exception}:", "").trim();
 
-      if (_isForbiddenError(rawError)) {
-        // A trial user gets one dream, and cannot buy their way out early -
-        // the store converts the trial on its own schedule. Tell them that
-        // rather than asking them to upgrade.
+      if (_isForbiddenError(e)) {
         sessionLimitReached.value = true;
-        rawError = _limitMessage();
+        rawError = _limitMessage(e);
       }
 
       welcomeMessage.value = rawError;
