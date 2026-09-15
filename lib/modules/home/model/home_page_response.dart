@@ -1,3 +1,5 @@
+import '../../subscription/model/access_state.dart';
+
 
 class HomePageResponse {
   final bool success;
@@ -29,8 +31,11 @@ class HomePageResponse {
 }
 
 class HomePageData {
-  final PremiumBanner premiumBanner;
-  final Map<String, dynamic>? access;
+  /// `data.access`, the same block GET /users/subscription/ returns.
+  /// Kept raw so the cached home payload round-trips it unchanged.
+  final Map<String, dynamic>? accessJson;
+
+  AccessState? get access => AccessState.tryParse(accessJson);
   final SleepSummary sleepSummary;
   final TonightSleepGoal tonightSleepGoal;
   final List<WeeklySleepPattern> weeklySleepPattern;
@@ -48,8 +53,7 @@ class HomePageData {
   final SleepStatus? sleepStatus;
 
   HomePageData({
-    required this.premiumBanner,
-    this.access,
+    this.accessJson,
     required this.sleepSummary,
     required this.tonightSleepGoal,
     required this.weeklySleepPattern,
@@ -69,10 +73,7 @@ class HomePageData {
 
   factory HomePageData.fromJson(Map<String, dynamic> json) {
     return HomePageData(
-      premiumBanner: PremiumBanner.fromJson(json['premium_banner'] ?? {}),
-      access: json['access'] is Map
-          ? Map<String, dynamic>.from(json['access'] as Map)
-          : null,
+      accessJson: json['access'] is Map ? Map<String, dynamic>.from(json['access']) : null,
       sleepSummary: SleepSummary.fromJson(json['sleep_summary'] ?? {}),
       tonightSleepGoal: TonightSleepGoal.fromJson(json['tonight_sleep_goal'] ?? {}),
       weeklySleepPattern: (json['weekly_sleep_pattern'] as List? ?? [])
@@ -103,8 +104,7 @@ class HomePageData {
 
   Map<String, dynamic> toJson() {
     return {
-      "premium_banner": premiumBanner.toJson(),
-      if (access != null) "access": access,
+      "access": accessJson,
       "sleep_summary": sleepSummary.toJson(),
       "tonight_sleep_goal": tonightSleepGoal.toJson(),
       "weekly_sleep_pattern": weeklySleepPattern.map((e) => e.toJson()).toList(),
@@ -122,38 +122,6 @@ class HomePageData {
       "sleep_status": sleepStatus?.toJson(),
     };
   }
-}
-
-class PremiumBanner {
-  final bool isPremium;
-  final bool isPaid;
-  final bool isTrial;
-  final String? trialEndsAt;
-  final bool showPaywall;
-
-  PremiumBanner({
-    required this.isPremium,
-    this.isPaid = false,
-    this.isTrial = false,
-    this.trialEndsAt,
-    this.showPaywall = true,
-  });
-
-  factory PremiumBanner.fromJson(Map<String, dynamic> json) => PremiumBanner(
-        isPremium: json['is_premium'] ?? false,
-        isPaid: json['is_paid'] ?? false,
-        isTrial: json['is_trial'] ?? false,
-        trialEndsAt: json['trial_ends_at']?.toString(),
-        showPaywall: json['show_paywall'] ?? true,
-      );
-
-  Map<String, dynamic> toJson() => {
-        "is_premium": isPremium,
-        "is_paid": isPaid,
-        "is_trial": isTrial,
-        "trial_ends_at": trialEndsAt,
-        "show_paywall": showPaywall,
-      };
 }
 
 class SleepQuiz {

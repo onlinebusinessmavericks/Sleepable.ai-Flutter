@@ -1,5 +1,5 @@
 
-import 'package:sleepable_ai/modules/subscription/model/access_block.dart';
+import '../../subscription/model/access_state.dart';
 
 class EmailLoginResponse {
   final bool? success;
@@ -45,8 +45,9 @@ class UserLoginData {
   final String? type;
   // Dynamic fields handle karne ke liye agar runtime par backend extra boolean bhejta hai
   final bool isPremium;
-  final AccessBlock? access;
-  final Map<String, dynamic> accessPayload;
+
+  /// Access block sent with the login body; null if the body had none.
+  final AccessState? access;
 
   UserLoginData({
     this.userId,
@@ -68,7 +69,6 @@ class UserLoginData {
     this.type,
     this.isPremium = false,
     this.access,
-    this.accessPayload = const {},
   });
 
   factory UserLoginData.fromJson(Map<String, dynamic> json) {
@@ -91,8 +91,7 @@ class UserLoginData {
       type: json['type'],
       isPremium: json['is_premium'] ?? false, // Check safely
       tokens: json['tokens'] != null ? TokenData.fromJson(json['tokens']) : null,
-      access: AccessBlock.fromJson(json),
-      accessPayload: AccessBlock.slice(json),
+      access: AccessState.tryParse(json),
     );
   }
 
@@ -116,7 +115,6 @@ class UserLoginData {
       'is_premium': isPremium,
       'tokens': tokens?.toJson(),
       'type': type,
-      ...accessPayload,
     };
   }
 

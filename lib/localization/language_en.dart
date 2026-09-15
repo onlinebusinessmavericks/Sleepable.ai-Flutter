@@ -2562,4 +2562,34 @@ class LanguageEn extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Please enter the 6-digit code sent to';
   @override
   String get verifyLogin => 'Verify & Login';
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "We couldn't confirm your account with the store. Please check your connection and try again.";
+  @override
+  String get purchaseActivationError => "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.";
+  @override
+  String get purchaseAlreadyHasAccess => "You already have access to Sleepable. You can manage your plan in My Subscription.";
+  @override
+  String get requestNotAllowed => "You don't have access to this right now.";
+  @override
+  String get sessionExpired => "Your session has expired. Please sign in again.";
+  @override
+  String get dreamImagesFailed => "We couldn't create the visuals for this dream.";
+  @override
+  String get dreamImagesTakingLong => "Your dream visuals are taking longer than usual. Open this dream from My Dreams later to see them.";
+  @override
+  String get trialReportsLocked => "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.";
+  @override
+  String get trackFirstNightForReport => "Track your first night to see your report.";
+  @override
+  String get reportLoadError => "Some of your report couldn't be loaded. Pull down to try again.";
+  @override
+  String get subscribeYearlyPrice => "Subscribe — {price}/year";
+  @override
+  String get deleteKeepsSubscription => "You have an active subscription or free trial. Deleting your account does not cancel it, and the store will still charge you. Cancel it in the store first.";
+  @override
+  String get manageSubscription => "Manage subscription";
+  @override
+  String get deleteAnyway => "Delete anyway";
 }

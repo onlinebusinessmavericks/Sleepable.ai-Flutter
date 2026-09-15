@@ -56,7 +56,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
       }
 
       // 4. Normal Flow: Stack the Generate Button (if ready) and the Chat Input
-      return Column(mainAxisSize: MainAxisSize.min, children: [if (controller.canAnalyze.value) _bigAnalyzeButton(context), _bottomChatInput(context)]);
+      return Column(mainAxisSize: MainAxisSize.min, children: [if (controller.canAnalyze.value && _canAnalyzeDreams()) _bigAnalyzeButton(context), _bottomChatInput(context)]);
     });
   }
 
@@ -185,7 +185,11 @@ class DreamBotScreen extends GetView<DreamBotController> {
       final subController = Get.isRegistered<SubscriptionController>()
           ? Get.find<SubscriptionController>()
           : Get.put(SubscriptionController());
-      final bool onTrial = subController.isTrial.value && !subController.isPremium.value;
+      // Trial or not comes from the 403 body of the refused request.
+      final bool onTrial = controller.limitIsTrial.value;
+      if (!isLimitReached && !subController.access.value.features.dreamBot.canAnalyze) {
+        return const SizedBox.shrink();
+      }
       // Scaffold already resizes for keyboard (resizeToAvoidBottomInset).
       // Do NOT add viewInsets.bottom here - that double-counts and crushes the layout.
       return AnimatedContainer(
@@ -211,7 +215,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
               if (isLoading) return;
 
               if (isLimitReached) {
-                if (onTrial || !subController.shouldShowPaywall) {
+                if (onTrial || !subController.access.value.showPaywall) {
                   Get.toNamed(Routes.mySubscription);
                 } else {
                   showPremiumOfferSheet4(context);
@@ -304,6 +308,11 @@ class DreamBotScreen extends GetView<DreamBotController> {
               height: 220,
               fit: BoxFit.cover,
             )
+                : (msg["imagesFailed"] == true || msg["imagesTimedOut"] == true)
+                ? _dreamImagesNotice(msg["imagesFailed"] == true
+                    ? (Get.context?.lang.dreamImagesFailed ?? "We couldn't create the visuals for this dream.")
+                    : (Get.context?.lang.dreamImagesTakingLong ??
+                        "Your dream visuals are taking longer than usual. Open this dream from My Dreams later to see them."))
                 : msg["imagesPending"] == true
                 // The analysis text arrives first; images are generated in the
                 // background and swapped in when ready.
@@ -886,3 +895,24 @@ void _showFullScreenImage(String url, String title) {
     useSafeArea: false,
   );
 }
+
+/// Analyze is offered only while the backend allows another dream analysis.
+bool _canAnalyzeDreams() =>
+    Get.isRegistered<SubscriptionController>() &&
+    Get.find<SubscriptionController>().access.value.features.dreamBot.canAnalyze;
+
+/// Shown in place of the dream image when it failed or is still not ready.
+Widget _dreamImagesNotice(String text) => Container(
+      height: 220,
+      width: double.infinity,
+      color: Colors.white10,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 28),
+          const SizedBox(height: 14),
+          Text(text, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 14)),
+        ],
+      ),
+    );

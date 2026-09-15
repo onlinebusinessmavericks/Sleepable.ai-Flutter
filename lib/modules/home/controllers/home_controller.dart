@@ -126,12 +126,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     // 2. Worker setup for future changes
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController(),permanent: true);
 
-    ever(subController.isPremium, (bool val) {
-      print("🔥 HomeController: Premium worker triggered with: $val");
-      updateFilteredItems();
-      // Do not fetch homepage here. Homepage applyAccessPayload is what
-      // updates isPremium; refetching it created an infinite loop.
-    });
+    ever(subController.access, (_) => updateFilteredItems());
     _setupControllers();
     _initAnimations();
 
@@ -146,10 +141,6 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         final decoded = jsonDecode(cachedJson);
         homeData.value = HomePageResponse.fromJson(decoded);
         _syncHomeState();
-        final cachedAccess = homeData.value?.data?.access;
-        if (cachedAccess != null && Get.isRegistered<SubscriptionController>()) {
-          unawaited(Get.find<SubscriptionController>().applyAccessPayload(cachedAccess));
-        }
         print("📦 Home screen loaded from cache");
       } catch (e) {
         print("❌ Cache load failed: $e");
@@ -235,22 +226,21 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       }
     });
   }
-  /// Premium status is fetched asynchronously at launch, so waits briefly for
-  /// that sync before answering. Without this a paying or admin-granted user
-  /// gets an upsell on app open.
-  Future<bool> _isPremiumAfterSync(SubscriptionController sub) async {
+  /// Access is fetched asynchronously at launch, so waits briefly for that
+  /// sync before answering. Without this a paying or admin-granted user gets
+  /// an upsell on app open.
+  Future<void> _waitForInitialSync(SubscriptionController sub) async {
     if (!sub.isInitialSyncDone.value) {
       await sub.isInitialSyncDone.stream
           .firstWhere((done) => done)
           .timeout(const Duration(seconds: 6), onTimeout: () => true);
     }
-    return sub.isPremium.value;
   }
 
-  /// Skip the launch start-trial funnel for Premium and for an active 3-day trial.
+  /// The launch paywall opens only when the backend's show_paywall says so.
   Future<bool> _shouldSkipLaunchPaywall(SubscriptionController sub) async {
-    await _isPremiumAfterSync(sub);
-    return !sub.shouldShowPaywall;
+    await _waitForInitialSync(sub);
+    return !sub.access.value.showPaywall;
   }
 
   // Helper 1: Paywall Handler
@@ -525,9 +515,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         // 2. Update the UI model
         homeData.value = response;
 
-        final access = response.data?.access;
-        if (access != null && Get.isRegistered<SubscriptionController>()) {
-          unawaited(Get.find<SubscriptionController>().applyAccessPayload(access));
+        // The home payload carries the same access block as
+        // /users/subscription/; a fresh one replaces the current state.
+        final accessJson = response.data!.accessJson;
+        if (accessJson != null && Get.isRegistered<SubscriptionController>()) {
+          await Get.find<SubscriptionController>().applyAccess(accessJson);
         }
 
         // 3. Sync all UI variables
@@ -818,9 +810,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   /// them to My Subscription instead of the "start free trial" paywall.
   void onProTapped(BuildContext context) {
     final sub = Get.find<SubscriptionController>();
-    if (sub.isPremium.value) return;
-    if (!sub.shouldShowPaywall) {
-      Get.toNamed(Routes.mySubscription);
+    if (!sub.access.value.showPaywall) {
+      if (sub.access.value.isTrial) Get.toNamed(Routes.mySubscription);
       return;
     }
     final bool hasAlreadySpun = sub.spinInfo.value?.alreadySpun ?? false;
@@ -833,8 +824,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
-    if (!subController.shouldShowPaywall) {
-      if (!subController.isPremium.value) Get.toNamed(Routes.mySubscription);
+    if (!subController.access.value.showPaywall) {
+      if (subController.access.value.isTrial) Get.toNamed(Routes.mySubscription);
       return;
     }
 
@@ -879,7 +870,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       {'id': 'sleep_aid', 'icon': Icons.bedtime, 'lang_key': 'sleep_aid'},
       {'id': 'premium', 'icon': Icons.star, 'lang_key': 'premium'},
       {'id': 'story', 'icon': Icons.auto_stories_rounded, 'lang_key': 'story'},
-      {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot', 'premiumOnly': true, 'trialAllowed': true},
+      {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot', 'premiumOnly': true},
       {'id': 'breathwork', 'icon': Icons.lens_blur, 'lang_key': 'breathwork'},
     ];
   }
@@ -890,13 +881,13 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         ? Get.find<SubscriptionController>()
         : Get.put(SubscriptionController());
 
-    bool isPremium = subController.isPremium.value;
-    print("STABLE DEBUG: Running Filter. User Premium: $isPremium");
+    // The "premium" chip opens a paywall, so it only shows where one may open.
+    final bool showPaywall = subController.access.value.showPaywall;
 
     List<Map<String, dynamic>> freshItems = getLocalizedItems();
     List<Map<String, dynamic>> newList = [];
 
-    if (isPremium) {
+    if (!showPaywall) {
       newList = freshItems.where((item) => item['id'] != 'premium').toList();
     } else {
       // Premium-only chips stay visible but locked so users can see what upgrading unlocks.

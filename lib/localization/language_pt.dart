@@ -1838,4 +1838,34 @@ class LanguagePt extends BaseLanguage {
   @override
   String get verifyLogin => 'Verificar e iniciar sessão';
 
+
+  // Purchases
+  @override
+  String get purchaseIdentityError => "Não foi possível confirmar sua conta na loja. Verifique sua conexão e tente novamente.";
+  @override
+  String get purchaseActivationError => "Sua compra foi concluída, mas ainda não foi possível ativá-la. Toque em Restaurar compras em instantes.";
+  @override
+  String get purchaseAlreadyHasAccess => "Você já tem acesso ao Sleepable. Você pode gerenciar seu plano em Minha assinatura.";
+  @override
+  String get requestNotAllowed => "Você não tem acesso a isso no momento.";
+  @override
+  String get sessionExpired => "Sua sessão expirou. Entre novamente.";
+  @override
+  String get dreamImagesFailed => "Não foi possível criar as imagens deste sonho.";
+  @override
+  String get dreamImagesTakingLong => "As imagens do seu sonho estão demorando mais que o normal. Abra este sonho mais tarde em Meus sonhos.";
+  @override
+  String get trialReportsLocked => "Seu teste inclui o relatório da sua primeira noite registrada. Os relatórios semanais e mensais abrem quando o Premium começar.";
+  @override
+  String get trackFirstNightForReport => "Registre sua primeira noite para ver seu relatório.";
+  @override
+  String get reportLoadError => "Parte do seu relatório não pôde ser carregada. Puxe para baixo para tentar de novo.";
+  @override
+  String get subscribeYearlyPrice => "Assinar — {price}/ano";
+  @override
+  String get deleteKeepsSubscription => "Você tem uma assinatura ou teste gratuito ativo. Excluir sua conta não o cancela e a loja continuará cobrando. Cancele primeiro na loja.";
+  @override
+  String get manageSubscription => "Gerenciar assinatura";
+  @override
+  String get deleteAnyway => "Excluir mesmo assim";
 }

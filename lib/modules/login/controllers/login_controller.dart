@@ -217,14 +217,10 @@ class LoginController extends BaseController {
         // purchases, otherwise the customer stays anonymous.
         await subController.identifyUser(response.data.uuid);
 
-        // Apply the access block from this response before any screen renders.
-        // Trial/has_access live on `data`, not only on GET /users/subscription/.
-        await subController.applyAccessPayload(response.data.accessPayload);
-
-        await Future.wait([
-          subController.getBackendSubscriptionStatus(),
-          subController.checkSpinStatus(),
-        ]);
+        // Access comes from the login body first, before any navigation.
+        // initData() then refreshes it from /users/subscription/; if that call
+        // fails the login body's state stays in place.
+        await subController.applyAccess(response.data.access?.raw);
 
         // 🔥 Navigation se pehle Products load karna trigger karein
         // Agar Paywall dikhana hai to ye zaroori hai
@@ -488,13 +484,10 @@ class LoginController extends BaseController {
       // purchases, otherwise the customer stays anonymous.
       await subController.identifyUser(targetData.uuid ?? '');
 
-      // Apply the access block from this response before any screen renders.
-      await subController.applyAccessPayload(targetData.accessPayload);
-
-      await Future.wait([
-        subController.getBackendSubscriptionStatus(),
-        subController.checkSpinStatus(),
-      ]);
+      // Access comes from the login body first, before any navigation.
+      // initData() then refreshes it from /users/subscription/; if that call
+      // fails the login body's state stays in place.
+      await subController.applyAccess(targetData.access?.raw);
 
       await subController.initData();
 

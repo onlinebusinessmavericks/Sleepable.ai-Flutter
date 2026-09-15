@@ -719,19 +719,22 @@ class ProgressApis {
   }
 
   /// ✨ Retrieve AI-generated sleep insights
-  static Future<AIInsightsResponse> getAIInsights({required String dataType, String? date}) async {
+  static Future<AIInsightsResponse> getAIInsights({required String dataType, String? date, int? trackerId}) async {
     //  final endpoint = APIEndPoints.aiInsights; // Ensure this is "api/v1/progress/ai-insights/"
     String endpoint = "${APIEndPoints.aiInsights}?data_type=$dataType";
     if (date != null && date.isNotEmpty) endpoint += "&date=$date";
+    // Trial: the first report night's session.
+    if (trackerId != null) endpoint += "&tracker_id=$trackerId";
     final response = await buildHttpResponse(endPoint: endpoint, method: MethodType.get);
 
     return AIInsightsResponse.fromJson(response);
   }
 
-  static Future<RecommendationsResponse> getRecommendations({required String type, String? date}) async {
-    // final endpoint = APIEndPoints.personalizedRecommendations;
+  /// Recommendations take no date: they are for the latest session, or for
+  /// [trackerId] (the trial's first report night).
+  static Future<RecommendationsResponse> getRecommendations({required String type, int? trackerId}) async {
     String endpoint = "${APIEndPoints.personalizedRecommendations}?data_type=$type";
-    if (date != null && date.isNotEmpty) endpoint += "&date=$date";
+    if (trackerId != null) endpoint += "&tracker_id=$trackerId";
     final response = await buildHttpResponse(endPoint: endpoint, method: MethodType.get);
     return RecommendationsResponse.fromJson(response);
   }

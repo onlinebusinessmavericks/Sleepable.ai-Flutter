@@ -18,11 +18,30 @@ import '../model/sleep_calendar_response.dart';
 import '../model/sleep_quality_response.dart';
 import '../model/sleep_stages_response.dart';
 import '../views/progress_view.dart';
+import '../../subscription/model/access_state.dart';
+
+/// Report tabs by id, never by their translated label.
+enum ReportTab { today, week, month }
+
+extension ReportTabDataType on ReportTab {
+  String get dataType => switch (this) {
+        ReportTab.today => 'today',
+        ReportTab.week => 'weekly',
+        ReportTab.month => 'monthly',
+      };
+}
 
 class ProgressController extends GetxController with GetTickerProviderStateMixin {
   bool _isInitialLoad = true;
   // --- 1. Global & Tab States ---
-  var selectedTab = "today".obs;
+  final Rx<ReportTab> selectedTab = ReportTab.today.obs;
+
+  /// Shown in place of the report sections: a trial Week/Month tab, or no
+  /// tracked night yet. Empty when the report can be shown.
+  final RxString reportNotice = ''.obs;
+
+  /// A section failed to load: the backend's 403 message, or a generic error.
+  final RxString reportError = ''.obs;
   var isLoading = false.obs; // Used for Snoring loading
 
   // --- 2. Module Loading States ---
@@ -133,10 +152,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
 
     // Just set the value. Do NOT call loadAllData() here if
     // you are going to call changeTab right after.
-    selectedTab.value = "today";
+    selectedTab.value = ReportTab.today;
 
     // Call changeTab once. This will act as your initial data fetch.
-    changeTab("today");
+    changeTab(ReportTab.today);
     fetchSleepCalendar();
   }
 
@@ -168,237 +187,104 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     super.onClose();
   }
 
-  /// Trial can only open the first report night. If that night is today or
-  /// yesterday (IST post-midnight sessions), keep the caller's date so Today
-  /// still resolves last night instead of a stale UTC first_report_date.
-  String? _trialAwareDate(SubscriptionController? sub, bool paid, String? dateToFetch) {
-    if (sub == null || !sub.isTrial.value || paid) return dateToFetch;
-    final first = sub.firstReportDate.value;
-    if (first.isEmpty) return dateToFetch;
-    final firstDt = DateTime.tryParse(first);
-    if (firstDt == null) return first;
-    final now = DateTime.now();
-    final firstDay = DateTime(firstDt.year, firstDt.month, firstDt.day);
-    final today = DateTime(now.year, now.month, now.day);
-    if ((today.difference(firstDay).inDays).abs() <= 1) {
-      return dateToFetch;
-    }
-    return first;
-  }
+  AccessState get _access => Get.isRegistered<SubscriptionController>()
+      ? Get.find<SubscriptionController>().access.value
+      : AccessState.unknown();
 
-  bool _lockTrialToFirstNight(SubscriptionController? sub, bool paid) {
-    if (sub == null || !sub.isTrial.value || paid) return false;
-    final first = sub.firstReportDate.value;
-    if (first.isEmpty) return false;
-    final firstDt = DateTime.tryParse(first);
-    if (firstDt == null) return true;
-    final now = DateTime.now();
-    final firstDay = DateTime(firstDt.year, firstDt.month, firstDt.day);
-    final today = DateTime(now.year, now.month, now.day);
-    return (today.difference(firstDay).inDays).abs() > 1;
-  }
+  Future<void> loadAllData() =>
+      _loadReport(selectedTab.value, date: activeDate.value, includeDreams: true);
 
-  Future<void> loadAllData() async {
-    String type;
-    String? dateToFetch;
-
-    // Determine type and date based on current tab state
-    if (selectedTab.value == "today") {
-      type = "today";
-      dateToFetch = activeDate.value; // 🟢 Use the saved date!
-    } else if (selectedTab.value == "week") {
-      type = "weekly";
-      dateToFetch = null; // Weekly doesn't need a specific day
-    } else {
-      type = "monthly";
-      dateToFetch = null; // Monthly doesn't need a specific day
-    }
-
-    final sub = Get.isRegistered<SubscriptionController>()
-        ? Get.find<SubscriptionController>()
-        : null;
-    final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.showDreambot ?? false;
-    dateToFetch = _trialAwareDate(sub, paid, dateToFetch) ?? dateToFetch;
-    if (type != "today" && !(sub?.arePeriodReportsUnlocked ?? false)) {
-      type = "today";
-      selectedTab.value = "today";
-    }
-    if (_lockTrialToFirstNight(sub, paid)) {
-      type = "today";
-    }
-
-    final calls = <Future>[
-      fetchSleepChart(type),
-      fetchSleepConsistency(type, date: dateToFetch),
-      getSnoringData(type, date: dateToFetch),
-      fetchKeyInsights(type, date: dateToFetch),
-      fetchSleepQuality(type, date: dateToFetch),
-      fetchAIInsights(type, date: dateToFetch),
-      fetchRecommendations(type, date: dateToFetch),
-      fetchAchievementBadges(type, date: dateToFetch),
-      fetchSleepStages(type, date: dateToFetch),
-    ];
-    if (sub?.isRecorderUnlocked ?? false) {
-      calls.add(fetchSleepAudio(type, date: dateToFetch));
-    }
-    if (canUseDreams) {
-      calls.add(fetchMyDreams());
-    }
-    await Future.wait(calls);
-  }
   Future refreshAllData() async {
     await loadAllData();
   }
 
   void onDateSelected(String formattedDate) {
-    final sub = Get.isRegistered<SubscriptionController>()
-        ? Get.find<SubscriptionController>()
-        : null;
-    if (sub != null && sub.isTrial.value && !sub.isPremium.value) {
-      final first = sub.firstReportDate.value;
-      if (first.isNotEmpty && formattedDate != first) {
-        toast(Get.context?.lang.unlockToCheck ?? "Available on your first trial night only.");
-        return;
-      }
+    final access = _access;
+    // A trial opens only the first report night.
+    if (access.isTrial && formattedDate != access.firstReportDate) {
+      toast(Get.context?.lang.trialReportsLocked ??
+          "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.");
+      return;
     }
-    // 1. Update UI state
-    selectedTab.value = "today";
-    activeDate.value = formattedDate; // 🟢 Save the date!
+    selectedTab.value = ReportTab.today;
+    activeDate.value = formattedDate;
     dateLabel.value = DateFormat('MMM dd, yyyy').format(DateTime.parse(formattedDate));
-
-    // 2. Fetch specific date
-    fetchSpecificNightData(formattedDate);
+    _loadReport(ReportTab.today, date: formattedDate);
   }
 
-  String _tabId(String tab) {
-    final t = tab.toLowerCase();
-    if (t == 'today' || t == 'week' || t == 'month') return t;
-    final lang = Get.context?.lang;
-    if (lang != null) {
-      if (tab == lang.today) return 'today';
-      if (tab == lang.week) return 'week';
-      if (tab == lang.month) return 'month';
-    }
-    return 'today';
-  }
-
-  void changeTab(String tab, {String? targetDate}) {
-    final id = _tabId(tab);
-    if (id != "today") {
-      final sub = Get.isRegistered<SubscriptionController>()
-          ? Get.find<SubscriptionController>()
-          : null;
-      if (sub == null || !sub.arePeriodReportsUnlocked) {
-        toast(sub != null && sub.isOnFreeTrial
-            ? (Get.context?.lang.unlockToCheck ?? "Unlock to check")
-            : (Get.context?.lang.unlockToCheck ?? "Unlock to check"));
-        return;
-      }
-    }
-    selectedTab.value = id;
-
-    String type;
-    if (id == "today") {
-      type = "today";
-      // 🟢 Update activeDate based on targetDate or fallback to actual today
+  void changeTab(ReportTab tab, {String? targetDate}) {
+    selectedTab.value = tab;
+    if (tab == ReportTab.today) {
       activeDate.value = targetDate ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      if (targetDate != null) {
-        DateTime parsed = DateTime.parse(targetDate);
-        dateLabel.value = DateFormat('MMM dd, yyyy').format(parsed);
-      } else {
-        dateLabel.value = "Today";
-      }
-    } else if (id == "week") {
-      type = "weekly";
-    } else if (id == "month") {
-      type = "monthly";
-    } else {
-      type = "today";
+      dateLabel.value = targetDate != null
+          ? DateFormat('MMM dd, yyyy').format(DateTime.parse(targetDate))
+          : "Today";
     }
-
-    _fetchTabSpecificData(type, customDate: activeDate.value);
-  }
-
-  Future<void> _fetchTabSpecificData(String type, {String? customDate}) async {
-    String dateToFetch = customDate ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final sub = Get.isRegistered<SubscriptionController>()
-        ? Get.find<SubscriptionController>()
-        : null;
-    final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.showDreambot ?? false;
-    dateToFetch = _trialAwareDate(sub, paid, dateToFetch) ?? dateToFetch;
-    if (type != "today" && !(sub?.arePeriodReportsUnlocked ?? false)) {
-      type = "today";
-      selectedTab.value = "today";
-    }
-    if (_lockTrialToFirstNight(sub, paid)) {
-      type = "today";
-    }
-    isChartLoading.value = true;
-    isQualityLoading.value = true;
-    isInsightsLoading.value = true;
-    isAIInsightsLoading.value = true;
-    isStagesLoading.value = true;
-    final calls = <Future>[
-      fetchSleepChart(type),
-      fetchSleepConsistency(type, date: dateToFetch),
-      getSnoringData(type, date: dateToFetch),
-      fetchKeyInsights(type, date: dateToFetch),
-      fetchSleepQuality(type, date: dateToFetch),
-      fetchAIInsights(type, date: dateToFetch),
-      fetchRecommendations(type, date: dateToFetch),
-      fetchAchievementBadges(type, date: dateToFetch),
-      fetchSleepStages(type, date: dateToFetch),
-    ];
-    if (sub?.isRecorderUnlocked ?? false) {
-      calls.add(fetchSleepAudio(type, date: dateToFetch));
-    }
-    if (canUseDreams && _isInitialLoad) {
-      calls.add(fetchMyDreams());
-    }
-    await Future.wait(calls);
-
+    _loadReport(tab, date: activeDate.value, includeDreams: _isInitialLoad);
     _isInitialLoad = false;
   }
 
-  Future<void> fetchSpecificNightData(String date) async {
-    // Set loading states
-    isStagesLoading.value = true;
-    isQualityLoading.value = true;
-    isLoading.value = true; // snoring loading
+  /// Loads the report for [tab]. In a trial, Week and Month are locked up front
+  /// and Today is always the first report night (date = first_report_date,
+  /// tracker_id = first_report_tracker_id) - no calls are made for a locked tab
+  /// or before the first night is tracked.
+  Future<void> _loadReport(ReportTab tab, {String? date, bool includeDreams = false}) async {
+    final access = _access;
+    reportNotice.value = '';
+    reportError.value = '';
 
-    try {
-      final sub = Get.isRegistered<SubscriptionController>()
-          ? Get.find<SubscriptionController>()
-          : null;
-      // We use "today" as the dataType because we want the 24h view for a specific date
-      final calls = <Future>[
-        fetchSleepStages("today", date: date),
-        fetchSleepQuality("today", date: date),
-        getSnoringData("today", date: date),
-        fetchKeyInsights("today", date: date),
-        fetchSleepConsistency("today", date: date),
-        fetchAIInsights("today", date: date),
-        fetchRecommendations("today", date: date),
-        fetchAchievementBadges("today", date: date),
-      ];
-      if (sub?.isRecorderUnlocked ?? false) {
-        calls.add(fetchSleepAudio("today", date: date));
+    String? day = date;
+    int? trackerId;
+    bool reportOpen = true;
+    if (access.isTrial) {
+      final first = access.firstReportDate;
+      if (tab != ReportTab.today) {
+        reportOpen = false;
+        reportNotice.value = Get.context?.lang.trialReportsLocked ??
+            "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.";
+      } else if (first == null) {
+        reportOpen = false;
+        reportNotice.value = Get.context?.lang.trackFirstNightForReport ?? "Track your first night to see your report.";
+      } else {
+        day = first;
+        trackerId = access.firstReportTrackerId;
+        activeDate.value = first;
+        final parsed = DateTime.tryParse(first);
+        if (parsed != null) dateLabel.value = DateFormat('MMM dd, yyyy').format(parsed);
       }
-      await Future.wait(calls);
+    }
 
-    } catch (e) {
-      debugPrint("Error fetching historical date: $e");
-    } finally {
-      isStagesLoading.value = false;
-      isQualityLoading.value = false;
-      isLoading.value = false;
+    final type = tab.dataType;
+    await Future.wait(<Future>[
+      if (reportOpen) ...[
+        fetchSleepChart(type),
+        fetchSleepConsistency(type, date: day),
+        getSnoringData(type, date: day),
+        fetchKeyInsights(type, date: day),
+        fetchSleepQuality(type, date: day),
+        fetchAIInsights(type, date: day, trackerId: trackerId),
+        fetchRecommendations(type, trackerId: trackerId),
+        fetchAchievementBadges(type, date: day),
+        fetchSleepStages(type, date: day),
+        if (access.features.sleepRecorder.unlocked) fetchSleepAudio(type, date: day),
+      ],
+      if (includeDreams && access.features.dreamBot.unlocked) fetchMyDreams(),
+    ]);
+  }
+
+  /// No silent failures: a 403 shows the backend's message in the report, any
+  /// other failure a generic error there.
+  void _reportFailure(String section, Object e) {
+    debugPrint("❌ $section: $e");
+    if (e is ApiError && e.isForbidden) {
+      reportError.value = e.message;
+    } else if (reportError.value.isEmpty) {
+      reportError.value = Get.context?.lang.reportLoadError ??
+          "Some of your report couldn't be loaded. Pull down to try again.";
     }
   }
 
-  Future<void> fetchAIInsights(String type, {String? date}) async {
+  Future<void> fetchAIInsights(String type, {String? date, int? trackerId}) async {
     // 🔒 Apple 5.1.1(i) / 5.1.2(i): sleep data is never sent to a third-party AI
     // without user consent. Consent is granted via the DreamBot dialog or Settings.
     if (!hasAiConsent()) {
@@ -414,7 +300,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       isAIInsightsLoading.value = true;
 
       // API correctly appends ?data_type=$type and &date=$date
-      final response = await ProgressApis.getAIInsights(dataType: type, date: date);
+      final response = await ProgressApis.getAIInsights(dataType: type, date: date, trackerId: trackerId);
 
       if (response.success && response.data != null) {
         aiInsightsList.assignAll(response.data!.insights);
@@ -422,9 +308,8 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         aiInsightsList.clear();
       }
     } catch (e) {
-      debugPrint("❌ AI Insights Error: $e");
+      _reportFailure("AI insights", e);
       aiInsightsList.clear();
-      _toastReportError(e);
     } finally {
       isAIInsightsLoading.value = false;
     }
@@ -442,7 +327,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         calendarData.assignAll(response.months);
       }
     } catch (e) {
-      debugPrint("❌ Calendar Error: $e");
+      _reportFailure("Sleep calendar", e);
     } finally {
       isCalendarLoading.value = false;
     }
@@ -455,8 +340,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       chartValues.value = response.data.breakdown.map((e) => e.value).toList();
       chartLabels.value = response.data.breakdown.map((e) => e.label).toList();
     } catch (e) {
-      debugPrint("❌ Sleep chart error: $e");
-      _toastReportError(e);
+      _reportFailure("Sleep duration chart", e);
     } finally {
       isChartLoading.value = false;
     }
@@ -472,8 +356,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       avgWakeTime.value = (response.data.averageWakeTime == null || response.data.averageWakeTime == "null") ? "--" : response.data.averageWakeTime!;
       sleepWindowVariance.value = response.data.sleepWindowVariance;
     } catch (e) {
-      debugPrint("❌ Consistency error: $e");
-      _toastReportError(e);
+      _reportFailure("Sleep consistency", e);
     } finally {
       isConsistencyLoading.value = false;
     }
@@ -494,7 +377,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         }).toList();
       }
     } catch (e) {
-      debugPrint("❌ Snoring Error: $e");
+      _reportFailure("Snoring", e);
     } finally {
       isLoading.value = false;
     }
@@ -519,9 +402,8 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       hasInsightsData.value = response.data.hasData;
 
     } catch (e) {
-      debugPrint("❌ Insights error: $e");
       hasInsightsData.value = false;
-      _toastReportError(e);
+      _reportFailure("Key insights", e);
     } finally {
       isInsightsLoading.value = false;
     }
@@ -537,7 +419,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         achiveData.value = response.data!.sleepableWithYouCount;
       }
     } catch (e) {
-      debugPrint("❌ Badges error: $e");
+      _reportFailure("Achievement badges", e);
     } finally {
       isLoadingBadges.value = false;
     }
@@ -582,9 +464,8 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         debugPrint("✅ Sleep Quality Updated: ${todaySleepScore.value}");
       }
     } catch (e) {
-      debugPrint("❌ Sleep Quality Error: $e");
       hasQualityData.value = false;
-      _toastReportError(e);
+      _reportFailure("Sleep quality", e);
     } finally {
       isQualityLoading.value = false;
     }
@@ -623,8 +504,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         hourLabels.assignAll(response.data!.hourLabels);
       }
     } catch (e) {
-      debugPrint("❌ Sleep Stages API Error: $e");
-      _toastReportError(e);
+      _reportFailure("Sleep stages", e);
     } finally {
       isStagesLoading.value = false;
     }
@@ -637,13 +517,13 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         myDreamsList.assignAll(response.data.toList().cast<DreamData>());
       }
     } catch (e) {
-      debugPrint("❌ Dream error: $e");
+      _reportFailure("Dream list", e);
     } finally {
       isLoadingDreams.value = false;
     }
   }
 
-  Future<void> fetchRecommendations(String type, {String? date}) async {
+  Future<void> fetchRecommendations(String type, {int? trackerId}) async {
     // 🔒 Personalised recommendations are AI-generated, so consent is required.
     if (!hasAiConsent()) {
       recommendationList.clear();
@@ -652,12 +532,13 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
 
     try {
       isRecLoading.value = true;
-      final response = await ProgressApis.getRecommendations(type: type, date: date);
+      final response = await ProgressApis.getRecommendations(type: type, trackerId: trackerId);
       if (response.success && response.data != null) {
         recommendationList.assignAll(response.data!.recommendations);
       }
     } catch (e) {
-      debugPrint("❌ Recommendations Error: $e");
+      recommendationList.clear();
+      _reportFailure("Recommendations", e);
     } finally {
       isRecLoading.value = false;
     }
@@ -687,7 +568,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         }
       }
     } catch (e) {
-      debugPrint("❌ Audio error: $e");
+      _reportFailure("Sleep recordings", e);
     } finally {
       isLoadingAudio.value = false;
     }
@@ -774,14 +655,6 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       default: return Colors.blueAccent;
     }
   }
-
-  void _toastReportError(Object e) {
-    final msg = lastForbiddenDetail?['message']?.toString();
-    if (msg != null && msg.isNotEmpty) {
-      toast(msg);
-    }
-  }
-
   String getStageStatus(String title, double percent) {
     if (percent == 0) return "None";
 

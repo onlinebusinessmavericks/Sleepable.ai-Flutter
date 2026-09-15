@@ -209,7 +209,14 @@ class SettingsController extends GetxController {
 
   /// -------------------- DELETE ACCOUNT --------------------
 
-  void showDeleteAccountDialog(BuildContext context) {
+  /// Deleting the account does not cancel a store subscription or trial, so a
+  /// user who still has one is told that first and offered the store page.
+  Future<void> showDeleteAccountDialog(BuildContext context) async {
+    if (await _hasActiveStoreSubscription()) {
+      if (!context.mounted) return;
+      final proceed = await _confirmDeleteWithSubscription(context);
+      if (proceed != true || !context.mounted) return;
+    }
     showDialog(
       context: context,
       builder: (_) {
@@ -276,6 +283,58 @@ class SettingsController extends GetxController {
       },
     );
   }
+  Future<bool> _hasActiveStoreSubscription() async {
+    if (!Get.isRegistered<SubscriptionController>()) return false;
+    final sub = Get.find<SubscriptionController>();
+    await sub.refreshEntitlementDetails();
+    final ent = sub.activeEntitlement.value;
+    // A store record decides; without one, a running trial still counts.
+    if (ent != null) return ent.isActive && ent.willRenew;
+    return sub.access.value.isTrial;
+  }
+
+  Future<bool?> _confirmDeleteWithSubscription(BuildContext context) {
+    final lang = context.lang;
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(lang.deleteTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: Text(lang.deleteKeepsSubscription, style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.4)),
+        actionsAlignment: MainAxisAlignment.center,
+        actionsOverflowDirection: VerticalDirection.down,
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+              _openStoreSubscriptions();
+            },
+            child: Text(lang.manageSubscription),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(lang.deleteAnyway, style: const TextStyle(color: Colors.redAccent)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(lang.cancel, style: const TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openStoreSubscriptions() async {
+    final url = GetPlatform.isIOS
+        ? Uri.parse('https://apps.apple.com/account/subscriptions')
+        : Uri.parse('https://play.google.com/store/account/subscriptions');
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      appSnackbar(Get.context?.lang.error ?? "Error", Get.context?.lang.somethingWentWrong ?? "Something went wrong");
+    }
+  }
+
   /// Guards against a second tap while the first delete is still in flight.
   bool _deleteInFlight = false;
 
