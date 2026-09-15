@@ -1849,4 +1849,8 @@ class LanguageEs extends BaseLanguage {
   String get requestNotAllowed => "No tiene acceso a esto en este momento.";
   @override
   String get sessionExpired => "Su sesión ha caducado. Inicie sesión de nuevo.";
+  @override
+  String get dreamImagesFailed => "No pudimos crear las imágenes de este sueño.";
+  @override
+  String get dreamImagesTakingLong => "Las imágenes de su sueño están tardando más de lo habitual. Abra este sueño más tarde desde Mis sueños.";
 }

@@ -215,7 +215,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
+    final canUseDreams = sub?.access.value.features.dreamBot.unlocked ?? false;
     dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
     if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";
@@ -297,7 +297,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
+    final canUseDreams = sub?.access.value.features.dreamBot.unlocked ?? false;
     dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
     if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";

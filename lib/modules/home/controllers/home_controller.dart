@@ -861,7 +861,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       {'id': 'sleep_aid', 'icon': Icons.bedtime, 'lang_key': 'sleep_aid'},
       {'id': 'premium', 'icon': Icons.star, 'lang_key': 'premium'},
       {'id': 'story', 'icon': Icons.auto_stories_rounded, 'lang_key': 'story'},
-      {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot', 'premiumOnly': true, 'trialAllowed': true},
+      {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot', 'premiumOnly': true},
       {'id': 'breathwork', 'icon': Icons.lens_blur, 'lang_key': 'breathwork'},
     ];
   }

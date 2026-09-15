@@ -1007,4 +1007,8 @@ abstract class BaseLanguage {
   // Network
   String get requestNotAllowed;
   String get sessionExpired;
+
+  // DreamBot
+  String get dreamImagesFailed;
+  String get dreamImagesTakingLong;
 }

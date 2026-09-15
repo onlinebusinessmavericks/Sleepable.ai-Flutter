@@ -1849,4 +1849,8 @@ class LanguageDe extends BaseLanguage {
   String get requestNotAllowed => "Darauf haben Sie gerade keinen Zugriff.";
   @override
   String get sessionExpired => "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.";
+  @override
+  String get dreamImagesFailed => "Die Bilder zu diesem Traum konnten nicht erstellt werden.";
+  @override
+  String get dreamImagesTakingLong => "Die Bilder zu Ihrem Traum brauchen länger als üblich. Öffnen Sie den Traum später unter Meine Träume.";
 }

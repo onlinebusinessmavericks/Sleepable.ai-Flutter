@@ -186,9 +186,8 @@ class HomeScreen extends GetView<HomeController> {
                                                 // ✅ Hamesha ID check karein, Label nahi
                                                 final String itemId = item['id'];
 
-                                                // Premium-only chips: free and trial users see the paywall.
-                                                // DreamBot stays trialAllowed; Story waits for paid Premium.
-                                                if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
+                                                // DreamBot opens only when the backend unlocks it.
+                                                if (item['premiumOnly'] == true && !subController.access.value.features.dreamBot.unlocked) {
                                                   controller.showRotatingPremiumSheet(context);
                                                   return;
                                                 }
@@ -239,7 +238,7 @@ class HomeScreen extends GetView<HomeController> {
                                                             clipBehavior: Clip.none,
                                                             children: [
                                                               Icon(item['icon'], color: isTapped ? AppColors.primary : Colors.white, size: 26 * SizeConfigs.paddingScale),
-                                                              if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true))
+                                                              if (item['premiumOnly'] == true && !subController.access.value.features.dreamBot.unlocked)
                                                                 Positioned(
                                                                   right: -2,
                                                                   bottom: -2,
@@ -1000,7 +999,7 @@ class HomeScreen extends GetView<HomeController> {
                       final homeController = Get.put(HomeController());
                       homeController.showRotatingPremiumSheet(context);
                     } else if (item['id'] == 'dreambot') {
-                      if (!subController.hasAccessTo(trialAllowed: true)) {
+                      if (!subController.access.value.features.dreamBot.unlocked) {
                         Get.put(HomeController()).showRotatingPremiumSheet(context);
                         return;
                       }

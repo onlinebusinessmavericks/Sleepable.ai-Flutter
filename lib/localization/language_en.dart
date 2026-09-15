@@ -2574,4 +2574,8 @@ class LanguageEn extends BaseLanguage {
   String get requestNotAllowed => "You don't have access to this right now.";
   @override
   String get sessionExpired => "Your session has expired. Please sign in again.";
+  @override
+  String get dreamImagesFailed => "We couldn't create the visuals for this dream.";
+  @override
+  String get dreamImagesTakingLong => "Your dream visuals are taking longer than usual. Open this dream from My Dreams later to see them.";
 }

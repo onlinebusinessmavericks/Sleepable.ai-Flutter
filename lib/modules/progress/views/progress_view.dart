@@ -965,7 +965,7 @@ class ProgressScreen extends GetView<ProgressController> {
                   children: [
                     Text(context.lang.myDreams, style: textStyle),
                     SizedBox(height: 10 * SizeConfigs.paddingScale),
-                    subController.hasAccessTo(trialAllowed: true) ? _buildMyDream(context) : _lockedDreamsCard(context),
+                    subController.access.value.features.dreamBot.unlocked ? _buildMyDream(context) : _lockedDreamsCard(context),
                   ],
                 );
               }),
@@ -1891,6 +1891,8 @@ Widget _buildMyDream(BuildContext context) {
   final cardHeight = (size.width < 380 ? 70.0 : 75.0) * SizeConfigs.paddingScale;
 
   return Obx(() {
+    // "New dream" only while the backend allows another analysis.
+    final bool canStartNew = Get.find<SubscriptionController>().access.value.features.dreamBot.canAnalyze;
     // Show loader only if list is empty and fetching
     if (controller.isLoadingDreams.value && controller.myDreamsList.isEmpty) {
       return SizedBox(
@@ -1903,11 +1905,11 @@ Widget _buildMyDream(BuildContext context) {
       height: cardHeight + 20,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: controller.myDreamsList.length + 1, // +1 for the static "New" card
+        itemCount: controller.myDreamsList.length + (canStartNew ? 1 : 0), // +1 for the "New" card
         // padding: const EdgeInsets.only(left: 18), // Start padding for the whole row
         itemBuilder: (context, index) {
-          if (index == 0) {
-            // 1. Static "New Dream" Card
+          if (canStartNew && index == 0) {
+            // 1. "New Dream" card
             return _dreamCard(
               context,
               id: 0,
@@ -1920,7 +1922,7 @@ Widget _buildMyDream(BuildContext context) {
           }
 
           // 2. Dynamic Cards from API (index - 1 because index 0 is used above)
-          final dream = controller.myDreamsList[index - 1];
+          final dream = controller.myDreamsList[index - (canStartNew ? 1 : 0)];
           return _dreamCard(
             context,
             id: dream.id,

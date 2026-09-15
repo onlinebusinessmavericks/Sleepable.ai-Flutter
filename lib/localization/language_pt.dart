@@ -1850,4 +1850,8 @@ class LanguagePt extends BaseLanguage {
   String get requestNotAllowed => "Você não tem acesso a isso no momento.";
   @override
   String get sessionExpired => "Sua sessão expirou. Entre novamente.";
+  @override
+  String get dreamImagesFailed => "Não foi possível criar as imagens deste sonho.";
+  @override
+  String get dreamImagesTakingLong => "As imagens do seu sonho estão demorando mais que o normal. Abra este sonho mais tarde em Meus sonhos.";
 }

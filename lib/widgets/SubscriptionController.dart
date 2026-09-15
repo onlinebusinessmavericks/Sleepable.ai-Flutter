@@ -169,20 +169,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
 
   /// Whether a paywall may be shown - the backend's `features.show_paywall`.
   bool get showPaywalls => access.value.showPaywall;
-  /// DreamBot is usable on Premium, and once during the 3-day trial.
-  bool get showDreambot => hasAccessTo(trialAllowed: true);
-
   /// Running 3-day store trial that has not converted to Premium yet.
   bool get isOnFreeTrial => isTrial.value && !isPremium.value;
-
-  /// Whether the user can open a premium feature.
-  ///
-  /// DreamBot allows one dream during the trial, so those call sites pass
-  /// [trialAllowed]. Music and Story on the Sounds tab stay locked until paid Premium.
-  bool hasAccessTo({bool trialAllowed = false}) {
-    if (isPremium.value) return true;
-    return trialAllowed && isTrial.value;
-  }
 
   /// A track's padlock. The backend sends `is_premium` per user - it already
   /// means "locked for this user" - so it is used as it is.

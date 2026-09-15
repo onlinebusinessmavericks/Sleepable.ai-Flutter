@@ -1885,4 +1885,8 @@ class LanguageFr extends BaseLanguage {
   String get requestNotAllowed => "Vous n'avez pas accès à ce contenu pour le moment.";
   @override
   String get sessionExpired => "Votre session a expiré. Veuillez vous reconnecter.";
+  @override
+  String get dreamImagesFailed => "Impossible de créer les visuels de ce rêve.";
+  @override
+  String get dreamImagesTakingLong => "Les visuels de votre rêve prennent plus de temps que prévu. Ouvrez ce rêve plus tard depuis Mes rêves.";
 }
