@@ -1853,4 +1853,10 @@ class LanguageDe extends BaseLanguage {
   String get dreamImagesFailed => "Die Bilder zu diesem Traum konnten nicht erstellt werden.";
   @override
   String get dreamImagesTakingLong => "Die Bilder zu Ihrem Traum brauchen länger als üblich. Öffnen Sie den Traum später unter Meine Träume.";
+  @override
+  String get trialReportsLocked => "Ihre Testphase enthält den Bericht Ihrer ersten erfassten Nacht. Wochen- und Monatsberichte gibt es, sobald Premium startet.";
+  @override
+  String get trackFirstNightForReport => "Erfassen Sie Ihre erste Nacht, um Ihren Bericht zu sehen.";
+  @override
+  String get reportLoadError => "Ein Teil Ihres Berichts konnte nicht geladen werden. Zum Aktualisieren nach unten ziehen.";
 }

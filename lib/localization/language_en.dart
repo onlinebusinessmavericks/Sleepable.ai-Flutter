@@ -2578,4 +2578,10 @@ class LanguageEn extends BaseLanguage {
   String get dreamImagesFailed => "We couldn't create the visuals for this dream.";
   @override
   String get dreamImagesTakingLong => "Your dream visuals are taking longer than usual. Open this dream from My Dreams later to see them.";
+  @override
+  String get trialReportsLocked => "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.";
+  @override
+  String get trackFirstNightForReport => "Track your first night to see your report.";
+  @override
+  String get reportLoadError => "Some of your report couldn't be loaded. Pull down to try again.";
 }

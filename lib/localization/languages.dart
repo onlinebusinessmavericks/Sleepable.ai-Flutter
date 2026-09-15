@@ -1011,4 +1011,9 @@ abstract class BaseLanguage {
   // DreamBot
   String get dreamImagesFailed;
   String get dreamImagesTakingLong;
+
+  // Reports
+  String get trialReportsLocked;
+  String get trackFirstNightForReport;
+  String get reportLoadError;
 }

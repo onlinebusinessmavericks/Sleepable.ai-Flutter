@@ -1853,4 +1853,10 @@ class LanguageEs extends BaseLanguage {
   String get dreamImagesFailed => "No pudimos crear las imágenes de este sueño.";
   @override
   String get dreamImagesTakingLong => "Las imágenes de su sueño están tardando más de lo habitual. Abra este sueño más tarde desde Mis sueños.";
+  @override
+  String get trialReportsLocked => "Su prueba incluye el informe de su primera noche registrada. Los informes semanales y mensuales se abren cuando empiece Premium.";
+  @override
+  String get trackFirstNightForReport => "Registre su primera noche para ver su informe.";
+  @override
+  String get reportLoadError => "No se pudo cargar parte de su informe. Deslice hacia abajo para reintentar.";
 }

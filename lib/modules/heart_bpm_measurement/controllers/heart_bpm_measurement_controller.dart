@@ -53,7 +53,11 @@ class HeartBpmMeasurementController extends GetxController {
     final sub = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
         : null;
-    if (sub != null && sub.isTrial.value && !sub.isPremium.value && sub.trialNightsUsed.value >= 3) {
+    final access = sub?.access.value;
+    if (access != null &&
+        access.isTrial &&
+        access.trialNightsLimit > 0 &&
+        access.trialNightsUsed >= access.trialNightsLimit) {
       toast(Get.context?.lang.trialNightLimitToast ?? "Trial includes 3 nights of tracking. Buy Premium to continue.");
       if (Get.context != null) showPremiumOfferSheet4(Get.context!);
       return;
@@ -175,6 +179,8 @@ class HeartBpmMeasurementController extends GetxController {
       }
 
     } catch (e) {
+      // A 403 from tracker start carries the backend's message (e.g. the trial's
+      // night cap); ApiError.toString() is that message.
       appSnackbar(Get.context?.lang.error ?? "Error", e.toString());
     } finally {
       isLoading.value = false;
