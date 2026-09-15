@@ -1873,34 +1873,4 @@ class LanguageFr extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Veuillez saisir le code à 6 chiffres envoyé à';
   @override
   String get verifyLogin => 'Vérifier et se connecter';
-
-  // Purchases
-  @override
-  String get purchaseIdentityError => "Impossible de confirmer votre compte auprès du store. Vérifiez votre connexion et réessayez.";
-  @override
-  String get purchaseActivationError => "Votre achat a bien été effectué, mais nous n'avons pas encore pu l'activer. Appuyez sur Restaurer les achats dans un instant.";
-  @override
-  String get purchaseAlreadyHasAccess => "Vous avez déjà accès à Sleepable. Vous pouvez gérer votre abonnement dans Mon abonnement.";
-  @override
-  String get requestNotAllowed => "Vous n'avez pas accès à ce contenu pour le moment.";
-  @override
-  String get sessionExpired => "Votre session a expiré. Veuillez vous reconnecter.";
-  @override
-  String get dreamImagesFailed => "Impossible de créer les visuels de ce rêve.";
-  @override
-  String get dreamImagesTakingLong => "Les visuels de votre rêve prennent plus de temps que prévu. Ouvrez ce rêve plus tard depuis Mes rêves.";
-  @override
-  String get trialReportsLocked => "Votre essai inclut le rapport de votre première nuit suivie. Les rapports hebdomadaires et mensuels s'ouvrent au début de Premium.";
-  @override
-  String get trackFirstNightForReport => "Suivez votre première nuit pour voir votre rapport.";
-  @override
-  String get reportLoadError => "Une partie de votre rapport n'a pas pu être chargée. Tirez vers le bas pour réessayer.";
-  @override
-  String get subscribeYearlyPrice => "S'abonner — {price}/an";
-  @override
-  String get deleteKeepsSubscription => "Vous avez un abonnement ou un essai gratuit actif. Supprimer votre compte ne l'annule pas et le store continuera de vous facturer. Résiliez-le d'abord dans le store.";
-  @override
-  String get manageSubscription => "Gérer l'abonnement";
-  @override
-  String get deleteAnyway => "Supprimer quand même";
 }

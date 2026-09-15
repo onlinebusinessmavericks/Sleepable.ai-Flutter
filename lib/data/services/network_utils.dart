@@ -6,14 +6,11 @@ import 'package:http/http.dart';
 import 'package:nb_utils/nb_utils.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/shared_prefences.dart';
-import '../../localization/lang_extension.dart';
-import '../../routes/app_pages.dart';
 import '../../widgets/ai_consent_dialog.dart';
 import 'api_end_point.dart';
 import 'api_sevices.dart';
 import 'common.dart';
 import 'config.dart';
-import 'session_clear.dart';
 
 Map<String, String> defaultHeaders() {
   Map<String, String> header = {};
@@ -96,7 +93,6 @@ Future<dynamic> buildHttpResponse({
   final Uri url = buildBaseUrl(endPoint);
   final Map<String, String> headers =
       header ?? buildHeaderTokens(isAuthRequired: allowTokenRefresh);
-  final String? sentToken = headers[HttpHeaders.authorizationHeader];
 
   Response response;
 
@@ -117,6 +113,28 @@ Future<dynamic> buildHttpResponse({
           .timeout(timeoutDuration);
     }
 
+    // if (response.statusCode == 401 &&
+    //     allowTokenRefresh &&
+    //     !retrying) {
+    //
+    //   final refreshed = await refreshAccessToken();
+    //
+    //   if (refreshed) {
+    //     return await buildHttpResponse(
+    //       endPoint: endPoint,
+    //       method: method,
+    //       request: request,
+    //       header: null,
+    //       retrying: true,
+    //       allowTokenRefresh: false,
+    //     );
+    //   } else {
+    //     toast('Session expired. Please login again');
+    //     throw 'Unauthorized';
+    //   }
+    // }
+// after response is received
+
     apiPrint(
       url: url.toString(),
       headers: jsonEncode(headers),
@@ -127,19 +145,6 @@ Future<dynamic> buildHttpResponse({
       methodType: method.name.toUpperCase(),
     );
 
-    if (response.statusCode == 401 && !retrying && _canRefreshFor(endPoint, sentToken)) {
-      if (await _refreshAfterUnauthorized(sentToken)) {
-        return await buildHttpResponse(
-          endPoint: endPoint,
-          method: method,
-          request: request,
-          header: header == null ? null : _withCurrentToken(header),
-          retrying: true,
-          allowTokenRefresh: allowTokenRefresh,
-        );
-      }
-      await _signOutToLogin();
-    }
 
     return await handleResponse(response);
 
@@ -162,7 +167,6 @@ Future<dynamic> buildMultipartHttpResponse({
   String fileKey = 'file',
   MethodType method = MethodType.post,
   Map<String, String>? header,
-  bool retrying = false,
 }) async {
 
   /// 🌐 INTERNET CHECK FIRST
@@ -181,7 +185,6 @@ Future<dynamic> buildMultipartHttpResponse({
   request.headers.addAll(
     header ?? buildHeaderTokens(isAuthRequired: true),
   );
-  final String? sentToken = request.headers[HttpHeaders.authorizationHeader];
 
   fields.forEach((key, value) {
     request.fields[key] = value.toString();
@@ -213,171 +216,18 @@ Future<dynamic> buildMultipartHttpResponse({
     methodType: "MultiPart",
   );
 
-  if (response.statusCode == 401 && !retrying && _canRefreshFor(endPoint, sentToken)) {
-    if (await _refreshAfterUnauthorized(sentToken)) {
-      return buildMultipartHttpResponse(
-        endPoint: endPoint,
-        fields: fields,
-        file: file,
-        fileKey: fileKey,
-        method: method,
-        header: header == null ? null : _withCurrentToken(header),
-        retrying: true,
-      );
-    }
-    await _signOutToLogin();
-  }
-
   return handleResponse(response);
 }
 
-//region Token refresh
-
-/// Endpoints that must never trigger a refresh: the refresh call itself, and
-/// the sign-in / sign-up / logout calls, where a 401 is an answer for the user
-/// rather than an expired session.
-const Set<String> _noRefreshEndpoints = {
-  APIEndPoints.refreshToken,
-  APIEndPoints.socialLogin,
-  APIEndPoints.logOut,
-  APIEndPoints.forgotPassword,
-  APIEndPoints.resetPassword,
-  'users/email-login/',
-  'users/email-verify-otp/',
-  'users/email-register/',
-};
-
-bool _canRefreshFor(String endPoint, String? sentToken) {
-  // Only a request that carried an access token can have an expired one.
-  if (sentToken == null || sentToken.isEmpty) return false;
-  final path = endPoint.startsWith(BASE_URL) ? endPoint.substring(BASE_URL.length) : endPoint;
-  final bare = path.split('?').first;
-  return !_noRefreshEndpoints.contains(bare);
-}
-
-Map<String, String> _withCurrentToken(Map<String, String> header) {
-  final token = getStringAsync(AppSharedPreferenceKeys.apiToken);
-  return {
-    ...header,
-    if (token.isNotEmpty) HttpHeaders.authorizationHeader: 'Bearer $token',
-  };
-}
-
-/// The refresh in progress, shared by every request that hit a 401 meanwhile.
-Future<bool>? _refreshInFlight;
-bool _signingOut = false;
-
-/// Gets a new access token after a 401. Returns true when the request should
-/// be retried.
-Future<bool> _refreshAfterUnauthorized(String? sentToken) {
-  // Another request already refreshed while this one was on the wire.
-  final current = getStringAsync(AppSharedPreferenceKeys.apiToken);
-  if (current.isNotEmpty && 'Bearer $current' != sentToken) {
-    return Future.value(true);
-  }
-  return _refreshInFlight ??= _refreshAccessToken().whenComplete(() => _refreshInFlight = null);
-}
-
-/// POST /users/refresh-token/ with {"refresh"} and no Authorization header -
-/// the backend rejects the call when an expired access token is attached.
-Future<bool> _refreshAccessToken() async {
-  final refresh = getStringAsync(AppSharedPreferenceKeys.refreshToken);
-  if (refresh.isEmpty) return false;
-  try {
-    final response = await post(
-      buildBaseUrl(APIEndPoints.refreshToken),
-      body: jsonEncode({'refresh': refresh}),
-      headers: buildHeaderTokens(isAuthRequired: false),
-    ).timeout(const Duration(seconds: 30));
-
-    apiPrint(
-      url: buildBaseUrl(APIEndPoints.refreshToken).toString(),
-      headers: '',
-      request: '',
-      hasRequest: false,
-      statusCode: response.statusCode,
-      responseBody: '',
-      methodType: 'POST',
-    );
-
-    if (!response.statusCode.isSuccessful()) return false;
-    final body = jsonDecode(response.body);
-    if (body is! Map) return false;
-    // Accept the tokens flat, under `data`, or under `data.tokens`.
-    Map source = body;
-    if (source['data'] is Map) source = source['data'];
-    if (source['tokens'] is Map) source = source['tokens'];
-
-    final access = (source['access'] ?? '').toString();
-    if (access.isEmpty) return false;
-    await setValue(AppSharedPreferenceKeys.apiToken, access);
-    final newRefresh = (source['refresh'] ?? '').toString();
-    if (newRefresh.isNotEmpty) {
-      await setValue(AppSharedPreferenceKeys.refreshToken, newRefresh);
-    }
-    return true;
-  } catch (e) {
-    log('Token refresh failed: $e');
-    return false;
-  }
-}
-
-/// The session cannot be renewed: clear it and send the user to sign in.
-Future<void> _signOutToLogin() async {
-  if (_signingOut) return;
-  _signingOut = true;
-  try {
-    toast(get_state.Get.context?.lang.sessionExpired ?? 'Your session has expired. Please sign in again.');
-    await SessionClear.clearForLogout();
-    get_state.Get.offAllNamed(Routes.login);
-  } finally {
-    _signingOut = false;
-  }
-}
-
-//endregion
 
 
-
-/// A failed request, with the body the backend sent for it.
+/// Body of the most recent 403, when it was JSON.
 ///
-/// [toString] is the message to show, so callers that display `e.toString()`
-/// keep working. Callers that need the detail of a 403 - `is_trial`, how much
-/// of a limit was used - read [body] from the error of their own request.
-class ApiError implements Exception {
-  final int statusCode;
-
-  /// The backend's `message`, or a localized generic line when it sent none.
-  final String message;
-
-  /// Whether [message] came from the backend.
-  final bool hasBackendMessage;
-  final Map<String, dynamic>? body;
-
-  const ApiError(this.statusCode, this.message, {this.body, this.hasBackendMessage = false});
-
-  bool get isForbidden => statusCode == 403;
-  String? get code => body?['code']?.toString();
-
-  @override
-  String toString() => message;
-}
-
-Map<String, dynamic>? _decodeMap(String raw) {
-  try {
-    final body = jsonDecode(raw);
-    return body is Map ? Map<String, dynamic>.from(body) : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-String? _backendMessage(Map<String, dynamic>? body) {
-  final message = body?['message'] ?? body?['detail'];
-  if (message is! String) return null;
-  final text = message.trim();
-  return text.isEmpty ? null : text;
-}
+/// A 403 is thrown as a plain string, so callers lose the detail the backend
+/// sends with it - which plan the user is on, how much of a limit they used.
+/// DreamBot needs `is_trial` to tell a trial user (who only has to wait for the
+/// trial to convert) from a free user (who has to buy).
+Map<String, dynamic>? lastForbiddenDetail;
 Future handleResponse(Response response, {HttpResponseType httpResponseType = HttpResponseType.JSON}) async {
   if (!await isNetworkAvailable()) {
     throw errorInternetNotAvailable;
@@ -387,21 +237,29 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
   // }
   // Inside your handleResponse function
   if (response.statusCode == 403) {
-    final body = _decodeMap(response.body);
-    final backendMessage = _backendMessage(body);
     // Apple Guideline 5.1.1(i) / 5.1.2(i): the backend refuses AI requests until
-    // the user consents.
-    if (body?['code'] == 'AI_CONSENT_REQUIRED') {
-      final consentMessage = backendMessage ?? 'AI consent required';
-      handleAiConsentRequired(consentMessage);
-      throw ApiError(403, consentMessage, body: body, hasBackendMessage: backendMessage != null);
+    // the user consents. That case must keep its own message, because callers
+    // treat a plain "Access forbidden" as the premium-limit error.
+    bool consentRequired = false;
+    String consentMessage = 'AI consent required';
+    lastForbiddenDetail = null;
+    try {
+      var body = jsonDecode(response.body);
+      if (body is Map) lastForbiddenDetail = Map<String, dynamic>.from(body);
+      if (body is Map && body['code'] == 'AI_CONSENT_REQUIRED') {
+        consentRequired = true;
+        consentMessage = body['message']?.toString() ?? consentMessage;
+      }
+    } catch (_) {
+      // Body was not JSON; fall through to the generic message below.
     }
-    throw ApiError(
-      403,
-      backendMessage ?? get_state.Get.context?.lang.requestNotAllowed ?? "You don't have access to this right now.",
-      body: body,
-      hasBackendMessage: backendMessage != null,
-    );
+
+    if (consentRequired) {
+      handleAiConsentRequired(consentMessage);
+      throw consentMessage;
+    }
+
+    throw 'Access forbidden';
   }
   else if (response.statusCode == 429) {
     throw 'Too many requests';

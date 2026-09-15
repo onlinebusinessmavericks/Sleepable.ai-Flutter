@@ -1,5 +1,3 @@
-import '../../subscription/model/access_state.dart';
-
 
 class HomePageResponse {
   final bool success;
@@ -31,11 +29,7 @@ class HomePageResponse {
 }
 
 class HomePageData {
-  /// `data.access`, the same block GET /users/subscription/ returns.
-  /// Kept raw so the cached home payload round-trips it unchanged.
-  final Map<String, dynamic>? accessJson;
-
-  AccessState? get access => AccessState.tryParse(accessJson);
+  final PremiumBanner premiumBanner;
   final SleepSummary sleepSummary;
   final TonightSleepGoal tonightSleepGoal;
   final List<WeeklySleepPattern> weeklySleepPattern;
@@ -53,7 +47,7 @@ class HomePageData {
   final SleepStatus? sleepStatus;
 
   HomePageData({
-    this.accessJson,
+    required this.premiumBanner,
     required this.sleepSummary,
     required this.tonightSleepGoal,
     required this.weeklySleepPattern,
@@ -73,7 +67,7 @@ class HomePageData {
 
   factory HomePageData.fromJson(Map<String, dynamic> json) {
     return HomePageData(
-      accessJson: json['access'] is Map ? Map<String, dynamic>.from(json['access']) : null,
+      premiumBanner: PremiumBanner.fromJson(json['premium_banner'] ?? {}),
       sleepSummary: SleepSummary.fromJson(json['sleep_summary'] ?? {}),
       tonightSleepGoal: TonightSleepGoal.fromJson(json['tonight_sleep_goal'] ?? {}),
       weeklySleepPattern: (json['weekly_sleep_pattern'] as List? ?? [])
@@ -104,7 +98,7 @@ class HomePageData {
 
   Map<String, dynamic> toJson() {
     return {
-      "access": accessJson,
+      "premium_banner": premiumBanner.toJson(),
       "sleep_summary": sleepSummary.toJson(),
       "tonight_sleep_goal": tonightSleepGoal.toJson(),
       "weekly_sleep_pattern": weeklySleepPattern.map((e) => e.toJson()).toList(),
@@ -122,6 +116,15 @@ class HomePageData {
       "sleep_status": sleepStatus?.toJson(),
     };
   }
+}
+
+class PremiumBanner {
+  final bool isPremium;
+  PremiumBanner({required this.isPremium});
+  factory PremiumBanner.fromJson(Map<String, dynamic> json) =>
+      PremiumBanner(isPremium: json['is_premium'] ?? false);
+
+  Map<String, dynamic> toJson() => {"is_premium": isPremium};
 }
 
 class SleepQuiz {

@@ -89,7 +89,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
               const SizedBox(height: 20),
               if (isPremium || isTrial) ..._details(ent: ent, isTrial: isTrial),
               const SizedBox(height: 8),
-              ..._actions(isPremium: isPremium, isTrial: isTrial, showPaywall: sub.access.value.showPaywall, ent: ent),
+              ..._actions(isPremium: isPremium, isTrial: isTrial, ent: ent),
               const SizedBox(height: 28),
               Text(
                 _copy("storeNote"),
@@ -122,16 +122,7 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
     }
 
     final days = sub.trialDaysRemaining;
-    // A cancelled trial never turns into Premium: say when it ends and that
-    // nothing will be charged.
-    final bool trialCancelled =
-        isTrial && ent != null && (ent.unsubscribeDetectedAt != null || !ent.willRenew);
-    final trialEnd = sub.trialEndsAt.value;
-    final String trialEndDate = _date(ent?.expirationDate) ??
-        (trialEnd == null ? "" : DateFormat('d MMM yyyy').format(trialEnd.toLocal()));
-    final String? subtitle = trialCancelled
-        ? _copy("trialEndsNoCharge").replaceAll("{date}", trialEndDate)
-        : isTrial
+    final String? subtitle = isTrial
         ? (days == null
             ? _copy("trialRunning")
             : days <= 0
@@ -214,16 +205,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
     rows.add(_row(_copy("plan"), _planName(ent)));
     if (started != null) rows.add(_row(_copy("started"), started));
     if (ends != null) {
-      final bool trialCancelled = isTrial && (cancelled || !ent.willRenew);
       rows.add(_row(
-        trialCancelled
-            ? _copy("trialEnds")
-            : isTrial
-                ? _copy("firstCharge")
-                : cancelled || !ent.willRenew
-                    ? _copy("accessUntil")
-                    : _copy("renewsOn"),
-        trialCancelled ? "$ends — ${_copy("wontBeCharged")}" : ends,
+        isTrial
+            ? _copy("firstCharge")
+            : cancelled || !ent.willRenew
+                ? _copy("accessUntil")
+                : _copy("renewsOn"),
+        ends,
       ));
     }
     rows.add(_row(
@@ -282,10 +270,10 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
   // Actions
   // ---------------------------------------------------------------------------
 
-  List<Widget> _actions({required bool isPremium, required bool isTrial, required bool showPaywall, EntitlementInfo? ent}) {
+  List<Widget> _actions({required bool isPremium, required bool isTrial, EntitlementInfo? ent}) {
     final buttons = <Widget>[];
 
-    if (showPaywall) {
+    if (!isPremium && !isTrial) {
       buttons.add(_primaryButton(_copy("seePlans"), () => showPremiumOfferSheet(context)));
     }
 
@@ -386,16 +374,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsIn": "Premium starts in {days} days",
         "trialEndsTomorrow": "Premium starts tomorrow",
         "trialEndsToday": "Premium starts today",
-        "trialIncludes": "During the trial you get 1 dream and 1 sleep report.",
+        "trialIncludes": "During the trial you get 1 dream and 1 sleep report. Recordings unlock when Premium starts.",
         "plan": "Plan",
         "price": "Price",
         "started": "Started on",
         "renewsOn": "Renews on",
         "accessUntil": "Access until",
         "firstCharge": "First charge on",
-        "trialEnds": "Trial ends",
-        "wontBeCharged": "you won't be charged",
-        "trialEndsNoCharge": "Trial ends {date} — you won't be charged",
         "autoRenew": "Auto-renew",
         "on": "On",
         "off": "Off",
@@ -424,16 +409,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsIn": "Premium startet in {days} Tagen",
         "trialEndsTomorrow": "Premium startet morgen",
         "trialEndsToday": "Premium startet heute",
-        "trialIncludes": "Waehrend der Testphase erhalten Sie 1 Traum und 1 Schlafbericht.",
+        "trialIncludes": "Waehrend der Testphase erhalten Sie 1 Traum und 1 Schlafbericht. Aufnahmen werden mit Premium freigeschaltet.",
         "plan": "Tarif",
         "price": "Preis",
         "started": "Begonnen am",
         "renewsOn": "Verlaengert am",
         "accessUntil": "Zugriff bis",
         "firstCharge": "Erste Abbuchung am",
-        "trialEnds": "Testphase endet am",
-        "wontBeCharged": "keine Abbuchung",
-        "trialEndsNoCharge": "Testphase endet am {date} — es wird nichts abgebucht",
         "autoRenew": "Automatische Verlaengerung",
         "on": "An",
         "off": "Aus",
@@ -462,16 +444,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsIn": "Premium demarre dans {days} jours",
         "trialEndsTomorrow": "Premium demarre demain",
         "trialEndsToday": "Premium demarre aujourd'hui",
-        "trialIncludes": "Pendant l'essai vous avez 1 reve et 1 rapport de sommeil.",
+        "trialIncludes": "Pendant l'essai vous avez 1 reve et 1 rapport de sommeil. Les enregistrements arrivent avec Premium.",
         "plan": "Formule",
         "price": "Prix",
         "started": "Debut le",
         "renewsOn": "Renouvellement le",
         "accessUntil": "Acces jusqu'au",
         "firstCharge": "Premier paiement le",
-        "trialEnds": "Fin de l'essai",
-        "wontBeCharged": "aucun paiement",
-        "trialEndsNoCharge": "L'essai se termine le {date} — vous ne serez pas debite",
         "autoRenew": "Renouvellement auto",
         "on": "Active",
         "off": "Desactive",
@@ -500,16 +479,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsIn": "Premium empieza en {days} dias",
         "trialEndsTomorrow": "Premium empieza manana",
         "trialEndsToday": "Premium empieza hoy",
-        "trialIncludes": "Durante la prueba tienes 1 sueno y 1 informe de sueno.",
+        "trialIncludes": "Durante la prueba tienes 1 sueno y 1 informe de sueno. Las grabaciones se activan con Premium.",
         "plan": "Plan",
         "price": "Precio",
         "started": "Inicio el",
         "renewsOn": "Se renueva el",
         "accessUntil": "Acceso hasta",
         "firstCharge": "Primer cobro el",
-        "trialEnds": "La prueba termina el",
-        "wontBeCharged": "sin cobro",
-        "trialEndsNoCharge": "La prueba termina el {date} — no se te cobrara",
         "autoRenew": "Renovacion automatica",
         "on": "Activada",
         "off": "Desactivada",
@@ -538,16 +514,13 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         "trialEndsIn": "O Premium comeca em {days} dias",
         "trialEndsTomorrow": "O Premium comeca amanha",
         "trialEndsToday": "O Premium comeca hoje",
-        "trialIncludes": "Durante o teste voce tem 1 sonho e 1 relatorio de sono.",
+        "trialIncludes": "Durante o teste voce tem 1 sonho e 1 relatorio de sono. As gravacoes liberam com o Premium.",
         "plan": "Plano",
         "price": "Preco",
         "started": "Iniciado em",
         "renewsOn": "Renova em",
         "accessUntil": "Acesso ate",
         "firstCharge": "Primeira cobranca em",
-        "trialEnds": "O teste termina em",
-        "wontBeCharged": "sem cobranca",
-        "trialEndsNoCharge": "O teste termina em {date} — voce nao sera cobrado",
         "autoRenew": "Renovacao automatica",
         "on": "Ativada",
         "off": "Desativada",

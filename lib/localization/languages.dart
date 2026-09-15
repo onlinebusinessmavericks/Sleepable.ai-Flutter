@@ -998,28 +998,4 @@ abstract class BaseLanguage {
   String get verificationCode;
   String get pleaseEnterThe6DigitCodeSentTo;
   String get verifyLogin;
-
-  // Purchases
-  String get purchaseIdentityError;
-  String get purchaseActivationError;
-  String get purchaseAlreadyHasAccess;
-
-  // Network
-  String get requestNotAllowed;
-  String get sessionExpired;
-
-  // DreamBot
-  String get dreamImagesFailed;
-  String get dreamImagesTakingLong;
-
-  // Reports
-  String get trialReportsLocked;
-  String get trackFirstNightForReport;
-  String get reportLoadError;
-
-  // Paywall and account
-  String get subscribeYearlyPrice;
-  String get deleteKeepsSubscription;
-  String get manageSubscription;
-  String get deleteAnyway;
 }

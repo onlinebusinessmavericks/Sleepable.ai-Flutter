@@ -15,33 +15,28 @@ import '../core/utils/library.dart';
 import '../data/services/api_end_point.dart';
 import '../data/services/network_utils.dart';
 import '../modules/sleep_sound/controllers/sleep_sound_controller.dart';
-import '../modules/subscription/model/access_state.dart';
 import '../modules/subscription/model/spin_data.dart';
 import '../localization/lang_extension.dart';
 
-class SubscriptionController extends GetxController with WidgetsBindingObserver {
+class SubscriptionController extends GetxController {
   RxList<Package> packages = <Package>[].obs;
   Rx<Package?> spinPackage = Rx<Package?>(null);
   Rx<Package?> spinYearlyPackage = Rx<Package?>(null);
   Rx<Package?> spinWeeklyPackage = Rx<Package?>(null);
-  /// What this user may do, as the backend last reported it. The single
-  /// source for every lock and every paywall decision.
-  final Rx<AccessState> access = AccessState.unknown().obs;
-  static const String ACCESS_CACHE_KEY = "access_state_cache";
-  DateTime? _lastAccessRefresh;
-
-  // Mirrors of [access], kept so existing Obx/ever listeners keep working.
-  // Written only by [_setAccess]; never set them anywhere else.
   RxBool isPremium = false.obs;
   RxBool isTrial = false.obs;
   RxString firstReportDate = ''.obs;
   RxInt trialNightsUsed = 0.obs;
+  static const String PREM_KEY = "is_user_premium_cache";
   /// Plan description from the backend, used when the store has no record of
   /// the purchase - Premium granted by support, for instance.
   RxString backendPlanName = ''.obs;
   RxString backendPlanPrice = ''.obs;
   RxString backendStartsAt = ''.obs;
   RxString backendExpiresAt = ''.obs;
+  static const String TRIAL_KEY = "is_user_trial_cache";
+  static const String FIRST_REPORT_KEY = "trial_first_report_date";
+  static const String TRIAL_ENDS_KEY = "trial_ends_at";
 
   /// Exactly when the store will charge for the trial, straight from the store
   /// via the backend - not a date counted locally. Null unless a trial is running.
@@ -59,10 +54,12 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   @override
   void onInit() {
     super.onInit();
-    WidgetsBinding.instance.addObserver(this);
-    // Start from the last access block the backend sent, so a paying user is
-    // not shown the locked state for the second or two the network sync takes.
-    _restoreAccessFromCache();
+    // Start from the cached value so a paying user is not shown the free/paywall
+    // state for the second or two the network sync takes.
+    isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
+    isTrial.value = getBoolAsync(TRIAL_KEY, defaultValue: false);
+    firstReportDate.value = getStringAsync(FIRST_REPORT_KEY);
+    _restoreTrialEndFromCache();
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -76,11 +73,25 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     try {
       // Re-identify on every launch: a user who logged in before this build (or
       // before RevenueCat finished configuring) would otherwise stay anonymous.
-      final uuid = _signedInUuid();
-      if (uuid.isNotEmpty) {
-        await identifyUser(uuid);
+      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+      if (storedUuid.isNotEmpty) {
+        await identifyUser(storedUuid);
       } else {
-        print("⚠️ [RC] No stored uuid and no cached profile - user stays anonymous");
+        // Anyone already logged in when this build ships never passed through
+        // the login path, and will not log in again. Recover their uuid from the
+        // cached profile so they do not stay anonymous forever.
+        final cachedProfile = getStringAsync(AppSharedPreferenceKeys.currentUserData);
+        if (cachedProfile.isNotEmpty) {
+          try {
+            final uuid = (jsonDecode(cachedProfile)['uuid'] ?? '').toString();
+            print("🔑 [RC] Recovered uuid from cached profile: '$uuid'");
+            if (uuid.isNotEmpty) await identifyUser(uuid);
+          } catch (e) {
+            print("❌ [RC] Could not read uuid from cached profile: $e");
+          }
+        } else {
+          print("⚠️ [RC] No stored uuid and no cached profile - user stays anonymous");
+        }
       }
 
       await Purchases.invalidateCustomerInfoCache();
@@ -116,65 +127,65 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  @override
-  void onClose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.onClose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
-    // Trial ends, purchases on another device and admin grants all happen
-    // while the app is in the background.
-    final last = _lastAccessRefresh;
-    if (last != null && DateTime.now().difference(last) < const Duration(minutes: 1)) return;
-    if (getStringAsync(AppSharedPreferenceKeys.apiToken).isEmpty) return;
-    _lastAccessRefresh = DateTime.now();
-    getBackendSubscriptionStatus(retries: 0);
-  }
-
-  /// Takes an access block from any backend response that carries one: the
-  /// login body, GET /users/subscription/, `data.access` on the home page, or
-  /// the restore / verify response. Returns false and changes nothing when
-  /// [json] is not an access block, so a partial response never resets the
-  /// user to "free".
-  Future<bool> applyAccess(dynamic json) async {
-    final parsed = AccessState.tryParse(json);
-    if (parsed == null) return false;
-    _setAccess(parsed);
-    await setValue(ACCESS_CACHE_KEY, jsonEncode(parsed.raw));
-    return true;
-  }
-
-  void _setAccess(AccessState state) {
-    access.value = state;
-    isPremium.value = state.isPremium;
-    isTrial.value = state.isTrial;
-    firstReportDate.value = state.firstReportDate ?? '';
-    trialNightsUsed.value = state.trialNightsUsed;
-    trialEndsAt.value = state.trialEndsAt;
-  }
-
-  void _restoreAccessFromCache() {
-    final cached = getStringAsync(ACCESS_CACHE_KEY);
-    if (cached.isEmpty) return;
-    try {
-      final parsed = AccessState.tryParse(jsonDecode(cached));
-      if (parsed != null) _setAccess(parsed);
-    } catch (e) {
-      log("Could not read cached access state: $e");
+// SubscriptionController.dart mein isse update karein
+  Future<void> updatePremiumStatus(bool status, {bool isFromBackend = false}) async {
+    // Blocking accidental downgrade: only the backend may turn premium off, so a
+    // slow/failed RevenueCat lookup cannot lock a paying user out.
+    if (isPremium.value == true && status == false && !isFromBackend) {
+      print("🛡️ Blocking accidental downgrade");
+      return;
     }
+
+    isPremium.value = status;
+    await setValue(PREM_KEY, status);
+    isPremium.refresh();
+    if (status) {
+      isTrial.value = false;
+      await setValue(TRIAL_KEY, false);
+    }
+    print("🔔 Cache Updated to: $status");
   }
 
-  /// Whether a paywall may be shown - the backend's `features.show_paywall`.
-  bool get showPaywalls => access.value.showPaywall;
+  bool get showPaywalls => !isPremium.value;
+  /// DreamBot is usable on Premium, and once during the 3-day trial.
+  bool get showDreambot => hasAccessTo(trialAllowed: true);
+
   /// Running 3-day store trial that has not converted to Premium yet.
   bool get isOnFreeTrial => isTrial.value && !isPremium.value;
 
-  /// A track's padlock. The backend sends `is_premium` per user - it already
-  /// means "locked for this user" - so it is used as it is.
-  bool isPremiumItemLocked({required bool itemIsPremium}) => itemIsPremium;
+  Future<void> applyTrialStatus({required bool trial}) async {
+    isTrial.value = trial;
+    await setValue(TRIAL_KEY, trial);
+  }
+  /// Whether the user can open a premium feature.
+  ///
+  /// DreamBot allows one dream during the trial, so those call sites pass
+  /// [trialAllowed]. Music and Story on the Sounds tab stay locked until paid Premium.
+  bool hasAccessTo({bool trialAllowed = false}) {
+    if (isPremium.value) return true;
+    return trialAllowed && isTrial.value;
+  }
+
+  /// Story is paid Premium only. Trial keeps the same catalog as free.
+  bool get hasStoryAccess => isPremium.value;
+
+  bool isStoryLabel(String? value) {
+    final v = (value ?? '').trim().toLowerCase();
+    if (v.isEmpty) return false;
+    if (v == 'story' || v == 'sleep story' || v == 'sleepstory') return true;
+    final lang = Get.context?.lang;
+    if (lang == null) return false;
+    return v == lang.story.toLowerCase() ||
+        v == lang.storyLabel.toLowerCase() ||
+        v == lang.sleepStory.toLowerCase();
+  }
+
+  /// Music and Story stay locked on free and during trial.
+  /// Paid Premium unlocks every premium track in those categories.
+  bool isPremiumItemLocked({required bool itemIsPremium, required bool isStory}) {
+    if (!itemIsPremium) return false;
+    return !isPremium.value;
+  }
 
   /// True once the user has actually won the spin discount.
   ///
@@ -182,13 +193,13 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// that field before any spin - it is the amount the wheel WILL award, not
   /// something the user holds. Reading it as a win put "LUCKY SPIN OFFER
   /// APPLIED" and the discounted price in front of brand new users.
-  bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true && spinOfferAvailable;
+  bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true;
 
   /// iOS: no spin and no discount paywall. Weekly + yearly come from the
   /// App Store current offering only.
   bool shouldShowDiscountOnPaywall() {
     if (Platform.isIOS) return false;
-    return hasSpecialOffer;
+    return spinInfo.value?.alreadySpun == true;
   }
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
@@ -313,12 +324,21 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     Get.find<SubscriptionController>().applyCustomerInfo(info);
   }
 
-  /// The store's view changed (renewal, cancellation, a purchase finishing).
-  /// Access is still the backend's call, so ask it again rather than reading
-  /// the receipt.
   Future<void> applyCustomerInfo(CustomerInfo customerInfo) async {
-    if (getStringAsync(AppSharedPreferenceKeys.apiToken).isEmpty) return;
-    await getBackendSubscriptionStatus();
+    final entitlement = customerInfo.entitlements.all['pro'];
+    final active = entitlement?.isActive ?? false;
+    if (!active) {
+      // Backend remains source of truth for access; RC only reports store period.
+      return;
+    }
+    final trial = entitlement!.periodType == PeriodType.trial;
+    if (trial) {
+      await applyTrialStatus(trial: true);
+      await updatePremiumStatus(false, isFromBackend: true);
+    } else {
+      await applyTrialStatus(trial: false);
+      await updatePremiumStatus(true, isFromBackend: true);
+    }
   }
 
   /// Tells RevenueCat which backend user this is.
@@ -358,59 +378,14 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  /// The backend uuid of the signed-in user, or '' when nobody is signed in.
-  ///
-  /// Users who logged in before the uuid was persisted only have it inside the
-  /// cached profile, so fall back to that.
-  String _signedInUuid() {
-    final stored = getStringAsync(AppSharedPreferenceKeys.userUuid);
-    if (stored.isNotEmpty) return stored;
-    final cachedProfile = getStringAsync(AppSharedPreferenceKeys.currentUserData);
-    if (cachedProfile.isEmpty) return '';
-    try {
-      return (jsonDecode(cachedProfile)['uuid'] ?? '').toString();
-    } catch (e) {
-      log("Could not read uuid from cached profile: $e");
-      return '';
-    }
-  }
-
-  /// Play offer id of the spin discount. The coupon only belongs to a purchase
-  /// made through this offer.
-  static const String _spinOfferId = 'yearly-spin-offer';
-
-  /// Confirms RevenueCat is attached to the signed-in user before a purchase or
-  /// restore, and returns that app user id.
-  ///
-  /// A receipt bought on an anonymous customer lands where the backend webhook
-  /// can never match it, so this retries logIn once and returns null if the id
-  /// still is not the user's uuid. Callers must not open checkout on null.
-  Future<String?> _ensureIdentity() async {
-    if (!isConfigured) return null;
-    final uuid = _signedInUuid();
-    if (uuid.isEmpty) return null;
-
-    for (int attempt = 0; attempt < 2; attempt++) {
-      try {
-        if (await Purchases.appUserID == uuid) return uuid;
-        await Purchases.logIn(uuid);
-        if (await Purchases.appUserID == uuid) {
-          await setValue(AppSharedPreferenceKeys.userUuid, uuid);
-          return uuid;
-        }
-      } catch (e) {
-        log("RevenueCat identity attempt ${attempt + 1} failed: $e");
-      }
-    }
-    return null;
-  }
-
   /// Clears cached entitlements and detaches RevenueCat so the next account
   /// does not inherit this customer's premium / trial state.
   Future<void> clearSessionState() async {
-    _setAccess(AccessState.unknown());
-    _lastAccessRefresh = null;
-    await removeKey(ACCESS_CACHE_KEY);
+    isPremium.value = false;
+    isTrial.value = false;
+    firstReportDate.value = '';
+    trialNightsUsed.value = 0;
+    trialEndsAt.value = null;
     spinInfo.value = null;
     backendPlanName.value = '';
     backendPlanPrice.value = '';
@@ -531,28 +506,12 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  /// Full store id of a purchase: `product:basePlan` on Google Play, the plain
-  /// product id on the App Store.
-  ///
-  /// On Android the entitlement keeps the base plan in a separate field, so
-  /// `productIdentifier` alone ("sleepable_yearly") never equals the id of the
-  /// package being bought ("sleepable_yearly:yearly-base").
-  static String _storeIdOf(EntitlementInfo entitlement) {
-    final product = entitlement.productIdentifier;
-    final plan = entitlement.productPlanIdentifier;
-    if (plan == null || plan.isEmpty || product.contains(':')) return product;
-    return '$product:$plan';
-  }
-
-  /// The subscription a store id belongs to, without its base plan.
-  static String _subscriptionIdOf(String storeId) => storeId.split(':').first;
-
-  /// Full store id of the subscription the user holds right now, if any.
-  Future<String?> _activeStoreProductId() async {
+  /// The product the user is subscribed to right now, if any.
+  Future<String?> _activeProductId() async {
     try {
       final info = await Purchases.getCustomerInfo();
       final entitlement = info.entitlements.all['pro'];
-      if (entitlement?.isActive ?? false) return _storeIdOf(entitlement!);
+      if (entitlement?.isActive ?? false) return entitlement!.productIdentifier;
     } catch (e) {
       print("❌ [RC] Could not read active product: $e");
     }
@@ -588,16 +547,11 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     final options = product?.subscriptionOptions;
     if (options == null || options.isEmpty) return null;
 
-    // Play only returns the offers this Google account is eligible for. Never
-    // stand in another option for one that is not in the list: a returning
-    // user gets the base plan, not a "discount" or a "trial" they cannot have.
-    if (discounted) {
-      final spin = options.firstWhereOrNull(isSpinOption);
-      if (spin != null) return spin;
-    }
-    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains('trial'))
-        ?? options.firstWhereOrNull((o) => o.freePhase != null)
-        ?? options.firstWhereOrNull((o) => o.isBasePlan)
+    final wantedTag = discounted ? 'spin' : 'trial';
+    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains(wantedTag))
+        // Tag missing in the console: fall back to shape - the discounted offer
+        // is the one carrying an intro phase.
+        ?? options.firstWhereOrNull((o) => !o.isBasePlan && (o.introPhase != null) == discounted)
         ?? product?.defaultOption;
   }
 
@@ -611,31 +565,6 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     final sep = id.lastIndexOf(':');
     return sep >= 0 ? id.substring(sep + 1) : id;
   }
-
-  /// Whether [option] is the Play spin offer (yearly-spin-offer).
-  bool isSpinOption(SubscriptionOption? option) => _playOfferId(option) == _spinOfferId;
-
-  /// The spin offer on the yearly plan, if Play returned it for this Google
-  /// account.
-  SubscriptionOption? get androidSpinOption {
-    if (!Platform.isAndroid) return null;
-    return _yearlyPackage?.storeProduct.subscriptionOptions?.firstWhereOrNull(isSpinOption);
-  }
-
-  bool get spinOfferAvailable => androidSpinOption != null;
-
-  /// Loads the store products if they are not loaded yet, then says whether
-  /// the spin offer is available. The wheel is offered only when it is: a spin
-  /// must never lead to a price that is not discounted.
-  Future<bool> ensureSpinOfferAvailable() async {
-    if (_yearlyPackage == null) await fetchStoreProducts();
-    return spinOfferAvailable;
-  }
-
-  /// Whether the yearly option this user would buy has a free phase. Only then
-  /// may a paywall say "free trial".
-  bool get yearlyHasFreeTrial =>
-      Platform.isAndroid && androidYearlyOption(discounted: hasSpecialOffer)?.freePhase != null;
 
   /// What the user is actually charged for the first year on Android.
   ///
@@ -718,44 +647,21 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       print("Store not available on this device");
       return;
     }
-    // Checkout only opens where a paywall may: never for trial or paid users,
-    // and not before the backend has said so. For the plan someone already
-    // holds, Play would reject the request outright.
-    if (!access.value.showPaywall) {
-      if (access.value.hasAccess) {
-        toast(Get.context?.lang.purchaseAlreadyHasAccess ??
-            "You already have access to Sleepable. You can manage your plan in My Subscription.");
-      }
-      return;
-    }
     try {
       isLoading.value = true;
-
-      // Checkout only opens once RevenueCat is attached to this account.
-      final appUserId = await _ensureIdentity();
-      if (appUserId == null) {
-        toast(Get.context?.lang.purchaseIdentityError ??
-            "We couldn't confirm your account with the store. Please check your connection and try again.");
-        return;
-      }
 
       // Step 1: RevenueCat Purchase
       // Android needs the plan change spelled out. Without this a switch
       // between plans falls back to whatever the billing library defaults to.
       GoogleProductChangeInfo? changeInfo;
       if (Platform.isAndroid) {
-        final activeStoreId = await _activeStoreProductId();
-        final targetStoreId = package.storeProduct.identifier;
-        // A change request that names the user's own current subscription is
-        // what Play answers with "One or more of the arguments provided are
-        // invalid". Only a genuinely different subscription gets one.
-        if (activeStoreId != null &&
-            _subscriptionIdOf(activeStoreId) != _subscriptionIdOf(targetStoreId)) {
+        final oldProductId = await _activeProductId();
+        if (oldProductId != null && oldProductId != package.storeProduct.identifier) {
           changeInfo = GoogleProductChangeInfo(
-            _subscriptionIdOf(activeStoreId),
-            prorationMode: _prorationModeFor(package, activeStoreId),
+            oldProductId,
+            prorationMode: _prorationModeFor(package, oldProductId),
           );
-          print("🔁 [RC] Plan change $activeStoreId -> $targetStoreId (${changeInfo.prorationMode})");
+          print("🔁 [RC] Plan change $oldProductId -> ${package.storeProduct.identifier} (${changeInfo.prorationMode})");
         }
       }
 
@@ -780,32 +686,29 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       final entitlement = customerInfo.entitlements.all['pro'];
 
       if (entitlement?.isActive ?? false) {
-        final offerId = _playOfferId(option);
-        final verified = await verifyPurchaseWithBackend(
-          productId: package.storeProduct.identifier,
-          appUserId: appUserId,
-          periodType: entitlement!.periodType.name,
-          offerId: offerId,
-          couponCode: offerId == _spinOfferId ? spinInfo.value?.couponCode : null,
+        final storeTrial = entitlement!.periodType == PeriodType.trial;
+        await verifyPurchaseWithBackend(
+            package.storeProduct.identifier,
+            customerInfo.originalAppUserId,
+            spinInfo.value?.couponCode,
+            periodType: storeTrial ? 'trial' : 'normal',
+            offerId: _playOfferId(option),
         );
-        if (!verified) log("verify-purchase did not succeed; relying on the status refresh");
 
-        // Refresh either way: the RevenueCat webhook may already have credited
-        // the purchase even when our own verify call failed. Access is whatever
-        // the backend says, never what the store receipt implies.
-        await getBackendSubscriptionStatus();
-        if (!access.value.hasAccess) {
-          toast(Get.context?.lang.purchaseActivationError ??
-              "Your purchase went through, but we couldn't activate it yet. Please tap Restore Purchases in a moment.");
-          return;
-        }
-
-        if (isPremium.value) {
-          toast("Success! Premium Activated.");
-        } else {
+        if (storeTrial) {
+          await applyTrialStatus(trial: true);
+          await updatePremiumStatus(false, isFromBackend: true);
           toast("3-day trial started. You are not Premium yet.");
+          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
+        } else {
+          await applyTrialStatus(trial: false);
+          if (Get.isRegistered<SleepSoundController>()) {
+            await Get.find<SleepSoundController>().invalidatePaidCatalogCache();
+          }
+          await updatePremiumStatus(true, isFromBackend: true);
+          toast("Success! Premium Activated.");
+          await _reloadCatalogAfterPaidPremium();
         }
-        await _reloadAfterAccessChange();
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
       }
@@ -845,27 +748,37 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     _restoreInFlight = true;
     isLoading.value = true;
     try {
-      String appUserId = '';
+      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+      if (storedUuid.isNotEmpty) {
+        await identifyUser(storedUuid);
+      }
+
+      String appUserId = storedUuid;
       String productId = '';
       String periodType = '';
 
       if (isConfigured) {
-        // Restoring onto an anonymous customer would re-link the receipt to
-        // the wrong place, so identity has to be settled first.
-        final confirmedId = await _ensureIdentity();
-        if (confirmedId == null) {
-          toast(Get.context?.lang.purchaseIdentityError ??
-              "We couldn't confirm your account with the store. Please check your connection and try again.");
-          return;
-        }
-        appUserId = confirmedId;
         try {
           await Purchases.invalidateCustomerInfoCache();
           final CustomerInfo customerInfo = await Purchases.restorePurchases();
+          if (customerInfo.originalAppUserId.isNotEmpty) {
+            appUserId = customerInfo.originalAppUserId;
+          }
+          try {
+            final currentId = await Purchases.appUserID;
+            // Prefer an id that is not the backend uuid, so the server has a
+            // second lookup for purchases still sitting on an anonymous customer.
+            if (currentId.isNotEmpty &&
+                storedUuid.isNotEmpty &&
+                appUserId == storedUuid &&
+                currentId != storedUuid) {
+              appUserId = currentId;
+            }
+          } catch (_) {}
           final entitlement = customerInfo.entitlements.all['pro'];
           if (entitlement?.isActive ?? false) {
-            productId = _storeIdOf(entitlement!);
-            periodType = entitlement.periodType.name;
+            productId = entitlement!.productIdentifier;
+            periodType = entitlement.periodType == PeriodType.trial ? 'trial' : 'normal';
           }
         } on PlatformException catch (e) {
           log("Store restore failed: ${e.message}");
@@ -921,7 +834,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       await _applySubscriptionPayload(data);
       await getBackendSubscriptionStatus();
       await refreshEntitlementDetails();
-      await _reloadAfterAccessChange();
+      if (isPremium.value) {
+        await _reloadCatalogAfterPaidPremium();
+      }
 
       final restored = response['restored'] == true;
       if (restored) {
@@ -943,16 +858,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
 
   /// Paid Premium: drop cached Music/Story locks and refetch so padlocks go without a reboot.
   /// Trial must not call this — those lists stay the free catalog.
-  /// Track padlocks come from the backend per user, so after a purchase or
-  /// restore every list that carries them is fetched again: the Sounds tab
-  /// lists, favorites, mixes, and the home payload.
-  Future<void> _reloadAfterAccessChange() async {
-    if (Get.isRegistered<SleepSoundController>()) {
-      await Get.find<SleepSoundController>().refreshCatalogAfterAccessChange();
-    }
-    if (Get.isRegistered<HomeController>()) {
-      await Get.find<HomeController>().fetchHomePageData();
-    }
+  Future<void> _reloadCatalogAfterPaidPremium() async {
+    if (!Get.isRegistered<SleepSoundController>()) return;
+    await Get.find<SleepSoundController>().refreshCatalogAfterPaidPremium();
   }
 
   /// The store's own record of the active subscription: which product, when it
@@ -1067,50 +975,31 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
   }
 
-  /// Records a store purchase on the backend. Returns true when it was accepted.
-  ///
-  /// Retries, because this is what creates the subscription row: a single
-  /// failed call used to be swallowed and left a paying user with no record.
-  /// The caller refreshes the subscription status either way.
-  Future<bool> verifyPurchaseWithBackend({
-    required String productId,
-    required String appUserId,
-    required String periodType,
-    String? offerId,
-    String? couponCode,
-    int retries = 2,
-  }) async {
-    final payload = <String, dynamic>{
-      "product_id": productId,
-      "app_user_id": appUserId,
-      "period_type": periodType,
-      // Play offer the purchase actually went through, so the backend can
-      // tell a spin discount apart from a plain trial. Empty on iOS, where
-      // the store applies the introductory offer without an offer id.
-      "offer_id": offerId ?? "",
-      if (couponCode != null && couponCode.isNotEmpty) "coupon_code": couponCode,
-    };
+  // 5. Backend Verification API
+  Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon,
+      {String periodType = 'normal', String? offerId}) async {
+    try {
+      final payload = {
+        "product_id": productId,
+        "app_user_id": token,
+        "purchase_token": token,
+        "coupon_code": coupon ?? "",
+        "period_type": periodType,
+        // Play offer the purchase actually went through, so the backend can
+        // tell a spin discount apart from a plain trial. Empty on iOS, where
+        // the store applies the introductory offer without an offer id.
+        "offer_id": offerId ?? "",
+      };
 
-    for (int attempt = 0; attempt <= retries; attempt++) {
-      try {
-        final response = await buildHttpResponse(
+      await buildHttpResponse(
           endPoint: APIEndPoints.verifyPurchase,
           method: MethodType.post,
-          request: payload,
-        );
-        if (response is Map && response['success'] == true) {
-          await applyAccess(response['data']);
-          return true;
-        }
-        log("verify-purchase rejected: ${response is Map ? response['message'] : response}");
-      } catch (e) {
-        log("verify-purchase attempt ${attempt + 1} failed: $e");
-      }
-      if (attempt < retries) {
-        await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
-      }
+          request: payload
+      );
+      await getBackendSubscriptionStatus(); // Refresh status
+    } catch (e) {
+      log("Verification Sync Error: $e");
     }
-    return false;
   }
 
   // 6. Get Status from Backend
@@ -1118,9 +1007,42 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   ///
   /// Retries before giving up: a failed call must not lock a paying or
   /// admin-granted user out, so on total failure the cached value is kept.
+  /// Stores the trial end sent by the backend. Accepts both plain and
+  /// microsecond ISO timestamps; anything unparseable is treated as "no trial"
+  /// rather than crashing the status sync.
+  void _applyTrialEnd(dynamic raw) {
+    final text = (raw ?? '').toString();
+    if (text.isEmpty || text == 'null') {
+      trialEndsAt.value = null;
+      removeKey(TRIAL_ENDS_KEY);
+      return;
+    }
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) {
+      log("Could not parse trial_ends_at: $text");
+      return;
+    }
+    trialEndsAt.value = parsed.toUtc();
+    setValue(TRIAL_ENDS_KEY, text);
+  }
+
+  void _restoreTrialEndFromCache() {
+    final cached = getStringAsync(TRIAL_ENDS_KEY);
+    if (cached.isEmpty) return;
+    trialEndsAt.value = DateTime.tryParse(cached)?.toUtc();
+  }
+
   Future<void> _applySubscriptionPayload(dynamic raw) async {
     final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-    await applyAccess(data);
+    final backendStatus = data['is_premium'] == true;
+    final trialStatus = data['is_trial'] == true;
+    await applyTrialStatus(trial: trialStatus && !backendStatus);
+    await updatePremiumStatus(backendStatus, isFromBackend: true);
+    final first = (data['first_report_date'] ?? '').toString();
+    firstReportDate.value = first == 'null' ? '' : first;
+    await setValue(FIRST_REPORT_KEY, firstReportDate.value);
+    trialNightsUsed.value = data['trial_nights_used'] ?? 0;
+    _applyTrialEnd(data['trial_ends_at']);
     // The backend describes the plan too. It is the only source for a
     // user whose Premium was granted outside the store, where there is
     // no purchase for RevenueCat to report.
@@ -1146,20 +1068,16 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     return left.isNegative ? 0 : left.inDays;
   }
 
-  /// Refreshes [access] from GET /users/subscription/. On failure the current
-  /// state is kept as it is - a network error must never turn a paying or
-  /// trial user into a free one. Returns whether the refresh succeeded.
-  Future<bool> getBackendSubscriptionStatus({int retries = 2}) async {
+  Future<void> getBackendSubscriptionStatus({int retries = 2}) async {
     for (int attempt = 0; attempt <= retries; attempt++) {
       try {
         final response = await buildHttpResponse(
             endPoint: APIEndPoints.subscriptionStatus,
             method: MethodType.get
         );
-        if (response['success'] == true) {
+        if (response['success']) {
           await _applySubscriptionPayload(response['data'] ?? {});
-          _lastAccessRefresh = DateTime.now();
-          return true;
+          return;
         }
       } catch (e) {
         log("Backend subscription check attempt ${attempt + 1} failed: $e");
@@ -1168,9 +1086,38 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
         await Future.delayed(Duration(seconds: 1 << attempt)); // 1s, then 2s
       }
     }
-    return false;
   }
 
+  Future<void> checkPremiumStatus() async {
+    if (!isConfigured) {
+      print("⚠️ [RC] Skipping status check: Not configured");
+      return;
+    }
+
+    try {
+      print("⏳ [RC] Fetching CustomerInfo...");
+      CustomerInfo customerInfo = await Purchases.getCustomerInfo().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print("⏰ [RC] CustomerInfo Timeout - Moving on");
+          throw TimeoutException("RC Timeout");
+        },
+      );
+
+      print("✅ [RC] CustomerInfo received");
+      bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
+      final trial = customerInfo.entitlements.all['pro']?.periodType == PeriodType.trial;
+      if (isActive && trial) {
+        await applyTrialStatus(trial: true);
+        await updatePremiumStatus(false, isFromBackend: true);
+      } else if (isActive) {
+        await applyTrialStatus(trial: false);
+        updatePremiumStatus(true, isFromBackend: false);
+      }
+    } catch (e) {
+      print("❌ [RC] Error in checkPremiumStatus: $e");
+      }
+  }
   /// Opens the exit offer after a paywall is dismissed.
   ///
   /// [context] is deliberately ignored. Every caller pops its own sheet on the
@@ -1180,15 +1127,14 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// paywall was closed. Go through the navigator's own context instead, once
   /// the pop has been through a frame.
   void checkAndShowPremiumSheet(BuildContext context) {
-    if (!access.value.showPaywall || Platform.isIOS) return;
+    if (isPremium.value || isOnFreeTrial || Platform.isIOS) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = Get.context;
       if (ctx == null) return;
 
-      // No spin offer from Play for this account: no spin, no discount flow.
-      if (!spinOfferAvailable) return;
-      if (hasSpecialOffer) {
+      final spinData = spinInfo.value;
+      if (spinData != null && spinData.alreadySpun) {
         showPremiumOfferSheet6(ctx);
       } else {
         showPremiumOfferSheet5(ctx);

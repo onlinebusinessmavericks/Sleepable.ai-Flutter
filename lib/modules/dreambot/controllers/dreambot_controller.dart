@@ -9,7 +9,6 @@ import '../../../widgets/ai_consent_dialog.dart';
 import '../../../data/services/network_utils.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../progress/controllers/progress_controller.dart';
-import '../../progress/model/dream_list_response.dart';
 
 class DreamBotController extends GetxController {
 
@@ -19,8 +18,6 @@ class DreamBotController extends GetxController {
   RxBool canAnalyze = false.obs; // Controls visibility of the Generate Button
   /// True when the backend refused a new session (free monthly cap or trial's 1 dream).
   RxBool sessionLimitReached = false.obs;
-  /// Whether that refusal was the trial's cap - read from the 403 body only.
-  RxBool limitIsTrial = false.obs;
   RxBool isTyping = false.obs;
   RxString userInput = "".obs;
   RxString welcomeMessage = "Initializing DreamBot...".obs;
@@ -32,6 +29,7 @@ class DreamBotController extends GetxController {
   ScrollController scrollController = ScrollController();
 
   int currentDreamId = 0;
+  int userMessageCount = 0; // Tracks how many messages the user sent
 
   bool _consentPromptOpen = false;
   bool _sessionStartInFlight = false;
@@ -66,10 +64,14 @@ class DreamBotController extends GetxController {
       ? Get.find<SubscriptionController>()
       : null;
 
-  /// The trial's dream cap is only ever what a 403 on this very request says:
-  /// its own body carries is_trial.
-  bool _isTrialCap(Object error) =>
-      error is ApiError && error.isForbidden && error.body?['is_trial'] == true;
+  /// Prefers the flag the backend sends with its 403 - that one is current,
+  /// where the controller's copy is only as fresh as the last status sync.
+  bool _isOnTrial() {
+    final serverFlag = lastForbiddenDetail?['is_trial'];
+    if (serverFlag is bool) return serverFlag;
+    final sub = _sub;
+    return sub != null && sub.isTrial.value && !sub.isPremium.value;
+  }
 
   /// The trial includes a single dream. Once it is used there is nothing to
   /// upgrade to - the store converts the trial on its own schedule - so the
@@ -125,32 +127,33 @@ class DreamBotController extends GetxController {
                 : table["in"]!.replaceAll("{days}", "$days");
     return "${table["used"]!} $wait";
   }
-  /// Whether this request itself came back with a 403.
-  bool _isForbiddenError(Object e) => e is ApiError && e.isForbidden;
-
-  /// Shows what went wrong with a DreamBot request: the backend's message for a
-  /// 403 (the dream cap), an error for anything else. The chat and the analysis
-  /// used to swallow these, so the screen just froze with no explanation.
-  void _reportError(Object e) {
-    if (_isForbiddenError(e)) {
-      limitIsTrial.value = _isTrialCap(e);
-      _showToast(_limitMessage(e));
-    } else {
-      _showToast(_errorText(e));
+  /// Whether an error came back from a 403.
+  ///
+  /// The network layer throws the English literal "Access forbidden", but
+  /// lang.forbidden is translated - so on a German or Spanish device the old
+  /// check never matched and the user was shown the raw error text instead of
+  /// the limit message. Match the literal, the translation, and the parsed body.
+  bool _isForbiddenError(String raw) {
+    if (lastForbiddenDetail != null) return true;
+    final text = raw.toLowerCase();
+    if (text.contains("forbidden") || text.contains("not found")) return true;
+    for (final word in [Get.context?.lang.forbidden, Get.context?.lang.pageNotFound]) {
+      final w = (word ?? "").toLowerCase();
+      if (w.isNotEmpty && text.contains(w)) return true;
     }
+    return false;
   }
 
-  /// Anything other than a 403 is an error, not a limit.
-  String _errorText(Object e) {
-    if (e is ApiError) return e.message;
-    if (e is String && e.trim().isNotEmpty) return e;
-    return Get.context?.lang.somethingWentWrong ?? "Something went wrong. Please try again.";
+  /// The dream limit comes back as a 403. The chat and the analysis used to
+  /// swallow it, so the screen just froze with no explanation. Returns true
+  /// when the error was a limit and a message has been shown.
+  bool _reportLimitError(Object e) {
+    if (!_isForbiddenError(e.toString())) return false;
+    _showToast(_limitMessage());
+    return true;
   }
 
-  /// The backend's own message for this 403 when it sent one.
-  String _limitMessage(Object e) => (e is ApiError && e.hasBackendMessage)
-      ? e.message
-      : _isTrialCap(e)
+  String _limitMessage() => _isOnTrial()
       ? _trialDreamLimitMessage()
       : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
           "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
@@ -161,7 +164,7 @@ class DreamBotController extends GetxController {
     final sub = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
         : null;
-    if (sub == null || !sub.access.value.features.dreamBot.unlocked) {
+    if (sub == null || !sub.hasAccessTo(trialAllowed: true)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Get.context != null) {
           Get.back();
@@ -213,8 +216,9 @@ class DreamBotController extends GetxController {
     }
 
     try {
+      // A stale 403 body from an earlier call must not decide this one.
+      lastForbiddenDetail = null;
       sessionLimitReached.value = false;
-      limitIsTrial.value = false;
 
       // Don't clear if we already have messages (to avoid flickering)
       if (messages.isEmpty) {
@@ -240,19 +244,28 @@ class DreamBotController extends GetxController {
 
         debugPrint("🎯 Session Started. ID: $currentDreamId");
       } else {
-        // Not a 403, so not the dream cap: show it as the error it is.
-        welcomeMessage.value = _errorText(res?['message'] ?? '');
+        // The backend's copy asks free users to upgrade; a trial user has
+        // already paid their way in and only has to wait it out.
+        sessionLimitReached.value = true;
+        String errorMsg = _isOnTrial()
+            ? _trialDreamLimitMessage()
+            : (res?['message'] ?? "Limit reached.");
+        welcomeMessage.value = errorMsg;
         // If there's an error, we don't add to messages yet to keep UI clean
       }
     } catch (e) {
       debugPrint("🛑 API Error Caught: $e");
-      if (_isForbiddenError(e)) {
+      String rawError = e.toString().replaceAll("${Get.context?.lang.exception}:", "").trim();
+
+      if (_isForbiddenError(rawError)) {
+        // A trial user gets one dream, and cannot buy their way out early -
+        // the store converts the trial on its own schedule. Tell them that
+        // rather than asking them to upgrade.
         sessionLimitReached.value = true;
-        limitIsTrial.value = _isTrialCap(e);
-        welcomeMessage.value = _limitMessage(e);
-      } else {
-        welcomeMessage.value = _errorText(e);
+        rawError = _limitMessage();
       }
+
+      welcomeMessage.value = rawError;
     } finally {
       isFirstAnalyzeLoading.value = false;
       _sessionStartInFlight = false;
@@ -289,6 +302,7 @@ class DreamBotController extends GetxController {
     // We don't clear the list because index 0 is the Bot's welcome message
     messages.add({"isUser": true, "msg": msg});
 
+    userMessageCount++;
     textController.clear();
     userInput.value = "";
     isTyping.value = false;
@@ -304,13 +318,14 @@ class DreamBotController extends GetxController {
 
       if (res['success']) {
         messages.add({"isUser": false, "msg": res['data']['response']});
-        // Analyze appears when the backend says this session is ready.
-        canAnalyze.value = res['data']['can_analyze'] == true;
+        if (res['data']['can_analyze'] == true || userMessageCount >= 3) {
+          canAnalyze.value = true;
+        }
       }
     } catch (e) {
       isBotTyping.value = false;
       debugPrint("Send Message Error: $e");
-      _reportError(e);
+      _reportLimitError(e);
     }
     scrollToBottom();
   }
@@ -350,7 +365,7 @@ class DreamBotController extends GetxController {
 
       final Map<String, dynamic> d = Map<String, dynamic>.from(res['data']);
       final int dreamId = (d['dream_id'] as num?)?.toInt() ?? currentDreamId;
-      final String imagesStatus = DreamData.parseImagesStatus(d);
+      final bool imagesPending = d['images_pending'] == true;
       final String imagePath = (d['image_url'] ?? d['image'] ?? '').toString();
 
       messages.add({
@@ -368,24 +383,21 @@ class DreamBotController extends GetxController {
         "date": d['created_at']?.toString() ?? "",
         "image": _absoluteImageUrl(imagePath),
         "chatHistory": d['chat_history'],
-        "imagesPending": imagesStatus == 'pending',
-        "imagesFailed": imagesStatus == 'failed',
+        "imagesPending": imagesPending,
       });
 
       canAnalyze.value = false;
 
-      if (imagesStatus == 'pending') {
+      if (imagesPending) {
         _pollForDreamImages(dreamId, messages.length - 1);
       }
 
       if (Get.isRegistered<ProgressController>()) {
         Get.find<ProgressController>().fetchMyDreams();
       }
-      // A trial dream is counted on a successful analysis; can_analyze changes.
-      _sub?.getBackendSubscriptionStatus();
     } catch (e) {
       debugPrint("Analysis Error: $e");
-      _reportError(e);
+      _reportLimitError(e);
     } finally {
       isFirstAnalyzeLoading.value = false;
       // Show analysis result from the top (image/summary first), not Action Steps at bottom
@@ -397,15 +409,13 @@ class DreamBotController extends GetxController {
     return path.startsWith('http') ? path : "https://api.sleepable.ai$path";
   }
 
-  /// Dream images are generated after the analysis text is returned, so re-read
-  /// the dream with growing gaps (about three minutes in all) and update the
-  /// card in place once they are ready or have failed.
+  /// Dream images are generated after the analysis text is returned (~50s), so
+  /// re-read the dream a few times and update the card in place once they exist.
   Future<void> _pollForDreamImages(int dreamId, int messageIndex) async {
     if (dreamId == 0) return;
-    const delays = [5, 10, 15, 20, 30, 30, 30, 40]; // seconds, 180 in total
 
-    for (int attempt = 0; attempt < delays.length; attempt++) {
-      await Future.delayed(Duration(seconds: delays[attempt]));
+    for (int attempt = 0; attempt < 5; attempt++) {
+      await Future.delayed(const Duration(seconds: 15));
       if (isClosed) return;
 
       try {
@@ -413,28 +423,29 @@ class DreamBotController extends GetxController {
         if (!res.success || res.data.isEmpty) continue;
 
         final d = res.data.first;
-        if (d.imagesPending) continue;
+        final bool ready = d.scenes.isNotEmpty || d.image.isNotEmpty;
+        if (!ready && d.imagesPending) continue;
 
-        _updateDreamMessage(messageIndex, {
-          "scenes": d.scenes,
-          "image": _absoluteImageUrl(d.image),
-          "imagesPending": false,
-          "imagesFailed": d.imagesFailed,
-        });
+        if (messageIndex < 0 || messageIndex >= messages.length) return;
+        final updated = Map<String, dynamic>.from(messages[messageIndex]);
+        updated["scenes"] = d.scenes;
+        updated["image"] = _absoluteImageUrl(d.image);
+        updated["imagesPending"] = false;
+        messages[messageIndex] = updated;
+        messages.refresh();
         return;
       } catch (e) {
         debugPrint("Dream image poll attempt ${attempt + 1} failed: $e");
       }
     }
 
-    // Still not ready after ~3 minutes: stop the loader and say so.
-    _updateDreamMessage(messageIndex, {"imagesPending": false, "imagesTimedOut": true});
-  }
-
-  void _updateDreamMessage(int messageIndex, Map<String, dynamic> changes) {
-    if (isClosed || messageIndex < 0 || messageIndex >= messages.length) return;
-    messages[messageIndex] = Map<String, dynamic>.from(messages[messageIndex])..addAll(changes);
-    messages.refresh();
+    // Gave up waiting: stop showing the loader rather than spinning forever.
+    if (messageIndex >= 0 && messageIndex < messages.length) {
+      final updated = Map<String, dynamic>.from(messages[messageIndex]);
+      updated["imagesPending"] = false;
+      messages[messageIndex] = updated;
+      messages.refresh();
+    }
   }
 
   void _loadOldDreamFromHistory(int id) async {
@@ -472,12 +483,7 @@ class DreamBotController extends GetxController {
             ? (dream.image.startsWith('http') ? dream.image : "https://api.sleepable.ai${dream.image}")
             : "",
         "chatHistory": dream.chatHistory,
-        "imagesPending": dream.imagesPending,
-        "imagesFailed": dream.imagesFailed,
       });
-      if (dream.imagesPending) {
-        _pollForDreamImages(dream.id, messages.length - 1);
-      }
 
       // 🔥 If the dream was already analyzed, allow more questions (Chat mode)
       canAnalyze.value = false;

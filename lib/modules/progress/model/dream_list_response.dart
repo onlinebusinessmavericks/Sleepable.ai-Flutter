@@ -42,11 +42,9 @@ class DreamData {
   final List<String> actionSteps;
   final List<DreamScene> scenes;
 
-  /// `images_status` from the backend: "pending" while the images are still
-  /// being generated, "failed" when they could not be, otherwise ready.
-  final String imagesStatus;
-  bool get imagesPending => imagesStatus == 'pending';
-  bool get imagesFailed => imagesStatus == 'failed';
+  /// True while the backend is still generating the dream images. The text is
+  /// returned immediately; scenes/image fill in about a minute later.
+  final bool imagesPending;
   // final int inputTokens;
   // final int outputTokens;
 
@@ -69,21 +67,11 @@ class DreamData {
     required this.guidance,
     required this.actionSteps,
     required this.scenes,
-    this.imagesStatus = '',
+    this.imagesPending = false,
     // required this.inputTokens,
     // required this.outputTokens,
     required this.chatHistory,
   });
-
-  /// Reads `images_status` (analyze response, dream detail, dream-list items).
-  /// `images_pending` is only a fallback for a response without it.
-  static String parseImagesStatus(Map json) {
-    final status = (json['images_status'] ?? '').toString().trim().toLowerCase();
-    if (status.isNotEmpty && status != 'null') {
-      return (status == 'processing' || status == 'generating') ? 'pending' : status;
-    }
-    return json['images_pending'] == true ? 'pending' : '';
-  }
 
   factory DreamData.fromJson(Map<String, dynamic> json) {
     return DreamData(
@@ -122,7 +110,7 @@ class DreamData {
             .map((x) => DreamScene.fromJson(x)),
       )
           : <DreamScene>[],
-      imagesStatus: parseImagesStatus(json),
+      imagesPending: json['images_pending'] ?? false,
       // inputTokens: json['input_tokens'] ?? 0,
       // outputTokens: json['output_tokens'] ?? 0,
 

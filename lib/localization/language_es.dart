@@ -1837,34 +1837,4 @@ class LanguageEs extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Por favor, introduzca el código de 6 dígitos enviado a';
   @override
   String get verifyLogin => 'Verificar e iniciar sesión';
-
-  // Purchases
-  @override
-  String get purchaseIdentityError => "No pudimos confirmar su cuenta con la tienda. Revise su conexión e inténtelo de nuevo.";
-  @override
-  String get purchaseActivationError => "Su compra se realizó, pero aún no pudimos activarla. Toque Restaurar compras en un momento.";
-  @override
-  String get purchaseAlreadyHasAccess => "Ya tiene acceso a Sleepable. Puede gestionar su plan en Mi suscripción.";
-  @override
-  String get requestNotAllowed => "No tiene acceso a esto en este momento.";
-  @override
-  String get sessionExpired => "Su sesión ha caducado. Inicie sesión de nuevo.";
-  @override
-  String get dreamImagesFailed => "No pudimos crear las imágenes de este sueño.";
-  @override
-  String get dreamImagesTakingLong => "Las imágenes de su sueño están tardando más de lo habitual. Abra este sueño más tarde desde Mis sueños.";
-  @override
-  String get trialReportsLocked => "Su prueba incluye el informe de su primera noche registrada. Los informes semanales y mensuales se abren cuando empiece Premium.";
-  @override
-  String get trackFirstNightForReport => "Registre su primera noche para ver su informe.";
-  @override
-  String get reportLoadError => "No se pudo cargar parte de su informe. Deslice hacia abajo para reintentar.";
-  @override
-  String get subscribeYearlyPrice => "Suscribirse — {price}/año";
-  @override
-  String get deleteKeepsSubscription => "Tiene una suscripción o prueba gratuita activa. Eliminar su cuenta no la cancela y la tienda seguirá cobrándole. Cancélela primero en la tienda.";
-  @override
-  String get manageSubscription => "Gestionar suscripción";
-  @override
-  String get deleteAnyway => "Eliminar de todos modos";
 }

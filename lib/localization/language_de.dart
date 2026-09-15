@@ -1837,34 +1837,4 @@ class LanguageDe extends BaseLanguage {
   String get pleaseEnterThe6DigitCodeSentTo => 'Bitte geben Sie den an gesendeten 6-stelligen Code ein.';
   @override
   String get verifyLogin => 'Verifizieren & Anmelden';
-
-  // Purchases
-  @override
-  String get purchaseIdentityError => "Wir konnten Ihr Konto nicht mit dem Store bestätigen. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.";
-  @override
-  String get purchaseActivationError => "Ihr Kauf war erfolgreich, konnte aber noch nicht aktiviert werden. Bitte tippen Sie gleich auf Käufe wiederherstellen.";
-  @override
-  String get purchaseAlreadyHasAccess => "Sie haben bereits Zugriff auf Sleepable. Ihr Abo verwalten Sie unter Mein Abo.";
-  @override
-  String get requestNotAllowed => "Darauf haben Sie gerade keinen Zugriff.";
-  @override
-  String get sessionExpired => "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.";
-  @override
-  String get dreamImagesFailed => "Die Bilder zu diesem Traum konnten nicht erstellt werden.";
-  @override
-  String get dreamImagesTakingLong => "Die Bilder zu Ihrem Traum brauchen länger als üblich. Öffnen Sie den Traum später unter Meine Träume.";
-  @override
-  String get trialReportsLocked => "Ihre Testphase enthält den Bericht Ihrer ersten erfassten Nacht. Wochen- und Monatsberichte gibt es, sobald Premium startet.";
-  @override
-  String get trackFirstNightForReport => "Erfassen Sie Ihre erste Nacht, um Ihren Bericht zu sehen.";
-  @override
-  String get reportLoadError => "Ein Teil Ihres Berichts konnte nicht geladen werden. Zum Aktualisieren nach unten ziehen.";
-  @override
-  String get subscribeYearlyPrice => "Abonnieren — {price}/Jahr";
-  @override
-  String get deleteKeepsSubscription => "Sie haben ein aktives Abo oder eine laufende Testphase. Das Löschen Ihres Kontos kündigt es nicht, der Store bucht weiter ab. Kündigen Sie es zuerst im Store.";
-  @override
-  String get manageSubscription => "Abo verwalten";
-  @override
-  String get deleteAnyway => "Trotzdem löschen";
 }

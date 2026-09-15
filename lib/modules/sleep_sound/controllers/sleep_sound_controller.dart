@@ -682,17 +682,9 @@ class SleepSoundController extends GetxController {
     }
   }
 
-  /// Access changed (purchase, restore): every cached list carries the old
-  /// per-user padlocks, so drop them all and fetch again.
-  Future<void> refreshCatalogAfterAccessChange() async {
-    soundsBySubCategory.clear();
-    soundsBySubCategory.refresh();
-    final prefs = await SharedPreferences.getInstance();
-    for (final k in prefs.getKeys().toList()) {
-      if (k.startsWith('cache_sounds_')) await prefs.remove(k);
-    }
+  Future<void> refreshCatalogAfterPaidPremium() async {
+    await invalidatePaidCatalogCache();
     refreshCurrentTabSilently();
-    fetchMixes();
   }
 
   List<SoundItem> soundsFor(String category, String sub) {
@@ -770,16 +762,25 @@ class SleepSoundController extends GetxController {
 
   final isAnyPlayerVisible = false.obs;
 
-  /// The track's own `is_premium`, which the backend sets per user.
+  bool get isUserPremium => subController.isPremium.value;
+
+  bool _isStorySound(SoundItem sound) =>
+      subController.isStoryLabel(sound.categoryName) ||
+      subController.isStoryLabel(sound.subcategoryName) ||
+      sound.slug.toLowerCase().contains('story');
+
   bool isTrackLockedForUser(SoundItem sound) =>
-      subController.isPremiumItemLocked(itemIsPremium: sound.isPremium == true);
+      subController.isPremiumItemLocked(
+        itemIsPremium: sound.isPremium == true,
+        isStory: _isStorySound(sound),
+      );
 
-  /// True when nothing in the playlist is locked for this user.
-  bool get canUseFullPlaylist => !activePlaylist.any(isTrackLockedForUser);
+  /// Premium Music and Story stay locked until paid Premium.
+  bool get canUseFullPlaylist => isUserPremium;
 
-  /// Unlocked tracks only (used by next/prev / auto-advance).
+  /// Non-pro rotation: free tracks only (used by next/prev / auto-advance).
   List<SoundItem> get freePlaylist =>
-      activePlaylist.where((s) => !isTrackLockedForUser(s)).toList();
+      activePlaylist.where((s) => s.isPremium != true).toList();
 
   void presentPremiumPaywall() {
     final context = Get.context;
@@ -1762,14 +1763,8 @@ class SleepSoundController extends GetxController {
       playingSounds.clear();
       playingMusic.clear();
 
-      // 2. Sort and Convert items from the API. Tracks locked for this user
-      // are not played.
-      bool skippedLocked = false;
+      // 2. Sort and Convert items from the API
       for (var item in mix.sounds) {
-        if (item.isPremium) {
-          skippedLocked = true;
-          continue;
-        }
         final soundItem = SoundItem(
                   id: item.id,
                   name: item.name,
@@ -1782,7 +1777,7 @@ class SleepSoundController extends GetxController {
                   categoryName: 'Mix',
                   subcategoryName: 'Mix',
                   slug: item.name.toLowerCase().replaceAll(' ', '-'),
-                  isPremium: item.isPremium,
+                  isPremium: false,
                   isNew: false,
                   isFavorite: false,
                   artist: null,
@@ -1808,7 +1803,6 @@ class SleepSoundController extends GetxController {
       playingSounds.refresh();
       playingMusic.refresh();
 
-      if (skippedLocked) presentPremiumPaywall();
     } catch (e) {
       debugPrint("❌ Mix Restore Error: $e");
     }

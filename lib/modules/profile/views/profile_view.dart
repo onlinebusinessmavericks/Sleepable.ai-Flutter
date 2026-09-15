@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
           // PRO Button
           Obx(() {
             return
-          subController.access.value.showPaywall ? GestureDetector(
+          (subController.isPremium.value == false)? GestureDetector(
             onTap: () {
               Get.find<HomeController>().onProTapped(context);
             },
