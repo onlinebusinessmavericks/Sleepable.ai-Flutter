@@ -1016,4 +1016,10 @@ abstract class BaseLanguage {
   String get trialReportsLocked;
   String get trackFirstNightForReport;
   String get reportLoadError;
+
+  // Paywall and account
+  String get subscribeYearlyPrice;
+  String get deleteKeepsSubscription;
+  String get manageSubscription;
+  String get deleteAnyway;
 }

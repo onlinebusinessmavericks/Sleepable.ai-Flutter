@@ -1859,4 +1859,12 @@ class LanguageDe extends BaseLanguage {
   String get trackFirstNightForReport => "Erfassen Sie Ihre erste Nacht, um Ihren Bericht zu sehen.";
   @override
   String get reportLoadError => "Ein Teil Ihres Berichts konnte nicht geladen werden. Zum Aktualisieren nach unten ziehen.";
+  @override
+  String get subscribeYearlyPrice => "Abonnieren — {price}/Jahr";
+  @override
+  String get deleteKeepsSubscription => "Sie haben ein aktives Abo oder eine laufende Testphase. Das Löschen Ihres Kontos kündigt es nicht, der Store bucht weiter ab. Kündigen Sie es zuerst im Store.";
+  @override
+  String get manageSubscription => "Abo verwalten";
+  @override
+  String get deleteAnyway => "Trotzdem löschen";
 }

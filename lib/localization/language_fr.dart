@@ -1895,4 +1895,12 @@ class LanguageFr extends BaseLanguage {
   String get trackFirstNightForReport => "Suivez votre première nuit pour voir votre rapport.";
   @override
   String get reportLoadError => "Une partie de votre rapport n'a pas pu être chargée. Tirez vers le bas pour réessayer.";
+  @override
+  String get subscribeYearlyPrice => "S'abonner — {price}/an";
+  @override
+  String get deleteKeepsSubscription => "Vous avez un abonnement ou un essai gratuit actif. Supprimer votre compte ne l'annule pas et le store continuera de vous facturer. Résiliez-le d'abord dans le store.";
+  @override
+  String get manageSubscription => "Gérer l'abonnement";
+  @override
+  String get deleteAnyway => "Supprimer quand même";
 }

@@ -182,13 +182,13 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// that field before any spin - it is the amount the wheel WILL award, not
   /// something the user holds. Reading it as a win put "LUCKY SPIN OFFER
   /// APPLIED" and the discounted price in front of brand new users.
-  bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true;
+  bool get hasSpecialOffer => spinInfo.value?.alreadySpun == true && spinOfferAvailable;
 
   /// iOS: no spin and no discount paywall. Weekly + yearly come from the
   /// App Store current offering only.
   bool shouldShowDiscountOnPaywall() {
     if (Platform.isIOS) return false;
-    return spinInfo.value?.alreadySpun == true;
+    return hasSpecialOffer;
   }
 
   int get paywallDiscountPercent => spinInfo.value?.discountPct ?? 50;
@@ -588,11 +588,16 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     final options = product?.subscriptionOptions;
     if (options == null || options.isEmpty) return null;
 
-    final wantedTag = discounted ? 'spin' : 'trial';
-    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains(wantedTag))
-        // Tag missing in the console: fall back to shape - the discounted offer
-        // is the one carrying an intro phase.
-        ?? options.firstWhereOrNull((o) => !o.isBasePlan && (o.introPhase != null) == discounted)
+    // Play only returns the offers this Google account is eligible for. Never
+    // stand in another option for one that is not in the list: a returning
+    // user gets the base plan, not a "discount" or a "trial" they cannot have.
+    if (discounted) {
+      final spin = options.firstWhereOrNull(isSpinOption);
+      if (spin != null) return spin;
+    }
+    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains('trial'))
+        ?? options.firstWhereOrNull((o) => o.freePhase != null)
+        ?? options.firstWhereOrNull((o) => o.isBasePlan)
         ?? product?.defaultOption;
   }
 
@@ -609,6 +614,28 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
 
   /// Whether [option] is the Play spin offer (yearly-spin-offer).
   bool isSpinOption(SubscriptionOption? option) => _playOfferId(option) == _spinOfferId;
+
+  /// The spin offer on the yearly plan, if Play returned it for this Google
+  /// account.
+  SubscriptionOption? get androidSpinOption {
+    if (!Platform.isAndroid) return null;
+    return _yearlyPackage?.storeProduct.subscriptionOptions?.firstWhereOrNull(isSpinOption);
+  }
+
+  bool get spinOfferAvailable => androidSpinOption != null;
+
+  /// Loads the store products if they are not loaded yet, then says whether
+  /// the spin offer is available. The wheel is offered only when it is: a spin
+  /// must never lead to a price that is not discounted.
+  Future<bool> ensureSpinOfferAvailable() async {
+    if (_yearlyPackage == null) await fetchStoreProducts();
+    return spinOfferAvailable;
+  }
+
+  /// Whether the yearly option this user would buy has a free phase. Only then
+  /// may a paywall say "free trial".
+  bool get yearlyHasFreeTrial =>
+      Platform.isAndroid && androidYearlyOption(discounted: hasSpecialOffer)?.freePhase != null;
 
   /// What the user is actually charged for the first year on Android.
   ///
@@ -1159,8 +1186,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       final ctx = Get.context;
       if (ctx == null) return;
 
-      final spinData = spinInfo.value;
-      if (spinData != null && spinData.alreadySpun) {
+      // No spin offer from Play for this account: no spin, no discount flow.
+      if (!spinOfferAvailable) return;
+      if (hasSpecialOffer) {
         showPremiumOfferSheet6(ctx);
       } else {
         showPremiumOfferSheet5(ctx);

@@ -2584,4 +2584,12 @@ class LanguageEn extends BaseLanguage {
   String get trackFirstNightForReport => "Track your first night to see your report.";
   @override
   String get reportLoadError => "Some of your report couldn't be loaded. Pull down to try again.";
+  @override
+  String get subscribeYearlyPrice => "Subscribe — {price}/year";
+  @override
+  String get deleteKeepsSubscription => "You have an active subscription or free trial. Deleting your account does not cancel it, and the store will still charge you. Cancel it in the store first.";
+  @override
+  String get manageSubscription => "Manage subscription";
+  @override
+  String get deleteAnyway => "Delete anyway";
 }

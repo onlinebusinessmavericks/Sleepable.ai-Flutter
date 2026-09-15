@@ -1859,4 +1859,12 @@ class LanguageEs extends BaseLanguage {
   String get trackFirstNightForReport => "Registre su primera noche para ver su informe.";
   @override
   String get reportLoadError => "No se pudo cargar parte de su informe. Deslice hacia abajo para reintentar.";
+  @override
+  String get subscribeYearlyPrice => "Suscribirse — {price}/año";
+  @override
+  String get deleteKeepsSubscription => "Tiene una suscripción o prueba gratuita activa. Eliminar su cuenta no la cancela y la tienda seguirá cobrándole. Cancélela primero en la tienda.";
+  @override
+  String get manageSubscription => "Gestionar suscripción";
+  @override
+  String get deleteAnyway => "Eliminar de todos modos";
 }

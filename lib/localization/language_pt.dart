@@ -1860,4 +1860,12 @@ class LanguagePt extends BaseLanguage {
   String get trackFirstNightForReport => "Registre sua primeira noite para ver seu relatório.";
   @override
   String get reportLoadError => "Parte do seu relatório não pôde ser carregada. Puxe para baixo para tentar de novo.";
+  @override
+  String get subscribeYearlyPrice => "Assinar — {price}/ano";
+  @override
+  String get deleteKeepsSubscription => "Você tem uma assinatura ou teste gratuito ativo. Excluir sua conta não o cancela e a loja continuará cobrando. Cancele primeiro na loja.";
+  @override
+  String get manageSubscription => "Gerenciar assinatura";
+  @override
+  String get deleteAnyway => "Excluir mesmo assim";
 }

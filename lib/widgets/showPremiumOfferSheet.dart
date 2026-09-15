@@ -199,7 +199,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                     child: Obx(() {
                       final spinData = subController.spinInfo.value;
                       // bool showOffer = spinData != null && spinData.alreadySpun == true;
-                      bool showOffer = spinData?.alreadySpun == true;
+                      bool showOffer = spinData?.alreadySpun == true && subController.spinOfferAvailable;
                       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
                       final spinPackage = subController.spinYearlyPackage.value;
 
@@ -398,7 +398,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
           child: Obx(() {
 
             final spinData = subController.spinInfo.value;
-            bool showOffer = spinData?.alreadySpun == true;
+            bool showOffer = spinData?.alreadySpun == true && subController.spinOfferAvailable;
             final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
             final spinPackage = subController.spinYearlyPackage.value;
 
@@ -686,7 +686,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
       final spinData = subController.spinInfo.value;
       // Ensure this condition is same in all sheets:
-      bool showOffer = spinData?.alreadySpun == true;
+      bool showOffer = spinData?.alreadySpun == true && subController.spinOfferAvailable;
 
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -1000,7 +1000,12 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
       // Apple Guideline 3.1.2(c): the rotating "Get for {symbol}0.00" label made a
       // $0.00 price more conspicuous than the billed amount. iOS uses one stable,
       // neutral label; Android keeps the rotating marketing labels.
-      String currentButtonText = Platform.isIOS ? lang.continueYearly : buttonTexts[currentTextIndex];
+      // Free-trial labels only when the option Play returned has free days.
+      String currentButtonText = Platform.isIOS
+          ? lang.continueYearly
+          : (subController.yearlyHasFreeTrial
+              ? buttonTexts[currentTextIndex]
+              : lang.subscribeYearlyPrice.replaceAll('{price}', yearlyPrice));
       return PopScope(
         canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
@@ -1132,7 +1137,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                                         currencySymbol: currencySymbol,
                                         weeklyAvg: weeklyAvg,
                                       )
-                                    : (showOffer
+                                    : ((showOffer || !subController.yearlyHasFreeTrial)
                                         ? "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})"
                                         : context.lang.noPaymentDue),
                                 style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
@@ -1216,10 +1221,22 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
   }
 }
 
-showPremiumOfferSheet5(BuildContext context) {
-  if (!paywallAllowed()) return null;
-  if (Platform.isIOS) return showPremiumOfferSheet4(context);
-  showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const LuckySpinScreen());
+Future<void> showPremiumOfferSheet5(BuildContext context) async {
+  if (!paywallAllowed()) return;
+  if (Platform.isIOS) {
+    showPremiumOfferSheet4(context);
+    return;
+  }
+  // Check the yearly product's options first: without the spin offer for this
+  // Google account there is no spin and no discount - just the plain paywall.
+  final available = await Get.find<SubscriptionController>().ensureSpinOfferAvailable();
+  final ctx = Get.context;
+  if (ctx == null) return;
+  if (!available) {
+    showPremiumOfferSheet4(ctx);
+    return;
+  }
+  showModalBottomSheet(context: ctx, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const LuckySpinScreen());
 }
 
 class LuckySpinScreen extends StatefulWidget {
@@ -1412,6 +1429,8 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 showPremiumOfferSheet6(BuildContext context) {
   if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
+  // The discount sheet is only for a won spin whose offer Play returned.
+  if (!Get.find<SubscriptionController>().hasSpecialOffer) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const OneTimeOfferSheet());
 }
 
@@ -1423,7 +1442,6 @@ class OneTimeOfferSheet extends StatefulWidget {
 }
 
 class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
-  bool isFreeTrialEnabled = true;
   int selectedPlanIndex = 1; // Default Yearly selected
 
   @override
@@ -1440,7 +1458,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       final spinData = subController.spinInfo.value;
       // ✅ Check karein ki spinData null toh nahi hai aur spin ho chuka hai
       // Ensure this condition is same in all sheets:
-      bool showOffer = spinData?.alreadySpun == true;
+      bool showOffer = spinData?.alreadySpun == true && subController.spinOfferAvailable;
       final standardPackage = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
 
@@ -1472,7 +1490,9 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       final bool isYearly = selectedPlanIndex == 1;
       final lang = context.lang;
       final String buttonText = isYearly
-          ? (isFreeTrialEnabled ? lang.startFreeTrial : lang.continueYearly)
+          ? (yearlyOption?.freePhase != null
+              ? lang.startFreeTrial
+              : lang.subscribeYearlyPrice.replaceAll('{price}', yearlyDisplayPrice))
           : lang.startJourney;
       final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
       return PopScope(
@@ -1607,7 +1627,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         ),
 
                         SizedBox(height: sh(16)),
-                        Text(context.lang.noCommitment, style: TextStyle(color: Colors.white54, fontSize: 14)),
+                        Text(yearlyOption?.freePhase != null ? context.lang.noCommitment : context.lang.cancelAnytime,
+                            style: TextStyle(color: Colors.white54, fontSize: 14)),
                         SizedBox(height: sh(40)),
                       ],
                     ),
@@ -1749,6 +1770,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 showPremiumOfferSheet7(BuildContext context) {
   if (!paywallAllowed()) return null;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
+  // This screen is about a free trial; without free days go straight to plans.
+  if (!Get.find<SubscriptionController>().yearlyHasFreeTrial) return showPremiumOfferSheet8(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const FreeTrialReminderScreen());
 }
 
@@ -1768,7 +1791,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
         child: Obx(() {
           final spinData = subController.spinInfo.value;
           // Ensure this condition is same in all sheets:
-          bool showOffer = spinData?.alreadySpun == true;
+          bool showOffer = spinData?.alreadySpun == true && subController.spinOfferAvailable;
 
           // 1. Determine Package
           final package = showOffer
@@ -1942,7 +1965,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       final spinData = subController.spinInfo.value;
       bool showOffer = Platform.isIOS
           ? false
-          : spinData?.alreadySpun == true;
+          : spinData?.alreadySpun == true && subController.spinOfferAvailable;
 
       final standardAnnual = subController.packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
       final spinPackage = subController.spinYearlyPackage.value;
@@ -2023,7 +2046,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
       // Apple Guideline 3.1.2(c): on iOS keep a neutral heading (no big "FREE trial"
       // promotion) so the billed amount stays the most conspicuous element.
       // Android keeps its original trial-forward title.
-      final String mainTitle = (isYearly && !Platform.isIOS) ? lang.startTrialToContinue : lang.unlockSleepableTitle;
+      final String mainTitle = (isYearly && subController.yearlyHasFreeTrial) ? lang.startTrialToContinue : lang.unlockSleepableTitle;
       // Someone already inside the free trial must not be offered the trial
       // again - the store would reject it as an existing subscription.
       final bool onTrial = subController.isTrial.value;
@@ -2037,7 +2060,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   // The store gives the trial once per account; a returning
                   // subscriber would be charged straight away, so do not
                   // promise them a trial.
-                  ? (subController.yearlyIntroEligible.value ? lang.startFreeTrial : lang.continueYearly)
+                  ? (subController.yearlyHasFreeTrial
+                      ? lang.startFreeTrial
+                      : lang.subscribeYearlyPrice.replaceAll('{price}', yearlyPriceText))
                   : lang.startJourney));
       final String bottomSubText = isYearly
           ? (Platform.isIOS
@@ -2046,7 +2071,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   currencySymbol: currencySymbol,
                   weeklyAvg: weeklyAvgFromYearly,
                 )
-              : "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})")
+              : (subController.yearlyHasFreeTrial
+                  ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})"
+                  : "$yearlyPriceText / ${lang.perYear} ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})"))
           : "${lang.just} $weeklyPriceText / ${lang.perWeek}";
       return PopScope(
         canPop: Platform.isIOS,
@@ -2145,7 +2172,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                       Text(
                         Platform.isIOS
                             ? context.lang.noCommitment
-                            : (isYearly ? context.lang.noPaymentDue : context.lang.noCommitment),
+                            : ((isYearly && subController.yearlyHasFreeTrial) ? context.lang.noPaymentDue : context.lang.cancelAnytime),
                         style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
                       ),
                     ],
