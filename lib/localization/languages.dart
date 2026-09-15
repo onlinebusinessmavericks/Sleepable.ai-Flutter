@@ -1022,4 +1022,8 @@ abstract class BaseLanguage {
   String get deleteKeepsSubscription;
   String get manageSubscription;
   String get deleteAnyway;
+
+  // Purchases and sounds
+  String get purchaseOptionUnavailable;
+  String get soundSceneUnavailable;
 }

@@ -238,6 +238,24 @@ class SoundsApis {
     return mixedListResponse.data?.records ?? [];
   }
 
+  /// Finds a mix by id in GET /sounds/mixed/list/, which returns public mixes
+  /// (home "sound scenes") and the user's own, each with full tracks.
+  static Future<MixedSoundRecord?> findMixedRecord(int mixId) async {
+    int page = 1;
+    int totalPages = 1;
+    do {
+      final response = await buildHttpResponse(endPoint: '${APIEndPoints.soundsMixedList}?page=$page&page_size=50', method: MethodType.get);
+      if (response is! Map || response['data'] is! Map) return null;
+      final data = MixedPaginationData.fromJson(Map<String, dynamic>.from(response['data']));
+      for (final mix in data.records) {
+        if (mix.id == mixId) return mix;
+      }
+      totalPages = data.totalPages;
+      page++;
+    } while (page <= totalPages);
+    return null;
+  }
+
   static Future<CommonResponse> soundsMixedDelete({required int mixId}) async {
     final response = await buildHttpResponse(
       endPoint: '${APIEndPoints.soundsMixedDetail}$mixId/',
@@ -670,7 +688,7 @@ class ProgressApis {
   }
 
   /// Re-reads a dream. Used to poll for the generated images, which the analyze
-  /// call returns as `images_pending` and fills in roughly a minute later.
+  /// call reports as images_status "pending" and fills in roughly a minute later.
   static Future<DreamListResponse> getDreamById(int dreamId) async {
     final response = await buildHttpResponse(
       endPoint: "progress/dreambot/$dreamId/",

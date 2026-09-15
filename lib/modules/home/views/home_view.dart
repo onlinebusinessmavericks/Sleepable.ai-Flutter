@@ -2433,7 +2433,16 @@ class HomeScreen extends GetView<HomeController> {
                   final String imageUrl = "$BASE_URL2${item.image ?? ""}";
 
                   return GestureDetector(
-                    onTap: () {}, //=> Get.toNamed(Routes.player, arguments: item),
+                    onTap: () async {
+                      // A scene is a public mix: find it in the mixes list and play it.
+                      final sleepController = Get.isRegistered<SleepSoundController>()
+                          ? Get.find<SleepSoundController>()
+                          : Get.put(SleepSoundController());
+                      final played = await sleepController.playSceneById(item.id);
+                      if (!played) {
+                        toast(Get.context?.lang.soundSceneUnavailable ?? "This sound scene isn't available right now.");
+                      }
+                    },
                     child: Container(
                       width: cardWidth * SizeConfigs.paddingScale,
                       margin: EdgeInsets.only(right: 12 * SizeConfigs.paddingScale),

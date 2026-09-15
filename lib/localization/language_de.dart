@@ -1867,4 +1867,8 @@ class LanguageDe extends BaseLanguage {
   String get manageSubscription => "Abo verwalten";
   @override
   String get deleteAnyway => "Trotzdem löschen";
+  @override
+  String get purchaseOptionUnavailable => "Dieser Tarif ist für Ihr Konto gerade nicht verfügbar. Bitte versuchen Sie es erneut.";
+  @override
+  String get soundSceneUnavailable => "Diese Klangszene ist gerade nicht verfügbar.";
 }

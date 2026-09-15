@@ -1903,4 +1903,8 @@ class LanguageFr extends BaseLanguage {
   String get manageSubscription => "Gérer l'abonnement";
   @override
   String get deleteAnyway => "Supprimer quand même";
+  @override
+  String get purchaseOptionUnavailable => "Cette offre n'est pas disponible pour votre compte pour le moment. Veuillez réessayer.";
+  @override
+  String get soundSceneUnavailable => "Cette ambiance sonore n'est pas disponible pour le moment.";
 }

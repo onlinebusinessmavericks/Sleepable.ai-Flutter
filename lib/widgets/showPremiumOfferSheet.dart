@@ -287,7 +287,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                   padding: EdgeInsets.symmetric(vertical: pad(18)),
                                 ),
                                 onPressed: () async {
-                                  await subController.buyProduct(package);
+                                  await subController.buyProduct(package, option: subController.androidYearlyOption(discounted: showOffer));
                                   if (subController.isPremium.value) Get.back();
                                 },
                                 child: subController.isLoading.value
@@ -531,7 +531,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                               }
 
                               // Controller ka global purchase function use karein
-                              await subController.buyProduct(package);
+                              await subController.buyProduct(package, option: subController.androidYearlyOption(discounted: showOffer));
 
                               if (subController.isPremium.value) {
                                 Get.back();
@@ -823,7 +823,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                     return;
                                   }
                                   // Controller ka universal buy function
-                                  await subController.buyProduct(package);
+                                  await subController.buyProduct(package, option: subController.androidYearlyOption(discounted: showOffer));
                                   if (subController.isPremium.value) Get.back();
                                 },
                                 child: subController.isLoading.value

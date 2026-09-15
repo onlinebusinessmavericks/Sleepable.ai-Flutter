@@ -251,10 +251,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     required Package? standardPackage,
     required bool showOffer,
   }) {
-    final price = yearlyFirstYearPrice(discounted: showOffer);
-    if (price.isNotEmpty) return price;
-    // Last resort only if offerings failed to load
-    return compactPriceString(spinData?.discountedPrice);
+    // Store prices only. The spin-wheel payload's price strings are USD
+    // placeholders and are never shown.
+    return yearlyFirstYearPrice(discounted: showOffer);
   }
 
   double getDisplayYearlyRawPrice({
@@ -263,15 +262,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     required Package? standardPackage,
     required bool showOffer,
   }) {
-    final amount = yearlyFirstYearAmount(discounted: showOffer);
-    if (amount > 0) return amount;
-    // Last resort only if offerings failed to load
-    final raw = spinData?.discountedPrice;
-    if (raw != null) {
-      final parsed = double.tryParse(raw.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), ''));
-      if (parsed != null) return parsed;
-    }
-    return 0;
+    // Store prices only; see getDisplayYearlyPrice.
+    return yearlyFirstYearAmount(discounted: showOffer);
   }
 
   /// Currency symbol from store product currencyCode (Play / App Store country).
@@ -595,10 +587,12 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
       final spin = options.firstWhereOrNull(isSpinOption);
       if (spin != null) return spin;
     }
-    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains('trial'))
-        ?? options.firstWhereOrNull((o) => o.freePhase != null)
-        ?? options.firstWhereOrNull((o) => o.isBasePlan)
-        ?? product?.defaultOption;
+    // Without a won spin the spin offer is never used. Today it also carries
+    // the free trial, so the free-phase search has to skip it. No RevenueCat
+    // default option: if nothing here matches, there is nothing to buy.
+    return options.firstWhereOrNull((o) => !o.isBasePlan && !isSpinOption(o) && o.tags.contains('trial'))
+        ?? options.firstWhereOrNull((o) => !isSpinOption(o) && o.freePhase != null)
+        ?? options.firstWhereOrNull((o) => o.isBasePlan);
   }
 
   /// Play formats a subscription option id as "<basePlanId>:<offerId>" for an
@@ -696,22 +690,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     return compactPriceString(_yearlyPackage?.storeProduct.priceString);
   }
 
-  /// The Play offer a purchase should go through when the caller did not name
-  /// one.
-  ///
-  /// Only the yearly plan carries offers: `spin` for the discounted year and
-  /// `trial` for the plain three days. Which one applies is decided by whether
-  /// the user has actually won the spin, the same test the paywall uses to
-  /// decide what price to print - so the sheet and the store agree.
-  SubscriptionOption? _defaultOptionFor(Package package) {
-    if (!Platform.isAndroid) return null;
-    if (package.packageType != PackageType.annual) return null;
-    return androidYearlyOption(discounted: hasSpecialOffer);
-  }
-
-  /// Buys [package]. On Android pass [option] to pick a specific Play offer
-  /// (the discounted year vs the plain free trial); without it one is worked
-  /// out from whether the user has won the spin.
+  /// Buys [package]. On Android a yearly purchase must pass the exact [option]
+  /// the sheet displayed; without one nothing is bought.
   Future<void> buyProduct(Package package, {SubscriptionOption? option}) async {
     if (!isConfigured) {
       toast("Store not available on this device");
@@ -759,11 +739,16 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
         }
       }
 
-      // The discount lives in the Play offer, not in the product. Five of the
-      // six purchase buttons never passed one, so the store fell back to its
-      // default offer and sold the full-price trial even to someone who had
-      // just won the spin. Work it out here so no call site can forget again.
-      option ??= _defaultOptionFor(package);
+      // Never let RevenueCat pick the yearly offer: buy exactly the option the
+      // sheet displayed, and the spin offer only after a won spin that Play
+      // returned for this account.
+      if (Platform.isAndroid && package.packageType == PackageType.annual) {
+        if (option == null || (isSpinOption(option) && !hasSpecialOffer)) {
+          toast(Get.context?.lang.purchaseOptionUnavailable ??
+              "This plan isn't available for your account right now. Please try again.");
+          return;
+        }
+      }
 
       final purchaseResult = await Purchases.purchase(
         option != null && Platform.isAndroid
@@ -1118,6 +1103,23 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   ///
   /// Retries before giving up: a failed call must not lock a paying or
   /// admin-granted user out, so on total failure the cached value is kept.
+  /// The backend's check for its latest deploy: /users/subscription/ must carry
+  /// first_report_tracker_id and features.sounds.premium_items_unlocked. Missing
+  /// keys mean the server is on an older build - logged for the backend team,
+  /// never worked around.
+  void _reportOldBackendBuild(dynamic data) {
+    if (data is! Map) return;
+    final features = data['features'];
+    final sounds = features is Map ? features['sounds'] : null;
+    final current = data.containsKey('first_report_tracker_id') &&
+        sounds is Map &&
+        sounds.containsKey('premium_items_unlocked');
+    if (!current) {
+      log("/users/subscription/ lacks first_report_tracker_id or "
+          "features.sounds.premium_items_unlocked: the backend is on an older build.");
+    }
+  }
+
   Future<void> _applySubscriptionPayload(dynamic raw) async {
     final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     await applyAccess(data);
@@ -1157,6 +1159,7 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
             method: MethodType.get
         );
         if (response['success'] == true) {
+          _reportOldBackendBuild(response['data']);
           await _applySubscriptionPayload(response['data'] ?? {});
           _lastAccessRefresh = DateTime.now();
           return true;

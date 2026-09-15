@@ -1785,6 +1785,24 @@ class SleepSoundController extends GetxController {
     return null;
   }
 
+  /// Plays a home "sound scene". A scene's id is the id of a public mix, so it
+  /// is looked up in the mixes list and played like any saved mix. Returns
+  /// false when the list has no mix with that id.
+  Future<bool> playSceneById(int mixId) async {
+    MixedSoundRecord? mix = apiMixes.firstWhereOrNull((m) => m.id == mixId);
+    if (mix == null) {
+      try {
+        mix = await SoundsApis.findMixedRecord(mixId);
+      } catch (e) {
+        debugPrint("Sound scene lookup failed: $e");
+      }
+    }
+    if (mix == null) return false;
+    await restoreMixFromApi(mix);
+    isAnyPlayerVisible.value = true;
+    return true;
+  }
+
   Future<void> restoreMixFromApi(MixedSoundRecord mix) async {
     try {
       debugPrint("🔄 Restoring Full Mix: ${mix.title}");

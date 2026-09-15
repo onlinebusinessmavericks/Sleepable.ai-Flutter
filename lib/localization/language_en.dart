@@ -2592,4 +2592,8 @@ class LanguageEn extends BaseLanguage {
   String get manageSubscription => "Manage subscription";
   @override
   String get deleteAnyway => "Delete anyway";
+  @override
+  String get purchaseOptionUnavailable => "This plan isn't available for your account right now. Please try again.";
+  @override
+  String get soundSceneUnavailable => "This sound scene isn't available right now.";
 }

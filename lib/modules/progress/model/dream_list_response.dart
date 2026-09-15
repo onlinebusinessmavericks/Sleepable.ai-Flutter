@@ -75,14 +75,11 @@ class DreamData {
     required this.chatHistory,
   });
 
-  /// Reads `images_status` (analyze response, dream detail, dream-list items).
-  /// `images_pending` is only a fallback for a response without it.
+  /// Reads `images_status` (analyze response, dream detail, dream-list items):
+  /// exactly one of none | pending | ready | failed.
   static String parseImagesStatus(Map json) {
-    final status = (json['images_status'] ?? '').toString().trim().toLowerCase();
-    if (status.isNotEmpty && status != 'null') {
-      return (status == 'processing' || status == 'generating') ? 'pending' : status;
-    }
-    return json['images_pending'] == true ? 'pending' : '';
+    final status = (json['images_status'] ?? '').toString();
+    return const {'none', 'pending', 'ready', 'failed'}.contains(status) ? status : 'none';
   }
 
   factory DreamData.fromJson(Map<String, dynamic> json) {

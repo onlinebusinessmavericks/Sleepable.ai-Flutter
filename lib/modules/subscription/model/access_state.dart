@@ -74,20 +74,18 @@ class AccessState {
     final map = Map<String, dynamic>.from(json as Map);
     final isPremium = map['is_premium'] == true;
     final isTrial = map['is_trial'] == true;
-    final features = AccessFeatures.fromJson(map['features'], topLevel: map);
+    final features = AccessFeatures.fromJson(map['features']);
     return AccessState(
       isPremium: isPremium,
       isTrial: isTrial,
-      // has_access is part of the contract; the fallback only covers a
-      // response from before the field existed.
-      hasAccess: map.containsKey('has_access') ? map['has_access'] == true : (isPremium || isTrial),
+      hasAccess: map['has_access'] == true,
       trialEndsAt: _date(map['trial_ends_at']),
       trialDreamsUsed: _int(map['trial_dreams_used']) ?? 0,
       trialDreamsLimit: _int(map['trial_dreams_limit']) ?? 0,
       trialNightsUsed: _int(map['trial_nights_used']) ?? 0,
       trialNightsLimit: _int(map['trial_nights_limit']) ?? 0,
-      firstReportDate: _string(map['first_report_date']) ?? features.reports.firstReportDate,
-      firstReportTrackerId: _int(map['first_report_tracker_id']) ?? features.reports.firstReportTrackerId,
+      firstReportDate: _string(map['first_report_date']),
+      firstReportTrackerId: _int(map['first_report_tracker_id']),
       features: features,
       isKnown: true,
       raw: _accessOnly(map),
@@ -151,11 +149,9 @@ class AccessFeatures {
     showPaywall: false,
   );
 
-  /// [topLevel] is the enclosing block: `show_paywall` is documented inside
-  /// `features`, but is read from the top level too if it only appears there.
-  factory AccessFeatures.fromJson(dynamic json, {Map<String, dynamic>? topLevel}) {
+  factory AccessFeatures.fromJson(dynamic json) {
     final map = json is Map ? Map<String, dynamic>.from(json) : <String, dynamic>{};
-    final paywall = map.containsKey('show_paywall') ? map['show_paywall'] : topLevel?['show_paywall'];
+    final paywall = map['show_paywall'];
     return AccessFeatures(
       dreamBot: AccessFeature.fromJson(map['dream_bot']),
       reports: AccessFeature.fromJson(map['reports']),

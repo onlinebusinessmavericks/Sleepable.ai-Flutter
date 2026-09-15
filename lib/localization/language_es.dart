@@ -1867,4 +1867,8 @@ class LanguageEs extends BaseLanguage {
   String get manageSubscription => "Gestionar suscripción";
   @override
   String get deleteAnyway => "Eliminar de todos modos";
+  @override
+  String get purchaseOptionUnavailable => "Este plan no está disponible para su cuenta ahora. Inténtelo de nuevo.";
+  @override
+  String get soundSceneUnavailable => "Esta escena sonora no está disponible ahora.";
 }

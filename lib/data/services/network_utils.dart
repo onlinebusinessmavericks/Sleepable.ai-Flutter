@@ -303,10 +303,9 @@ Future<bool> _refreshAccessToken() async {
     if (!response.statusCode.isSuccessful()) return false;
     final body = jsonDecode(response.body);
     if (body is! Map) return false;
-    // Accept the tokens flat, under `data`, or under `data.tokens`.
-    Map source = body;
-    if (source['data'] is Map) source = source['data'];
-    if (source['tokens'] is Map) source = source['tokens'];
+    // POST /users/refresh-token/ returns the tokens as data.access / data.refresh.
+    final source = body['data'];
+    if (source is! Map) return false;
 
     final access = (source['access'] ?? '').toString();
     if (access.isEmpty) return false;

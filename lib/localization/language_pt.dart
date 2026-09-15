@@ -1868,4 +1868,8 @@ class LanguagePt extends BaseLanguage {
   String get manageSubscription => "Gerenciar assinatura";
   @override
   String get deleteAnyway => "Excluir mesmo assim";
+  @override
+  String get purchaseOptionUnavailable => "Este plano não está disponível para sua conta agora. Tente novamente.";
+  @override
+  String get soundSceneUnavailable => "Esta cena sonora não está disponível agora.";
 }
