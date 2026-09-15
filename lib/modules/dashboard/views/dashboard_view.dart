@@ -93,7 +93,6 @@ class DashboardScreen extends StatelessWidget {
                   if (index == 1) {
                     // 🔊 Sounds tab index
                     sleepSoundController.onSoundTabVisible();
-                    sleepSoundController.refreshCurrentTabSilently();
                   }
 
                   if (index == 2) {

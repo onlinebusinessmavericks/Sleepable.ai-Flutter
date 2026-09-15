@@ -19,7 +19,7 @@ class SpinData {
 
   factory SpinData.fromJson(Map<String, dynamic> json) {
     return SpinData(
-      alreadySpun: json['already_spun'] ?? (json['discount_pct'] != null),
+      alreadySpun: json['already_spun'] == true,
       couponCode: json['coupon_code'],
       discountPct: json['discount_pct'],
       originalPrice: json['original_price'],

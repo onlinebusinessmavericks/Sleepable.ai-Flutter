@@ -217,18 +217,14 @@ class LoginController extends BaseController {
         // purchases, otherwise the customer stays anonymous.
         await subController.identifyUser(response.data.uuid);
 
-        // Pehle Login response se update karein
-        bool loginPremiumStatus = response.data.isPremium;
-        await subController.updatePremiumStatus(loginPremiumStatus, isFromBackend: true);
+        // Apply the access block from this response before any screen renders.
+        // Trial/has_access live on `data`, not only on GET /users/subscription/.
+        await subController.applyAccessPayload(response.data.accessPayload);
 
-        // 🔥 DOUBLE CHECK & DATA PREP
-        if (!loginPremiumStatus) {
-          print("🔄 Login said false, double checking...");
-          await Future.wait([
-            subController.getBackendSubscriptionStatus(),
-            subController.checkSpinStatus(),
-          ]);
-        }
+        await Future.wait([
+          subController.getBackendSubscriptionStatus(),
+          subController.checkSpinStatus(),
+        ]);
 
         // 🔥 Navigation se pehle Products load karna trigger karein
         // Agar Paywall dikhana hai to ye zaroori hai
@@ -492,17 +488,13 @@ class LoginController extends BaseController {
       // purchases, otherwise the customer stays anonymous.
       await subController.identifyUser(targetData.uuid ?? '');
 
-      // Backend response se immediate premium status sync karein
-      bool loginPremiumStatus = targetData.isPremium ?? false;
-      await subController.updatePremiumStatus(loginPremiumStatus, isFromBackend: true);
+      // Apply the access block from this response before any screen renders.
+      await subController.applyAccessPayload(targetData.accessPayload);
 
-      if (!loginPremiumStatus) {
-        print("🔄 Login said false, double checking...");
-        await Future.wait([
-          subController.getBackendSubscriptionStatus(),
-          subController.checkSpinStatus(),
-        ]);
-      }
+      await Future.wait([
+        subController.getBackendSubscriptionStatus(),
+        subController.checkSpinStatus(),
+      ]);
 
       await subController.initData();
 

@@ -32,9 +32,9 @@ class InsightsList extends StatelessWidget {
         final tab = controller.selectedTab.value;
         final emptyMsg = (!subController.isPremium.value && !subController.isTrial.value)
             ? context.lang.proInsightsPrompt
-            : (tab == context.lang.week)
+            : (tab == 'week')
                 ? context.lang.noInsightsWeek
-                : (tab == context.lang.month)
+                : (tab == 'month')
                     ? context.lang.noInsightsMonth
                     : context.lang.noInsightsToday;
         return Center(

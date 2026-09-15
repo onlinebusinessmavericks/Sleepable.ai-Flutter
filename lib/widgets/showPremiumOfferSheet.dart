@@ -29,6 +29,15 @@ void _openPaywallLegalLink(BuildContext context, {required String title, require
   Get.to(() => WebViewScreen(title: title, url: url));
 }
 
+/// Trial and paid must never see checkout. Send them to My Subscription.
+bool _paywallBlocked() {
+  if (!Get.isRegistered<SubscriptionController>()) return false;
+  final sub = Get.find<SubscriptionController>();
+  if (sub.shouldShowPaywall) return false;
+  Get.toNamed(Routes.mySubscription);
+  return true;
+}
+
 Widget buildIosSubscriptionLegalLinks(BuildContext context, {double fontSize = 11}) {
   if (!Platform.isIOS) return const SizedBox.shrink();
 
@@ -114,6 +123,7 @@ Widget _trialNotPremiumBanner(BuildContext context) {
 }
 
 showPremiumOfferSheet(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen());
 }
@@ -322,6 +332,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
 }
 
 showPremiumOfferSheet2(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen2());
 }
@@ -567,6 +578,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet3(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen3());
 }
@@ -850,14 +862,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 }
 
 Future showPremiumOfferSheet4(BuildContext context) {
-  final sub = Get.isRegistered<SubscriptionController>()
-      ? Get.find<SubscriptionController>()
-      : null;
-  // Trial users already started this plan. Opening the carousel would promise
-  // another 3-day trial and can lead to Lucky Spin on close of checkout.
-  if (sub != null && sub.isOnFreeTrial) {
-    return Get.toNamed(Routes.mySubscription) ?? Future.value();
-  }
+  if (_paywallBlocked()) return Future.value();
   return showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const PremiumOfferSheetFullScreen4());
 }
 
@@ -1210,6 +1215,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
 }
 
 showPremiumOfferSheet5(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const LuckySpinScreen());
 }
@@ -1402,6 +1408,7 @@ class _LuckySpinScreenState extends State<LuckySpinScreen> {
 }
 
 showPremiumOfferSheet6(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const OneTimeOfferSheet());
 }
@@ -1452,18 +1459,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       double discountedYearlyRaw = storePrice;
 
       double actualDaily = discountedYearlyRaw / 365;
-      String finalDailyPriceDisplay;
-
-      if (yearlyPackage.storeProduct.currencyCode.toUpperCase() == "INR") {
-        // ₹7.77 Lucky number formatting (India Play storefront only)
-        if (actualDaily >= 7.0 && actualDaily <= 8.5) {
-          finalDailyPriceDisplay = "7.77";
-        } else {
-          finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
-        }
-      } else {
-        finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
-      }
+      String finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
 
       // Weekly Average for sub-card
       String weeklyAvgFromYearly = (discountedYearlyRaw / 52).toStringAsFixed(2);
@@ -1501,8 +1497,10 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         ),
 
                         SizedBox(height: sh(24)),
-                        _buildDiscountCard(homeController, textTheme),
-                        SizedBox(height: sh(24)),
+                        if (showOffer && subController.yearlyHasFirstYearDiscount)
+                          _buildDiscountCard(homeController, textTheme),
+                        if (showOffer && subController.yearlyHasFirstYearDiscount)
+                          SizedBox(height: sh(24)),
                         _buildFeatureRow("💤", context.lang.featureSleep, textTheme),
                         _buildFeatureRow("🎶", context.lang.featureSounds, textTheme),
                         _buildFeatureRow("📈", context.lang.featureAnalytics, textTheme),
@@ -1582,7 +1580,12 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                             onPressed: () async {
                               final packageToBuy = isYearly ? yearlyPackage : weeklyPackage;
                               if (packageToBuy != null) {
-                                await subController.buyProduct(packageToBuy);
+                                await subController.buyProduct(
+                                  packageToBuy,
+                                  option: isYearly
+                                      ? subController.androidYearlyOption(discounted: showOffer)
+                                      : null,
+                                );
                                 // ✅ SUCCESS: Dashboard par bhejte waqt sab clear karein
                                 if (subController.isPremium.value) {
                                   Get.until((route) => Get.isOverlaysClosed);
@@ -1651,10 +1654,6 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
               Text(
                 "50% ${context.lang.off}",
                 style: textTheme.displaySmall?.copyWith(fontSize: sp(48), fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              Text(
-                context.lang.offForever,
-                style: textTheme.headlineMedium?.copyWith(fontSize: sp(34), fontWeight: FontWeight.w900, color: Colors.white.withOpacity(0.6)),
               ),
             ],
           ),
@@ -1744,6 +1743,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 }
 
 showPremiumOfferSheet7(BuildContext context) {
+  if (_paywallBlocked()) return;
   if (Platform.isIOS) return showPremiumOfferSheet4(context);
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const FreeTrialReminderScreen());
 }
@@ -1905,6 +1905,7 @@ class FreeTrialReminderScreen extends StatelessWidget {
 }
 
 showPremiumOfferSheet8(BuildContext context) {
+  if (_paywallBlocked()) return;
   showModalBottomSheet(context: context, backgroundColor: Colors.transparent, isScrollControlled: true, enableDrag: false, builder: (_) => const UnifiedPremiumSheet());
 }
 

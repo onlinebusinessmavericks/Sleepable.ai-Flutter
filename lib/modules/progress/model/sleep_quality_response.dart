@@ -24,6 +24,7 @@ class SleepQualityWrapper {
   final String timeAsleep;
   final double durationHours;
   final List<SleepQualityPoint> breakdown;
+  final bool hasData;
 
   SleepQualityWrapper({
     required this.sleepScore,
@@ -34,15 +35,20 @@ class SleepQualityWrapper {
     required this.timeAsleep,
     required this.breakdown,
     required this.durationHours,
+    this.hasData = true,
   });
 
   factory SleepQualityWrapper.fromJson(Map<String, dynamic> json) {
     // Determine the breakdown list: try 'breakdown' then 'hourly'
     var rawBreakdown = json['breakdown'] ?? json['hourly'] ?? [];
+    final rawScore = json['sleep_score'] ?? json['quality_score'] ?? json['summary']?['avg_quality_score'];
+    final breakdown = (rawBreakdown as List)
+        .map((e) => SleepQualityPoint.fromJson(e))
+        .toList();
 
     return SleepQualityWrapper(
       // Handling Today's key vs Historical Date keys
-      sleepScore: (json['sleep_score'] ?? json['quality_score'] ?? json['summary']?['avg_quality_score'] ?? 0.0).toDouble(),
+      sleepScore: (rawScore ?? 0.0).toDouble(),
       durationScore: (json['duration_score'] ?? 0.0).toDouble(),
       durationHours: (json['duration_hours'] ?? 0.0).toDouble(),
 
@@ -51,6 +57,7 @@ class SleepQualityWrapper {
 
       // Sleep Phases vs Stage Score
       sleepPhasesScore: (json['sleep_phases_score'] ?? json['stage_score'] ?? 0.0).toDouble(),
+      hasData: rawScore != null || breakdown.isNotEmpty,
 
       // Time in bed: Historical mein duration_hours aa raha hai
       timeInBed: json['time_in_bed'] ?? (json['duration_hours'] != null ? "${json['duration_hours']}h" : "--"),
@@ -58,9 +65,7 @@ class SleepQualityWrapper {
       // Time asleep: check for minutes or hours
       timeAsleep: json['time_asleep_minutes']?.toString() ?? json['duration_hours']?.toString() ?? "0",
 
-      breakdown: (rawBreakdown as List)
-          .map((e) => SleepQualityPoint.fromJson(e))
-          .toList(),
+      breakdown: breakdown,
     );
   }
 }

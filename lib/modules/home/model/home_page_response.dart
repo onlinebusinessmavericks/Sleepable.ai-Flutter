@@ -30,6 +30,7 @@ class HomePageResponse {
 
 class HomePageData {
   final PremiumBanner premiumBanner;
+  final Map<String, dynamic>? access;
   final SleepSummary sleepSummary;
   final TonightSleepGoal tonightSleepGoal;
   final List<WeeklySleepPattern> weeklySleepPattern;
@@ -48,6 +49,7 @@ class HomePageData {
 
   HomePageData({
     required this.premiumBanner,
+    this.access,
     required this.sleepSummary,
     required this.tonightSleepGoal,
     required this.weeklySleepPattern,
@@ -68,6 +70,9 @@ class HomePageData {
   factory HomePageData.fromJson(Map<String, dynamic> json) {
     return HomePageData(
       premiumBanner: PremiumBanner.fromJson(json['premium_banner'] ?? {}),
+      access: json['access'] is Map
+          ? Map<String, dynamic>.from(json['access'] as Map)
+          : null,
       sleepSummary: SleepSummary.fromJson(json['sleep_summary'] ?? {}),
       tonightSleepGoal: TonightSleepGoal.fromJson(json['tonight_sleep_goal'] ?? {}),
       weeklySleepPattern: (json['weekly_sleep_pattern'] as List? ?? [])
@@ -99,6 +104,7 @@ class HomePageData {
   Map<String, dynamic> toJson() {
     return {
       "premium_banner": premiumBanner.toJson(),
+      if (access != null) "access": access,
       "sleep_summary": sleepSummary.toJson(),
       "tonight_sleep_goal": tonightSleepGoal.toJson(),
       "weekly_sleep_pattern": weeklySleepPattern.map((e) => e.toJson()).toList(),
@@ -120,11 +126,34 @@ class HomePageData {
 
 class PremiumBanner {
   final bool isPremium;
-  PremiumBanner({required this.isPremium});
-  factory PremiumBanner.fromJson(Map<String, dynamic> json) =>
-      PremiumBanner(isPremium: json['is_premium'] ?? false);
+  final bool isPaid;
+  final bool isTrial;
+  final String? trialEndsAt;
+  final bool showPaywall;
 
-  Map<String, dynamic> toJson() => {"is_premium": isPremium};
+  PremiumBanner({
+    required this.isPremium,
+    this.isPaid = false,
+    this.isTrial = false,
+    this.trialEndsAt,
+    this.showPaywall = true,
+  });
+
+  factory PremiumBanner.fromJson(Map<String, dynamic> json) => PremiumBanner(
+        isPremium: json['is_premium'] ?? false,
+        isPaid: json['is_paid'] ?? false,
+        isTrial: json['is_trial'] ?? false,
+        trialEndsAt: json['trial_ends_at']?.toString(),
+        showPaywall: json['show_paywall'] ?? true,
+      );
+
+  Map<String, dynamic> toJson() => {
+        "is_premium": isPremium,
+        "is_paid": isPaid,
+        "is_trial": isTrial,
+        "trial_ends_at": trialEndsAt,
+        "show_paywall": showPaywall,
+      };
 }
 
 class SleepQuiz {

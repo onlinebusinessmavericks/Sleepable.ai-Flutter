@@ -129,6 +129,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     ever(subController.isPremium, (bool val) {
       print("🔥 HomeController: Premium worker triggered with: $val");
       updateFilteredItems();
+      // Do not fetch homepage here. Homepage applyAccessPayload is what
+      // updates isPremium; refetching it created an infinite loop.
     });
     _setupControllers();
     _initAnimations();
@@ -144,6 +146,10 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
         final decoded = jsonDecode(cachedJson);
         homeData.value = HomePageResponse.fromJson(decoded);
         _syncHomeState();
+        final cachedAccess = homeData.value?.data?.access;
+        if (cachedAccess != null && Get.isRegistered<SubscriptionController>()) {
+          unawaited(Get.find<SubscriptionController>().applyAccessPayload(cachedAccess));
+        }
         print("📦 Home screen loaded from cache");
       } catch (e) {
         print("❌ Cache load failed: $e");
@@ -244,7 +250,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   /// Skip the launch start-trial funnel for Premium and for an active 3-day trial.
   Future<bool> _shouldSkipLaunchPaywall(SubscriptionController sub) async {
     await _isPremiumAfterSync(sub);
-    return sub.isPremium.value || sub.isOnFreeTrial;
+    return !sub.shouldShowPaywall;
   }
 
   // Helper 1: Paywall Handler
@@ -500,7 +506,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     return '${AppSharedPreferenceKeys.cachedHomeData}_pending';
   }
 
+  bool _isFetchingHome = false;
+
   Future<void> fetchHomePageData() async {
+    if (_isFetchingHome) return;
+    _isFetchingHome = true;
     try {
       // Only show loader if we don't have cached data yet
       if (homeData.value == null) isLoadingHome.value = true;
@@ -514,6 +524,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
         // 2. Update the UI model
         homeData.value = response;
+
+        final access = response.data?.access;
+        if (access != null && Get.isRegistered<SubscriptionController>()) {
+          unawaited(Get.find<SubscriptionController>().applyAccessPayload(access));
+        }
 
         // 3. Sync all UI variables
         _syncHomeState();
@@ -531,6 +546,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       countdownText.value =  Get.context?.lang.errorLoadingData ?? "Error loading data";
     } finally {
       isLoadingHome.value = false;
+      _isFetchingHome = false;
     }
   }
 
@@ -550,7 +566,11 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
     final summary = data.sleepSummary;
 
     sleepStatus.value = data.sleepStatus;
-    updateInsightMessage();
+    // Rotating this on every homepage poll made the Sounds tab rebuild
+    // and looked like a fetch loop. Insight text is set once per session.
+    if (currentInsight.value.isEmpty) {
+      updateInsightMessage();
+    }
 
     // ✅ 1. Toggle sync
     isEnabled.value = goal.reminderEnable;
@@ -799,7 +819,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   void onProTapped(BuildContext context) {
     final sub = Get.find<SubscriptionController>();
     if (sub.isPremium.value) return;
-    if (sub.isTrial.value) {
+    if (!sub.shouldShowPaywall) {
       Get.toNamed(Routes.mySubscription);
       return;
     }
@@ -813,9 +833,8 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
-    if (subController.isPremium.value) return;
-    if (subController.isTrial.value) {
-      Get.toNamed(Routes.mySubscription);
+    if (!subController.shouldShowPaywall) {
+      if (!subController.isPremium.value) Get.toNamed(Routes.mySubscription);
       return;
     }
 
@@ -859,7 +878,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
       {'id': 'white_noise', 'icon': Icons.music_note, 'lang_key': 'white_noise'},
       {'id': 'sleep_aid', 'icon': Icons.bedtime, 'lang_key': 'sleep_aid'},
       {'id': 'premium', 'icon': Icons.star, 'lang_key': 'premium'},
-      {'id': 'story', 'icon': Icons.auto_stories_rounded, 'lang_key': 'story', 'premiumOnly': true},
+      {'id': 'story', 'icon': Icons.auto_stories_rounded, 'lang_key': 'story'},
       {'id': 'dreambot', 'icon': Icons.mark_unread_chat_alt, 'lang_key': 'dreamBot', 'premiumOnly': true, 'trialAllowed': true},
       {'id': 'breathwork', 'icon': Icons.lens_blur, 'lang_key': 'breathwork'},
     ];

@@ -1,4 +1,5 @@
-import 'dart:convert';
+
+import 'package:sleepable_ai/modules/subscription/model/access_block.dart';
 
 class EmailLoginResponse {
   final bool? success;
@@ -44,6 +45,8 @@ class UserLoginData {
   final String? type;
   // Dynamic fields handle karne ke liye agar runtime par backend extra boolean bhejta hai
   final bool isPremium;
+  final AccessBlock? access;
+  final Map<String, dynamic> accessPayload;
 
   UserLoginData({
     this.userId,
@@ -64,6 +67,8 @@ class UserLoginData {
     this.tokens,
     this.type,
     this.isPremium = false,
+    this.access,
+    this.accessPayload = const {},
   });
 
   factory UserLoginData.fromJson(Map<String, dynamic> json) {
@@ -86,6 +91,8 @@ class UserLoginData {
       type: json['type'],
       isPremium: json['is_premium'] ?? false, // Check safely
       tokens: json['tokens'] != null ? TokenData.fromJson(json['tokens']) : null,
+      access: AccessBlock.fromJson(json),
+      accessPayload: AccessBlock.slice(json),
     );
   }
 
@@ -109,6 +116,7 @@ class UserLoginData {
       'is_premium': isPremium,
       'tokens': tokens?.toJson(),
       'type': type,
+      ...accessPayload,
     };
   }
 

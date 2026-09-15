@@ -15,19 +15,27 @@ import '../core/utils/library.dart';
 import '../data/services/api_end_point.dart';
 import '../data/services/network_utils.dart';
 import '../modules/sleep_sound/controllers/sleep_sound_controller.dart';
+import '../modules/subscription/model/access_block.dart';
 import '../modules/subscription/model/spin_data.dart';
 import '../localization/lang_extension.dart';
 
-class SubscriptionController extends GetxController {
+class SubscriptionController extends GetxController with WidgetsBindingObserver {
   RxList<Package> packages = <Package>[].obs;
   Rx<Package?> spinPackage = Rx<Package?>(null);
   Rx<Package?> spinYearlyPackage = Rx<Package?>(null);
   Rx<Package?> spinWeeklyPackage = Rx<Package?>(null);
   RxBool isPremium = false.obs;
   RxBool isTrial = false.obs;
+  /// Paid or trial. Screens do not read this yet; stored from the access block.
+  RxBool hasAccess = false.obs;
   RxString firstReportDate = ''.obs;
   RxInt trialNightsUsed = 0.obs;
+  RxInt trialNightsLimit = 3.obs;
+  RxInt trialDreamsUsed = 0.obs;
+  RxInt trialDreamsLimit = 1.obs;
+  Rx<AccessFeatures?> accessFeatures = Rx<AccessFeatures?>(null);
   static const String PREM_KEY = "is_user_premium_cache";
+  static const String ACCESS_CACHE_KEY = "user_access_block_cache";
   /// Plan description from the backend, used when the store has no record of
   /// the purchase - Premium granted by support, for instance.
   RxString backendPlanName = ''.obs;
@@ -54,12 +62,15 @@ class SubscriptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
     // Start from the cached value so a paying user is not shown the free/paywall
     // state for the second or two the network sync takes.
     isPremium.value = getBoolAsync(PREM_KEY, defaultValue: false);
     isTrial.value = getBoolAsync(TRIAL_KEY, defaultValue: false);
+    hasAccess.value = isPremium.value || isTrial.value;
     firstReportDate.value = getStringAsync(FIRST_REPORT_KEY);
     _restoreTrialEndFromCache();
+    _restoreAccessFromCache();
 
     // 2. Agar user logged in hai toh sync start karein
     if (getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty) {
@@ -67,6 +78,19 @@ class SubscriptionController extends GetxController {
     } else {
       isInitialSyncDone.value = true; // Guest user ke liye sync done
     }
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (getStringAsync(AppSharedPreferenceKeys.apiToken).isEmpty) return;
+    getBackendSubscriptionStatus();
   }
 
   Future<void> initData() async {
@@ -136,9 +160,14 @@ class SubscriptionController extends GetxController {
       return;
     }
 
+    // Homepage / RevenueCat confirm the same flag many times. Refreshing on a
+    // no-op retriggers workers that wipe the Sounds catalog and refetch home.
+    if (isPremium.value == status) {
+      return;
+    }
+
     isPremium.value = status;
     await setValue(PREM_KEY, status);
-    isPremium.refresh();
     if (status) {
       isTrial.value = false;
       await setValue(TRIAL_KEY, false);
@@ -146,14 +175,48 @@ class SubscriptionController extends GetxController {
     print("🔔 Cache Updated to: $status");
   }
 
-  bool get showPaywalls => !isPremium.value;
+  bool get showPaywalls => shouldShowPaywall;
+
+  /// True only for free users. Trial and paid never see checkout.
+  bool get shouldShowPaywall {
+    final features = accessFeatures.value;
+    if (features != null) return features.showPaywall;
+    return !(isPremium.value || isOnFreeTrial || hasAccess.value);
+  }
+
   /// DreamBot is usable on Premium, and once during the 3-day trial.
-  bool get showDreambot => hasAccessTo(trialAllowed: true);
+  bool get showDreambot {
+    final flag = accessFeatures.value?.dreamBot;
+    if (flag != null) return flag.unlocked;
+    return hasAccessTo(trialAllowed: true);
+  }
+
+  bool get canAnalyzeDream {
+    final flag = accessFeatures.value?.dreamBot;
+    if (flag != null) return flag.canAnalyze ?? flag.unlocked;
+    return isPremium.value || isOnFreeTrial;
+  }
+
+  bool get isRecorderUnlocked {
+    final flag = accessFeatures.value?.sleepRecorder;
+    if (flag != null) return flag.unlocked;
+    return isPremium.value || isOnFreeTrial;
+  }
+
+  bool get isQuizUnlocked {
+    final flag = accessFeatures.value?.sleepQuiz;
+    if (flag != null) return flag.unlocked;
+    return isPremium.value || isOnFreeTrial;
+  }
+
+  /// Week / month / year reports are paid only.
+  bool get arePeriodReportsUnlocked => isPremium.value;
 
   /// Running 3-day store trial that has not converted to Premium yet.
   bool get isOnFreeTrial => isTrial.value && !isPremium.value;
 
   Future<void> applyTrialStatus({required bool trial}) async {
+    if (isTrial.value == trial) return;
     isTrial.value = trial;
     await setValue(TRIAL_KEY, trial);
   }
@@ -163,11 +226,14 @@ class SubscriptionController extends GetxController {
   /// [trialAllowed]. Music and Story on the Sounds tab stay locked until paid Premium.
   bool hasAccessTo({bool trialAllowed = false}) {
     if (isPremium.value) return true;
-    return trialAllowed && isTrial.value;
+    if (!trialAllowed) return false;
+    final flag = accessFeatures.value?.dreamBot;
+    if (flag != null) return flag.unlocked;
+    return isTrial.value || hasAccess.value;
   }
 
-  /// Story is paid Premium only. Trial keeps the same catalog as free.
-  bool get hasStoryAccess => isPremium.value;
+  /// Story is a section, not a paywall. Individual tracks still use is_premium.
+  bool get hasStoryAccess => true;
 
   bool isStoryLabel(String? value) {
     final v = (value ?? '').trim().toLowerCase();
@@ -180,11 +246,9 @@ class SubscriptionController extends GetxController {
         v == lang.sleepStory.toLowerCase();
   }
 
-  /// Music and Story stay locked on free and during trial.
-  /// Paid Premium unlocks every premium track in those categories.
+  /// Padlock comes only from the track flag the backend already scoped to this user.
   bool isPremiumItemLocked({required bool itemIsPremium, required bool isStory}) {
-    if (!itemIsPremium) return false;
-    return !isPremium.value;
+    return itemIsPremium;
   }
 
   /// True once the user has actually won the spin discount.
@@ -325,20 +389,8 @@ class SubscriptionController extends GetxController {
   }
 
   Future<void> applyCustomerInfo(CustomerInfo customerInfo) async {
-    final entitlement = customerInfo.entitlements.all['pro'];
-    final active = entitlement?.isActive ?? false;
-    if (!active) {
-      // Backend remains source of truth for access; RC only reports store period.
-      return;
-    }
-    final trial = entitlement!.periodType == PeriodType.trial;
-    if (trial) {
-      await applyTrialStatus(trial: true);
-      await updatePremiumStatus(false, isFromBackend: true);
-    } else {
-      await applyTrialStatus(trial: false);
-      await updatePremiumStatus(true, isFromBackend: true);
-    }
+    // Store metadata only. Access flags come from the backend access block.
+    activeEntitlement.value = customerInfo.entitlements.all['pro'];
   }
 
   /// Tells RevenueCat which backend user this is.
@@ -383,8 +435,13 @@ class SubscriptionController extends GetxController {
   Future<void> clearSessionState() async {
     isPremium.value = false;
     isTrial.value = false;
+    hasAccess.value = false;
     firstReportDate.value = '';
     trialNightsUsed.value = 0;
+    trialNightsLimit.value = 3;
+    trialDreamsUsed.value = 0;
+    trialDreamsLimit.value = 1;
+    accessFeatures.value = null;
     trialEndsAt.value = null;
     spinInfo.value = null;
     backendPlanName.value = '';
@@ -392,6 +449,7 @@ class SubscriptionController extends GetxController {
     backendStartsAt.value = '';
     backendExpiresAt.value = '';
     isInitialSyncDone.value = true;
+    await removeKey(ACCESS_CACHE_KEY);
     await resetUser();
   }
 
@@ -479,8 +537,10 @@ class SubscriptionController extends GetxController {
     if (Platform.isIOS) {
       return packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
     }
-    return spinYearlyPackage.value ??
-        packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+    if (hasSpecialOffer && spinYearlyPackage.value != null) {
+      return spinYearlyPackage.value;
+    }
+    return packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
   }
 
   Future<void> refreshTrialEligibility() async {
@@ -506,12 +566,37 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  /// Play entitlements use `sleepable_yearly`; store products use
+  /// `sleepable_yearly:yearly-base`. Treat those as the same subscription.
+  String _storeProductKey(String id) {
+    if (id.isEmpty) return id;
+    return id.split(':').first;
+  }
+
+  bool _isSameStoreProduct(String a, String b) {
+    if (a == b) return true;
+    return _storeProductKey(a) == _storeProductKey(b);
+  }
+
+  String _entitlementProductId(EntitlementInfo entitlement) {
+    final id = entitlement.productIdentifier;
+    try {
+      final plan = (entitlement as dynamic).productPlanIdentifier as String?;
+      if (plan != null && plan.isNotEmpty && !id.contains(':')) {
+        return '$id:$plan';
+      }
+    } catch (_) {}
+    return id;
+  }
+
+  String _periodTypeName(PeriodType type) => type.name;
+
   /// The product the user is subscribed to right now, if any.
   Future<String?> _activeProductId() async {
     try {
       final info = await Purchases.getCustomerInfo();
       final entitlement = info.entitlements.all['pro'];
-      if (entitlement?.isActive ?? false) return entitlement!.productIdentifier;
+      if (entitlement?.isActive ?? false) return _entitlementProductId(entitlement!);
     } catch (e) {
       print("❌ [RC] Could not read active product: $e");
     }
@@ -524,7 +609,7 @@ class SubscriptionController extends GetxController {
   /// current period to end so the user is not refunded mid-term.
   GoogleProrationMode _prorationModeFor(Package newPackage, String oldProductId) {
     final oldPackage = [...packages, if (spinYearlyPackage.value != null) spinYearlyPackage.value!]
-        .firstWhereOrNull((p) => p.storeProduct.identifier == oldProductId);
+        .firstWhereOrNull((p) => _isSameStoreProduct(p.storeProduct.identifier, oldProductId));
 
     final oldIsAnnual = oldPackage?.packageType == PackageType.annual;
     final newIsAnnual = newPackage.packageType == PackageType.annual;
@@ -547,12 +632,19 @@ class SubscriptionController extends GetxController {
     final options = product?.subscriptionOptions;
     if (options == null || options.isEmpty) return null;
 
-    final wantedTag = discounted ? 'spin' : 'trial';
-    return options.firstWhereOrNull((o) => !o.isBasePlan && o.tags.contains(wantedTag))
-        // Tag missing in the console: fall back to shape - the discounted offer
-        // is the one carrying an intro phase.
-        ?? options.firstWhereOrNull((o) => !o.isBasePlan && (o.introPhase != null) == discounted)
-        ?? product?.defaultOption;
+    final wantedTags = discounted
+        ? const ['spin', 'yearly-spin-offer']
+        : const ['trial', 'yearly-base'];
+    return options.firstWhereOrNull(
+          (o) => !o.isBasePlan && o.tags.any(wantedTags.contains),
+        ) ??
+        options.firstWhereOrNull(
+          (o) => discounted
+              ? o.id.contains('yearly-spin-offer') || o.id.contains('spin')
+              : o.id.contains('yearly-base') || o.id.contains('trial'),
+        ) ??
+        options.firstWhereOrNull((o) => !o.isBasePlan && (o.introPhase != null) == discounted) ??
+        product?.defaultOption;
   }
 
   /// Play formats a subscription option id as "<basePlanId>:<offerId>" for an
@@ -642,6 +734,10 @@ class SubscriptionController extends GetxController {
   /// (the discounted year vs the plain free trial); without it one is worked
   /// out from whether the user has won the spin.
   Future<void> buyProduct(Package package, {SubscriptionOption? option}) async {
+    if (!shouldShowPaywall) {
+      Get.toNamed(Routes.mySubscription);
+      return;
+    }
     if (!isConfigured) {
       toast("Store not available on this device");
       print("Store not available on this device");
@@ -649,6 +745,10 @@ class SubscriptionController extends GetxController {
     }
     try {
       isLoading.value = true;
+      final storedUuid = getStringAsync(AppSharedPreferenceKeys.userUuid);
+      if (storedUuid.isNotEmpty) {
+        await identifyUser(storedUuid);
+      }
 
       // Step 1: RevenueCat Purchase
       // Android needs the plan change spelled out. Without this a switch
@@ -656,12 +756,13 @@ class SubscriptionController extends GetxController {
       GoogleProductChangeInfo? changeInfo;
       if (Platform.isAndroid) {
         final oldProductId = await _activeProductId();
-        if (oldProductId != null && oldProductId != package.storeProduct.identifier) {
+        final newProductId = package.storeProduct.identifier;
+        if (oldProductId != null && !_isSameStoreProduct(oldProductId, newProductId)) {
           changeInfo = GoogleProductChangeInfo(
             oldProductId,
             prorationMode: _prorationModeFor(package, oldProductId),
           );
-          print("🔁 [RC] Plan change $oldProductId -> ${package.storeProduct.identifier} (${changeInfo.prorationMode})");
+          print("🔁 [RC] Plan change $oldProductId -> $newProductId (${changeInfo.prorationMode})");
         }
       }
 
@@ -686,26 +787,29 @@ class SubscriptionController extends GetxController {
       final entitlement = customerInfo.entitlements.all['pro'];
 
       if (entitlement?.isActive ?? false) {
-        final storeTrial = entitlement!.periodType == PeriodType.trial;
-        await verifyPurchaseWithBackend(
-            package.storeProduct.identifier,
-            customerInfo.originalAppUserId,
+        String appUserId = customerInfo.originalAppUserId;
+        try {
+          appUserId = await Purchases.appUserID;
+        } catch (_) {}
+        try {
+          await verifyPurchaseWithBackend(
+            _entitlementProductId(entitlement!),
+            appUserId,
             spinInfo.value?.couponCode,
-            periodType: storeTrial ? 'trial' : 'normal',
+            periodType: _periodTypeName(entitlement.periodType),
             offerId: _playOfferId(option),
-        );
+          );
+        } catch (e) {
+          toast("Purchase saved in the store, but we could not verify it yet. Please tap Restore Purchases.");
+          return;
+        }
 
-        if (storeTrial) {
-          await applyTrialStatus(trial: true);
-          await updatePremiumStatus(false, isFromBackend: true);
+        if (isOnFreeTrial) {
           toast("3-day trial started. You are not Premium yet.");
-          // Music and Story catalogs do not change on trial — do not rebuild the Sounds tab.
-        } else {
-          await applyTrialStatus(trial: false);
+        } else if (isPremium.value) {
           if (Get.isRegistered<SleepSoundController>()) {
             await Get.find<SleepSoundController>().invalidatePaidCatalogCache();
           }
-          await updatePremiumStatus(true, isFromBackend: true);
           toast("Success! Premium Activated.");
           await _reloadCatalogAfterPaidPremium();
         }
@@ -761,24 +865,18 @@ class SubscriptionController extends GetxController {
         try {
           await Purchases.invalidateCustomerInfoCache();
           final CustomerInfo customerInfo = await Purchases.restorePurchases();
-          if (customerInfo.originalAppUserId.isNotEmpty) {
-            appUserId = customerInfo.originalAppUserId;
-          }
           try {
             final currentId = await Purchases.appUserID;
-            // Prefer an id that is not the backend uuid, so the server has a
-            // second lookup for purchases still sitting on an anonymous customer.
-            if (currentId.isNotEmpty &&
-                storedUuid.isNotEmpty &&
-                appUserId == storedUuid &&
-                currentId != storedUuid) {
-              appUserId = currentId;
+            if (currentId.isNotEmpty) appUserId = currentId;
+          } catch (_) {
+            if (customerInfo.originalAppUserId.isNotEmpty) {
+              appUserId = customerInfo.originalAppUserId;
             }
-          } catch (_) {}
+          }
           final entitlement = customerInfo.entitlements.all['pro'];
           if (entitlement?.isActive ?? false) {
-            productId = entitlement!.productIdentifier;
-            periodType = entitlement.periodType == PeriodType.trial ? 'trial' : 'normal';
+            productId = _entitlementProductId(entitlement!);
+            periodType = _periodTypeName(entitlement.periodType);
           }
         } on PlatformException catch (e) {
           log("Store restore failed: ${e.message}");
@@ -794,10 +892,15 @@ class SubscriptionController extends GetxController {
         return;
       }
 
+      if (productId.isEmpty || periodType.isEmpty) {
+        toast("No active subscription found to restore.");
+        return;
+      }
+
       final payload = <String, dynamic>{
-        if (appUserId.isNotEmpty) "app_user_id": appUserId,
-        if (productId.isNotEmpty) "product_id": productId,
-        if (periodType.isNotEmpty) "period_type": periodType,
+        "app_user_id": appUserId,
+        "product_id": productId,
+        "period_type": periodType,
       };
 
       Map? response;
@@ -859,8 +962,12 @@ class SubscriptionController extends GetxController {
   /// Paid Premium: drop cached Music/Story locks and refetch so padlocks go without a reboot.
   /// Trial must not call this — those lists stay the free catalog.
   Future<void> _reloadCatalogAfterPaidPremium() async {
-    if (!Get.isRegistered<SleepSoundController>()) return;
-    await Get.find<SleepSoundController>().refreshCatalogAfterPaidPremium();
+    if (Get.isRegistered<SleepSoundController>()) {
+      await Get.find<SleepSoundController>().refreshCatalogAfterPaidPremium();
+    }
+    if (Get.isRegistered<HomeController>()) {
+      await Get.find<HomeController>().fetchHomePageData();
+    }
   }
 
   /// The store's own record of the active subscription: which product, when it
@@ -978,28 +1085,29 @@ class SubscriptionController extends GetxController {
   // 5. Backend Verification API
   Future<void> verifyPurchaseWithBackend(String productId, String token, String? coupon,
       {String periodType = 'normal', String? offerId}) async {
+    String appUserId = token;
     try {
-      final payload = {
-        "product_id": productId,
-        "app_user_id": token,
-        "purchase_token": token,
-        "coupon_code": coupon ?? "",
-        "period_type": periodType,
-        // Play offer the purchase actually went through, so the backend can
-        // tell a spin discount apart from a plain trial. Empty on iOS, where
-        // the store applies the introductory offer without an offer id.
-        "offer_id": offerId ?? "",
-      };
+      final current = await Purchases.appUserID;
+      if (current.isNotEmpty) appUserId = current;
+    } catch (_) {}
 
-      await buildHttpResponse(
-          endPoint: APIEndPoints.verifyPurchase,
-          method: MethodType.post,
-          request: payload
-      );
-      await getBackendSubscriptionStatus(); // Refresh status
-    } catch (e) {
-      log("Verification Sync Error: $e");
+    final payload = {
+      "product_id": productId,
+      "app_user_id": appUserId,
+      "coupon_code": coupon ?? "",
+      "period_type": periodType,
+      "offer_id": offerId ?? "",
+    };
+
+    final response = await buildHttpResponse(
+      endPoint: APIEndPoints.verifyPurchase,
+      method: MethodType.post,
+      request: payload,
+    );
+    if (response is Map && response['success'] == false) {
+      throw response['message'] ?? 'Verification failed';
     }
+    await getBackendSubscriptionStatus();
   }
 
   // 6. Get Status from Backend
@@ -1032,32 +1140,151 @@ class SubscriptionController extends GetxController {
     trialEndsAt.value = DateTime.tryParse(cached)?.toUtc();
   }
 
+  void _restoreAccessFromCache() {
+    final cached = getStringAsync(ACCESS_CACHE_KEY);
+    if (cached.isEmpty) return;
+    try {
+      final decoded = jsonDecode(cached);
+      if (decoded is! Map) return;
+      final data = Map<String, dynamic>.from(decoded);
+      _hydrateAccessFields(data);
+      if (data.containsKey('is_premium')) {
+        isPremium.value = data['is_premium'] == true;
+      }
+      if (data.containsKey('is_trial')) {
+        isTrial.value = data['is_trial'] == true && !isPremium.value;
+      }
+      if (data.containsKey('first_report_date')) {
+        final first = (data['first_report_date'] ?? '').toString();
+        firstReportDate.value = first == 'null' ? '' : first;
+      }
+      if (data.containsKey('trial_nights_used')) {
+        trialNightsUsed.value = _asAccessInt(data['trial_nights_used']);
+      }
+    } catch (e) {
+      log("Access cache restore failed: $e");
+    }
+  }
+
+  /// Login, OTP, subscription, restore, and homepage `data.access` all share
+  /// the same block. Screens still read isPremium/isTrial; this also stores
+  /// has_access and features for later steps.
+  Future<void> applyAccessPayload(dynamic raw) => _applySubscriptionPayload(raw);
+
   Future<void> _applySubscriptionPayload(dynamic raw) async {
     final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    if (data.isEmpty) return;
+
+    final hasPremiumKey = data.containsKey('is_premium');
+    final hasTrialKey = data.containsKey('is_trial');
     final backendStatus = data['is_premium'] == true;
-    final trialStatus = data['is_trial'] == true;
-    await applyTrialStatus(trial: trialStatus && !backendStatus);
-    await updatePremiumStatus(backendStatus, isFromBackend: true);
-    final first = (data['first_report_date'] ?? '').toString();
-    firstReportDate.value = first == 'null' ? '' : first;
-    await setValue(FIRST_REPORT_KEY, firstReportDate.value);
-    trialNightsUsed.value = data['trial_nights_used'] ?? 0;
-    _applyTrialEnd(data['trial_ends_at']);
+    final trialStatus = data['is_trial'] == true && !backendStatus;
+
+    // Homepage sends the same access block on every poll. Re-applying it
+    // retriggered premium workers and wiped the Sounds catalog.
+    final premiumUnchanged = !hasPremiumKey || isPremium.value == backendStatus;
+    final trialUnchanged = !hasTrialKey || isTrial.value == trialStatus;
+
+    _hydrateAccessFields(data);
+
+    if (!premiumUnchanged || !trialUnchanged) {
+      if (hasTrialKey || hasPremiumKey) {
+        await applyTrialStatus(trial: trialStatus);
+      }
+      if (hasPremiumKey) {
+        await updatePremiumStatus(backendStatus, isFromBackend: true);
+      }
+    }
+    if (data.containsKey('first_report_date')) {
+      final first = (data['first_report_date'] ?? '').toString();
+      final normalized = first == 'null' ? '' : first;
+      if (firstReportDate.value != normalized) {
+        firstReportDate.value = normalized;
+        await setValue(FIRST_REPORT_KEY, firstReportDate.value);
+      }
+    }
+    if (data.containsKey('trial_nights_used')) {
+      trialNightsUsed.value = _asAccessInt(data['trial_nights_used']);
+    }
+    if (data.containsKey('trial_ends_at')) {
+      _applyTrialEnd(data['trial_ends_at']);
+    }
     // The backend describes the plan too. It is the only source for a
     // user whose Premium was granted outside the store, where there is
     // no purchase for RevenueCat to report.
     if (data.containsKey('plan_name')) {
-      backendPlanName.value = (data['plan_name'] ?? '').toString();
+      final name = (data['plan_name'] ?? '').toString();
+      if (backendPlanName.value != name) backendPlanName.value = name;
     }
     if (data.containsKey('price')) {
-      backendPlanPrice.value = compactPriceString((data['price'] ?? '').toString());
+      final price = compactPriceString((data['price'] ?? '').toString());
+      if (backendPlanPrice.value != price) backendPlanPrice.value = price;
     }
     if (data.containsKey('starts_at')) {
-      backendStartsAt.value = (data['starts_at'] ?? '').toString();
+      final starts = (data['starts_at'] ?? '').toString();
+      if (backendStartsAt.value != starts) backendStartsAt.value = starts;
     }
     if (data.containsKey('expires_at')) {
-      backendExpiresAt.value = (data['expires_at'] ?? '').toString();
+      final expires = (data['expires_at'] ?? '').toString();
+      if (backendExpiresAt.value != expires) backendExpiresAt.value = expires;
     }
+    if (!premiumUnchanged || !trialUnchanged) {
+      await _persistAccessCache();
+    }
+  }
+
+  void _hydrateAccessFields(Map<String, dynamic> data) {
+    final paid = data['is_premium'] == true;
+    final trial = data['is_trial'] == true;
+    if (data.containsKey('has_access')) {
+      hasAccess.value = data['has_access'] == true;
+    } else if (data.containsKey('is_premium') || data.containsKey('is_trial')) {
+      hasAccess.value = paid || trial;
+    }
+    if (data.containsKey('trial_nights_limit')) {
+      trialNightsLimit.value = _asAccessInt(data['trial_nights_limit'], 3);
+    }
+    if (data.containsKey('trial_dreams_used')) {
+      trialDreamsUsed.value = _asAccessInt(data['trial_dreams_used']);
+    }
+    if (data.containsKey('trial_dreams_limit')) {
+      trialDreamsLimit.value = _asAccessInt(data['trial_dreams_limit'], 1);
+    }
+    if (data['features'] is Map) {
+      final next = AccessFeatures.fromJson(data['features']);
+      final prev = accessFeatures.value;
+      if (prev == null || jsonEncode(prev.toJson()) != jsonEncode(next.toJson())) {
+        accessFeatures.value = next;
+      }
+    }
+  }
+
+  Future<void> _persistAccessCache() async {
+    await setValue(
+      ACCESS_CACHE_KEY,
+      jsonEncode({
+        'is_premium': isPremium.value,
+        'is_trial': isTrial.value,
+        'has_access': hasAccess.value,
+        'trial_ends_at': trialEndsAt.value?.toIso8601String(),
+        'trial_nights_used': trialNightsUsed.value,
+        'trial_nights_limit': trialNightsLimit.value,
+        'trial_dreams_used': trialDreamsUsed.value,
+        'trial_dreams_limit': trialDreamsLimit.value,
+        'first_report_date': firstReportDate.value,
+        if (accessFeatures.value != null) 'features': accessFeatures.value!.toJson(),
+        if (backendPlanName.value.isNotEmpty) 'plan_name': backendPlanName.value,
+        if (backendPlanPrice.value.isNotEmpty) 'price': backendPlanPrice.value,
+        if (backendStartsAt.value.isNotEmpty) 'starts_at': backendStartsAt.value,
+        if (backendExpiresAt.value.isNotEmpty) 'expires_at': backendExpiresAt.value,
+      }),
+    );
+  }
+
+  int _asAccessInt(dynamic value, [int fallback = 0]) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse('$value') ?? fallback;
   }
 
   /// Whole days left before the trial converts. Null when no trial is running.
@@ -1105,15 +1332,7 @@ class SubscriptionController extends GetxController {
       );
 
       print("✅ [RC] CustomerInfo received");
-      bool isActive = customerInfo.entitlements.all['pro']?.isActive ?? false;
-      final trial = customerInfo.entitlements.all['pro']?.periodType == PeriodType.trial;
-      if (isActive && trial) {
-        await applyTrialStatus(trial: true);
-        await updatePremiumStatus(false, isFromBackend: true);
-      } else if (isActive) {
-        await applyTrialStatus(trial: false);
-        updatePremiumStatus(true, isFromBackend: false);
-      }
+      await applyCustomerInfo(customerInfo);
     } catch (e) {
       print("❌ [RC] Error in checkPremiumStatus: $e");
       }
@@ -1127,7 +1346,7 @@ class SubscriptionController extends GetxController {
   /// paywall was closed. Go through the navigator's own context instead, once
   /// the pop has been through a frame.
   void checkAndShowPremiumSheet(BuildContext context) {
-    if (isPremium.value || isOnFreeTrial || Platform.isIOS) return;
+    if (!shouldShowPaywall || Platform.isIOS) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = Get.context;

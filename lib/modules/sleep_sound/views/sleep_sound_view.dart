@@ -349,27 +349,22 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                                 if (controller.selectedCategorySlug.value == tabSlug) return;
 
-                                controller.selectedCategorySlug.value = tabSlug;
-
-                                // ✅ fetch ONCE
                                 await controller.fetchSubCategories(tabSlug);
+                                controller.rebuildSoundPages();
 
                                 final filters = controller.getCurrentFilters(tabSlug);
                                 if (filters.isEmpty) return;
 
                                 final firstFilterSlug = filters.first.slug;
-
                                 final page = controller.globalIndexFor(tabSlug, firstFilterSlug);
-                                  // if (page >= 0) {
-                                  //   pageController.animateToPage(page, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                                  // }
-                                if (page >= 0 && pageController.hasClients) {
-                                  pageController.animateToPage(
-                                    page,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
+                                if (page < 0 || !pageController.hasClients) return;
+
+                                // Set header + page together so Story chips never
+                                // sit over a White Noise grid.
+                                controller.selectedCategorySlug.value = tabSlug;
+                                controller.selectedSubCategorySlug.value = firstFilterSlug;
+                                pageController.jumpToPage(page);
+                                await controller.fetchSounds(tabSlug, firstFilterSlug);
                               },
 
                               child: Container(

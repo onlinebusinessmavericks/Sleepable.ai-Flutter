@@ -76,23 +76,54 @@ class ProgressScreen extends GetView<ProgressController> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     // children: ["Today", "Week", "Month"].map((tab) {
-                      children: [context.lang.today, context.lang.week, context.lang.month].map((tab) {
-                      final isSelected = controller.selectedTab.value == tab;
+                      children: [
+                        {'id': 'today', 'label': context.lang.today},
+                        {'id': 'week', 'label': context.lang.week},
+                        {'id': 'month', 'label': context.lang.month},
+                      ].map((tab) {
+                      final isSelected = controller.selectedTab.value == tab['id'];
+                      final id = tab['id']!;
                       return Expanded(
                         child: GestureDetector(
-                          onTap: () => controller.changeTab(tab),
+                          onTap: () {
+                            final id = tab['id']!;
+                            if (id != 'today') {
+                              final sub = Get.isRegistered<SubscriptionController>()
+                                  ? Get.find<SubscriptionController>()
+                                  : null;
+                              if (sub == null || !sub.arePeriodReportsUnlocked) {
+                                toast(sub != null && sub.isOnFreeTrial
+                                    ? trialCountdownText(sub)
+                                    : (context.lang.unlockToCheck));
+                                return;
+                              }
+                            }
+                            controller.changeTab(id);
+                          },
                           child: AnimatedContainer(
                             duration: const Duration(microseconds: 200),
                             padding: EdgeInsets.symmetric(vertical: 12 * SizeConfigs.paddingScale),
                             decoration: BoxDecoration(color: isSelected ? Colors.blueAccent : Colors.transparent, borderRadius: BorderRadius.circular(30)),
                             alignment: Alignment.center,
-                            child: Text(
-                              tab,
-                              style: textStyle?.copyWith(
-                                color: isSelected ? Colors.white : Colors.grey,
-                                fontSize: 15 * SizeConfigs.textScale,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (id != 'today' &&
+                                    !(Get.isRegistered<SubscriptionController>() &&
+                                        Get.find<SubscriptionController>().arePeriodReportsUnlocked))
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 4 * SizeConfigs.paddingScale),
+                                    child: Icon(Icons.lock, color: isSelected ? Colors.white : Colors.grey, size: 13 * SizeConfigs.textScale),
+                                  ),
+                                Text(
+                                  tab['label']!,
+                                  style: textStyle?.copyWith(
+                                    color: isSelected ? Colors.white : Colors.grey,
+                                    fontSize: 15 * SizeConfigs.textScale,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -102,10 +133,10 @@ class ProgressScreen extends GetView<ProgressController> {
                 );
               }),
 
-              Obx(() => controller.selectedTab.value == context.lang.today ? SizedBox(height: 20 * SizeConfigs.paddingScale) : SizedBox()),
+              Obx(() => controller.selectedTab.value == 'today' ? SizedBox(height: 20 * SizeConfigs.paddingScale) : SizedBox()),
               // 📅 Center Date Label (Click to open Calendar)
               Obx(
-                () => controller.selectedTab.value == context.lang.today
+                () => controller.selectedTab.value == 'today'
                     ? GestureDetector(
                         onTap: () {
                           // 🔥 Ye function custom calendar sheet open karega
@@ -135,7 +166,7 @@ class ProgressScreen extends GetView<ProgressController> {
 
 
               Obx(() {
-                final isToday = controller.selectedTab.value == context.lang.today;
+                final isToday = controller.selectedTab.value == 'today';
 
                 return isToday
                     ? Container(
@@ -154,7 +185,9 @@ class ProgressScreen extends GetView<ProgressController> {
                               children: [
                                 Text(context.lang.sleepQualityAnalysis, style: textStyle),
                                 Text(
-                                  "${controller.durationHours.value.toStringAsFixed(1)}${context.lang.h}",
+                                  controller.hasQualityData.value
+                                      ? "${controller.durationHours.value.toStringAsFixed(1)}${context.lang.h}"
+                                      : "--",
                                   style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w900, color: AppColors.white, fontSize: 36 * SizeConfigs.textScale, height: 1),
                                 ),
                               ],
@@ -201,7 +234,7 @@ class ProgressScreen extends GetView<ProgressController> {
                               final int selectedIndex = controller.selectedBarIndex.value; // Track which bar is tapped
 
                               // final bool isMonthly = selectedTab == "Month";
-                              final bool isMonthly = selectedTab == context.lang.month;
+                              final bool isMonthly = selectedTab == 'month';
                               final int columnCount = data.length;
                               final double chartHeight = 170 * SizeConfigs.paddingScale;
 
@@ -733,7 +766,9 @@ class ProgressScreen extends GetView<ProgressController> {
                     _buildInsightCard(
                       context,
                       controller.sleepTrend.value >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                      "${controller.avgSleepHours.value.toStringAsFixed(1)}${context.lang.h}",
+                      controller.hasInsightsData.value
+                          ? "${controller.avgSleepHours.value.toStringAsFixed(1)}${context.lang.h}"
+                          : "--",
                       context.lang.averageSleepLabel,
                       "${controller.sleepTrend.value.abs().toStringAsFixed(1)}${context.lang.m}",
                       Icons.bed,
@@ -745,7 +780,9 @@ class ProgressScreen extends GetView<ProgressController> {
                     _buildInsightCard(
                       context,
                       controller.qualityTrend.value >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                      "${controller.sleepQualityScore.value.toStringAsFixed(0)}%",
+                      controller.hasInsightsData.value
+                          ? "${controller.sleepQualityScore.value.toStringAsFixed(0)}%"
+                          : "--",
                       context.lang.sleepQualityLabel,
                       "${controller.qualityTrend.value.abs().toStringAsFixed(1)}%",
                       Icons.favorite,
@@ -757,7 +794,9 @@ class ProgressScreen extends GetView<ProgressController> {
                     _buildInsightCard(
                       context,
                       controller.consistencyTrend.value >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                      "${controller.consistencyScore.value.toStringAsFixed(0)}%",
+                      controller.hasInsightsData.value
+                          ? "${controller.consistencyScore.value.toStringAsFixed(0)}%"
+                          : "--",
                       context.lang.consistencyLabel,
                       "${controller.consistencyTrend.value.abs().toStringAsFixed(1)}%",
                       Icons.sync_rounded,
@@ -840,12 +879,12 @@ class ProgressScreen extends GetView<ProgressController> {
               _buildWideBadgeCard(context, title: context.lang.nightOwlTamer, subtitle:  context.lang.bedtimeBeforePM, icon: Icons.nights_stay_rounded),
 
 
-              controller.selectedTab.value == context.lang.today ? SizedBox.shrink() : SizedBox(height: 20 * SizeConfigs.paddingScale),
-              controller.selectedTab.value == context.lang.today ? SizedBox.shrink() : Text(context.lang.sleepQualityLabel, style: textStyle),
-              controller.selectedTab.value == context.lang.today ? SizedBox.shrink() : SizedBox(height: 10 * SizeConfigs.paddingScale),
+              controller.selectedTab.value == 'today' ? SizedBox.shrink() : SizedBox(height: 20 * SizeConfigs.paddingScale),
+              controller.selectedTab.value == 'today' ? SizedBox.shrink() : Text(context.lang.sleepQualityLabel, style: textStyle),
+              controller.selectedTab.value == 'today' ? SizedBox.shrink() : SizedBox(height: 10 * SizeConfigs.paddingScale),
 
               Obx(() {
-                final isToday = controller.selectedTab.value == context.lang.today;
+                final isToday = controller.selectedTab.value == 'today';
 
                 if (isToday) return const SizedBox.shrink();
                 if (controller.isQualityLoading.value) {
@@ -1287,7 +1326,7 @@ class ProgressScreen extends GetView<ProgressController> {
 
                 // unlock button
                 Obx(
-                  () => subController.isPremium.value
+                  () => subController.isRecorderUnlocked
                       ? const SizedBox.shrink()
                       : Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1353,26 +1392,23 @@ class ProgressScreen extends GetView<ProgressController> {
               GestureDetector(
                 // onTap: () => audioUrl.isNotEmpty ? controller.handlePlayPause(audioUrl) : null,
                 onTap: () {
-                  // 🔥 Logic: Play only if Premium, otherwise show sheet
-                  if (subController.isPremium.value) {
+                  if (subController.isRecorderUnlocked) {
                     if (audioUrl.isNotEmpty) controller.handlePlayPause(audioUrl);
-                  } else {
-                    // Check karein ki spin ho chuka hai ya nahi
+                  } else if (subController.shouldShowPaywall) {
                     final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
 
                     if (hasAlreadySpun && !GetPlatform.isIOS) {
-                      // ✅ Spin ho chuka hai -> Discounted Sheet
-                      // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) -> Sheet 4.
                       showPremiumOfferSheet6(Get.context!);
                     } else {
-                      // ❌ Spin nahi hua -> Normal Paywall
                       showPremiumOfferSheet4(Get.context!);
                     }
+                  } else {
+                    Get.toNamed(Routes.mySubscription);
                   }
                 },
                 child: Obx(() {
                   bool isCurrentPlaying = controller.playingUrl.value == audioUrl && controller.isPlaying.value;
-                  if (!subController.isPremium.value) {
+                  if (!subController.isRecorderUnlocked) {
                     return const Icon(Icons.lock_rounded, color: Colors.white38, size: 34);
                   }
                   return Icon(isCurrentPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded, color: isCurrentPlaying ? const Color(0xFF1E90FF) : Colors.white, size: 34);
@@ -1394,7 +1430,7 @@ class ProgressScreen extends GetView<ProgressController> {
                         ),
                         // Obx ke andar logic change karein
                         Obx(() {
-                          return (subController.isPremium.value)
+                          return (subController.isRecorderUnlocked)
                               ? const SizedBox.shrink() // ✅ Premium hone par kuch nahi dikhega
                               : const Icon(
                             Icons.lock_outline_rounded,
@@ -1409,7 +1445,7 @@ class ProgressScreen extends GetView<ProgressController> {
                     // Seekable progress bar
                     Obx(() {
                       final bool isActive = controller.playingUrl.value == audioUrl;
-                      final bool canSeek = subController.isPremium.value && audioUrl.isNotEmpty;
+                      final bool canSeek = subController.isRecorderUnlocked && audioUrl.isNotEmpty;
                       double progress = 0.0;
                       if (isActive && controller.totalDuration.value.inMilliseconds > 0) {
                         progress = (controller.currentPosition.value.inMilliseconds /
@@ -2162,7 +2198,9 @@ Widget _buildTodayAnalysisUI(BuildContext context, ProgressController controller
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  "${controller.todaySleepScore.value.toInt()}",
+                                  controller.hasQualityData.value
+                                      ? "${controller.todaySleepScore.value.toInt()}"
+                                      : "--",
                                   style: TextStyle(color: Colors.white, fontSize: 32 * SizeConfigs.textScale, fontWeight: FontWeight.bold),
                                 ),
                                 Padding(

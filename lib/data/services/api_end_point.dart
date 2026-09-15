@@ -1,6 +1,7 @@
 class APIEndPoints {
   ///Auth & User
   static const String socialLogin = 'users/auth/';
+  static const String refreshToken = 'users/refresh-token/';
   static const String logOut = 'users/logout/';
   static const String deleteAccount = 'users/delete-account/';
   static const String updateFCMToken = 'users/update-fcm-token/';
@@ -42,7 +43,7 @@ class APIEndPoints {
   /// Progress
   static const String sleepDurationChart = 'progress/sleep-duration-chart';
   static const String sleepCalendar = 'progress/sleep-calendar/';
-  static const String sleepConsistencyData = "progress/sleep-consistancy-data";
+  static const String sleepConsistencyData = "progress/sleep-consistency-data/";
   static const String keyInsights = "progress/key-insights";
   static const String achievementBadges = "progress/achievement-badges";
   static const String dreamList = 'progress/dream-list/';

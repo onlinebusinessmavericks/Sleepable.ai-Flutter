@@ -116,10 +116,7 @@ class SleepSoundController extends GetxController {
       final res = await SoundsApis.fetchSoundSubCategories(categorySlug: categorySlug);
       subCategoryMap[categorySlug] = res.data;
       soundsLoadFailed.value = false;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _rebuildPages(); // update combinedPages after fetching
-      });
+      _rebuildPages();
 
       // ❌ Don't force selectedCategorySlug/subCategorySlug here
     } catch (e) {
@@ -250,8 +247,17 @@ class SleepSoundController extends GetxController {
   Future<void> _fetchAllSubCategorySounds(String categorySlug) async {
     final key = soundKey(categorySlug, allSubSlug);
 
+    if (!subCategoryMap.containsKey(categorySlug)) {
+      await fetchSubCategories(categorySlug);
+    }
+
     // 1. Get all actual subcategory slugs for this category
     final subs = subCategoryMap[categorySlug] ?? [];
+    if (subs.isEmpty) {
+      // Subcategories are not ready — keep any cached "All" list on screen.
+      return;
+    }
+
     final List<SoundItem> mergedItems = [];
 
     // 2. Fetch each subcategory's data
@@ -270,8 +276,15 @@ class SleepSoundController extends GetxController {
       }
     }
 
+    // Never replace a visible cached list with an empty merge.
+    if (mergedItems.isEmpty) {
+      final existing = soundsBySubCategory[key];
+      if (existing != null && existing.isNotEmpty) return;
+    }
+
     // 3. Update the "All" key with the merged list
     soundsBySubCategory[key] = mergedItems;
+    _saveToCache(key, mergedItems);
     soundsBySubCategory.refresh();
   }
 
@@ -637,6 +650,8 @@ class SleepSoundController extends GetxController {
   }
 
 
+  void rebuildSoundPages() => _rebuildPages();
+
   void _rebuildPages() {
     final result = <Map<String, String>>[];
 
@@ -648,8 +663,21 @@ class SleepSoundController extends GetxController {
       }
     }
 
+    if (_pagesEqual(combinedPages, result)) return;
+
     combinedPages.assignAll(result);
     debugPrint("✅ combinedPages rebuilt: ${combinedPages.length}");
+  }
+
+  bool _pagesEqual(List<Map<String, String>> a, List<Map<String, String>> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i]["categorySlug"] != b[i]["categorySlug"] ||
+          a[i]["subCategorySlug"] != b[i]["subCategorySlug"]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Map<String, String> pageAt(int index) => combinedPages[index];
@@ -785,6 +813,10 @@ class SleepSoundController extends GetxController {
   void presentPremiumPaywall() {
     final context = Get.context;
     if (context == null) return;
+    if (!subController.shouldShowPaywall) {
+      Get.toNamed(Routes.mySubscription);
+      return;
+    }
     final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
     if (hasAlreadySpun) {
       if (Get.isRegistered<HomeController>()) {
@@ -968,13 +1000,17 @@ class SleepSoundController extends GetxController {
     resetTimer(0);
     _setupSteps();
     _preWarmCache();
+    var paidCatalogUnlocked = subController.isPremium.value;
     ever(subController.isPremium, (bool premium) {
       print("💎 Worker Triggered: Premium is $premium");
-
-      // Paid Premium: Music padlocks must drop without an app reboot.
-      // Trial does not change isPremium, so this does not run on trial start.
-      soundsBySubCategory.clear();
-      onSoundTabVisible();
+      if (!premium) {
+        paidCatalogUnlocked = false;
+        return;
+      }
+      // Already-premium homepage polls must not wipe Music/Story.
+      if (paidCatalogUnlocked) return;
+      paidCatalogUnlocked = true;
+      refreshCatalogAfterPaidPremium();
     });
     _initializeData();
     checkTrackingStatus();

@@ -153,10 +153,14 @@ class DreamBotController extends GetxController {
     return true;
   }
 
-  String _limitMessage() => _isOnTrial()
+  String _limitMessage() {
+    final server = lastForbiddenDetail?['message']?.toString();
+    if (server != null && server.isNotEmpty) return server;
+    return _isOnTrial()
       ? _trialDreamLimitMessage()
       : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
           "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
+  }
 
   @override
   void onInit() {
@@ -164,7 +168,7 @@ class DreamBotController extends GetxController {
     final sub = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
         : null;
-    if (sub == null || !sub.hasAccessTo(trialAllowed: true)) {
+    if (sub == null || !sub.showDreambot) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Get.context != null) {
           Get.back();
@@ -172,15 +176,14 @@ class DreamBotController extends GetxController {
       });
       return;
     }
+    canAnalyze.value = sub.canAnalyzeDream;
     final String? rawId = Get.parameters["dreamId"] ?? Get.arguments?["dream_id"]?.toString();
     int? paramId = int.tryParse(rawId ?? "0");
 
     if (paramId != null && paramId > 0) {
       _loadOldDreamFromHistory(paramId);
     } else {
-      // 🚀 Step 1: Call the API immediately so the Bot message is ready
-      // when the user lands on the screen.
-      startNewDreamSession();
+      welcomeMessage.value = Get.context?.lang.analyzeMyDream ?? "Describe your dream to begin.";
     }
   }
   @override
@@ -202,7 +205,7 @@ class DreamBotController extends GetxController {
       return rawDate;
     }
   }
-  void startNewDreamSession() async {
+  Future<void> startNewDreamSession() async {
     if (_sessionStartInFlight || (_sessionStarted && currentDreamId > 0)) {
       debugPrint("⏭ Skipping duplicate DreamBot session start");
       return;
@@ -273,27 +276,28 @@ class DreamBotController extends GetxController {
   }
 
   // This is called when the user clicks the "Analyze" button
-  void handleFirstAction() async {
+  Future<void> handleFirstAction() async {
     String msg = userInput.value.trim();
     if (msg.isEmpty) return;
 
-    // If the session failed to start earlier (e.g. internet issue), try again
     if (currentDreamId == 0) {
-       startNewDreamSession();
+      await startNewDreamSession();
     }
 
-    // If we have a successful session now, proceed to send the message
     if (currentDreamId != 0) {
       await sendMessage();
     } else {
-      // If still no ID (likely Premium Limit), show the toast
       _showToast(welcomeMessage.value);
     }
   }
 
   Future<void> sendMessage() async {
     String msg = userInput.value.trim();
-    if (msg.isEmpty || currentDreamId == 0) return;
+    if (msg.isEmpty) return;
+    if (currentDreamId == 0) {
+      await startNewDreamSession();
+    }
+    if (currentDreamId == 0) return;
 
     // 🔒 The dream text is sent to a third-party AI, so consent is required.
     if (!await _requireAiConsent()) return;
@@ -318,8 +322,10 @@ class DreamBotController extends GetxController {
 
       if (res['success']) {
         messages.add({"isUser": false, "msg": res['data']['response']});
-        if (res['data']['can_analyze'] == true || userMessageCount >= 3) {
+        if (res['data']['can_analyze'] == true) {
           canAnalyze.value = true;
+        } else if (res['data']['can_analyze'] == false) {
+          canAnalyze.value = false;
         }
       }
     } catch (e) {

@@ -175,6 +175,7 @@ class HomeScreen extends GetView<HomeController> {
                                       }
                                         return Obx(() {
                                           final isTapped = controller.tappedIndex.value == index;
+                                          final String itemId = item['id'];
                                           return GestureDetector(
                                             onTap: () {
                                               controller.tappedIndex.value = index;
@@ -183,12 +184,17 @@ class HomeScreen extends GetView<HomeController> {
                                                   controller.tappedIndex.value = -1;
                                                 }
 
-                                                // ✅ Hamesha ID check karein, Label nahi
-                                                final String itemId = item['id'];
-
-                                                // Premium-only chips: free and trial users see the paywall.
-                                                // DreamBot stays trialAllowed; Story waits for paid Premium.
-                                                if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
+                                                // Premium-only chips: free users see the paywall.
+                                                // Story is a section (open for everyone). DreamBot allows trial.
+                                                if (itemId == 'dreambot' && !subController.showDreambot) {
+                                                  if (subController.shouldShowPaywall) {
+                                                    controller.showRotatingPremiumSheet(context);
+                                                  } else {
+                                                    Get.toNamed(Routes.mySubscription);
+                                                  }
+                                                  return;
+                                                }
+                                                if (item['premiumOnly'] == true && itemId != 'dreambot' && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true)) {
                                                   controller.showRotatingPremiumSheet(context);
                                                   return;
                                                 }
@@ -239,7 +245,7 @@ class HomeScreen extends GetView<HomeController> {
                                                             clipBehavior: Clip.none,
                                                             children: [
                                                               Icon(item['icon'], color: isTapped ? AppColors.primary : Colors.white, size: 26 * SizeConfigs.paddingScale),
-                                                              if (item['premiumOnly'] == true && !subController.hasAccessTo(trialAllowed: item['trialAllowed'] == true))
+                                                              if (itemId == 'dreambot' && !subController.showDreambot)
                                                                 Positioned(
                                                                   right: -2,
                                                                   bottom: -2,
@@ -2584,6 +2590,17 @@ class HomeScreen extends GetView<HomeController> {
       padding: EdgeInsets.only(left: index == 0 ? 18 * SizeConfigs.paddingScale : 0, right: index == totalItems - 1 ? 18 * SizeConfigs.paddingScale : 0),
       child: GestureDetector(
         onTap: () {
+          final sub = Get.isRegistered<SubscriptionController>()
+              ? Get.find<SubscriptionController>()
+              : Get.put(SubscriptionController());
+          if (!sub.isQuizUnlocked) {
+            if (sub.shouldShowPaywall) {
+              controller.showRotatingPremiumSheet(context);
+            } else {
+              Get.toNamed(Routes.mySubscription);
+            }
+            return;
+          }
           // 1. Check if SleepInfoController is NOT already registered
           if (!Get.isRegistered<SleepInfoController>()) {
             Get.put(SleepInfoController());

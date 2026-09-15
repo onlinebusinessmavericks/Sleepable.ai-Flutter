@@ -113,26 +113,24 @@ Future<dynamic> buildHttpResponse({
           .timeout(timeoutDuration);
     }
 
-    // if (response.statusCode == 401 &&
-    //     allowTokenRefresh &&
-    //     !retrying) {
-    //
-    //   final refreshed = await refreshAccessToken();
-    //
-    //   if (refreshed) {
-    //     return await buildHttpResponse(
-    //       endPoint: endPoint,
-    //       method: method,
-    //       request: request,
-    //       header: null,
-    //       retrying: true,
-    //       allowTokenRefresh: false,
-    //     );
-    //   } else {
-    //     toast('Session expired. Please login again');
-    //     throw 'Unauthorized';
-    //   }
-    // }
+    if (response.statusCode == 401 &&
+        allowTokenRefresh &&
+        !retrying) {
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return await buildHttpResponse(
+          endPoint: endPoint,
+          method: method,
+          request: request,
+          header: null,
+          retrying: true,
+          allowTokenRefresh: false,
+        );
+      } else {
+        toast('Session expired. Please login again');
+        throw 'Unauthorized';
+      }
+    }
 // after response is received
 
     apiPrint(
@@ -154,6 +152,41 @@ Future<dynamic> buildHttpResponse({
   } on TimeoutException {
     // toast('Request timeout');
     throw Exception("Request timeout. Please try again.");
+  }
+}
+
+Future<bool> refreshAccessToken() async {
+  final raw = getStringAsync(AppSharedPreferenceKeys.currentUserData);
+  if (raw.isEmpty) return false;
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return false;
+    final userId = decoded['user_id'] ?? decoded['id'];
+    if (userId == null) return false;
+    final uri = buildBaseUrl(APIEndPoints.refreshToken);
+    final res = await post(
+      uri,
+      body: jsonEncode({'user_id': userId}),
+      headers: {
+        HttpHeaders.contentTypeHeader: 'application/json; charset=utf-8',
+        HttpHeaders.acceptHeader: 'application/json; charset=utf-8',
+      },
+    ).timeout(const Duration(seconds: 15));
+    if (res.statusCode < 200 || res.statusCode >= 300) return false;
+    final body = jsonDecode(res.body);
+    final data = body is Map ? body['data'] : null;
+    final access = data is Map ? data['access']?.toString() ?? '' : '';
+    final refresh = data is Map ? data['refresh']?.toString() ?? '' : '';
+    if (access.isEmpty) return false;
+    await setValue(AppSharedPreferenceKeys.apiToken, access);
+    apiToken = access;
+    if (refresh.isNotEmpty) {
+      await setValue(AppSharedPreferenceKeys.refreshToken, refresh);
+    }
+    return true;
+  } catch (e) {
+    log('Token refresh failed: $e');
+    return false;
   }
 }
 
@@ -259,7 +292,7 @@ Future handleResponse(Response response, {HttpResponseType httpResponseType = Ht
       throw consentMessage;
     }
 
-    throw 'Access forbidden';
+    throw lastForbiddenDetail?['message']?.toString() ?? 'Access forbidden';
   }
   else if (response.statusCode == 429) {
     throw 'Too many requests';

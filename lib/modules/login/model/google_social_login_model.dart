@@ -1,4 +1,6 @@
 
+import 'package:sleepable_ai/modules/subscription/model/access_block.dart';
+
 class SocialLoginResponse {
   final bool success;
   final String message;
@@ -46,6 +48,8 @@ class SocialLoginResponseData {
   final Tokens tokens;
   final String type;
   final bool isPremium;
+  final AccessBlock? access;
+  final Map<String, dynamic> accessPayload;
 
   SocialLoginResponseData({
     required this.userId,
@@ -66,6 +70,8 @@ class SocialLoginResponseData {
     required this.tokens,
     required this.type,
     required this.isPremium,
+    this.access,
+    this.accessPayload = const {},
   });
 
   factory SocialLoginResponseData.fromJson(Map<String, dynamic> json) {
@@ -88,6 +94,8 @@ class SocialLoginResponseData {
       tokens: json['tokens'] != null ? Tokens.fromJson(json['tokens']) : Tokens.empty(),
       type: json['type'] ?? '',
       isPremium: json['is_premium'] ?? json['isPremium'] ?? false,
+      access: AccessBlock.fromJson(json),
+      accessPayload: AccessBlock.slice(json),
     );
   }
 
@@ -111,6 +119,8 @@ class SocialLoginResponseData {
       tokens: Tokens.empty(),
       type: '',
       isPremium: false,
+      access: null,
+      accessPayload: const {},
     );
   }
 
@@ -133,6 +143,7 @@ class SocialLoginResponseData {
     'tokens': tokens.toJson(),
     'type': type,
     'is_premium': isPremium,
+    ...accessPayload,
   };
 }
 

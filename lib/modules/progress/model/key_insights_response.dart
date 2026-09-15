@@ -27,6 +27,7 @@ class KeyInsightsData {
   final double sleepStreakDays;
   final double consistencyScore;
   final double consistencyTrend; // New
+  final bool hasData;
 
   KeyInsightsData({
     required this.averageSleepHours,
@@ -36,6 +37,7 @@ class KeyInsightsData {
     required this.sleepStreakDays,
     required this.consistencyScore,
     required this.consistencyTrend,
+    this.hasData = true,
   });
 
   factory KeyInsightsData.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,9 @@ class KeyInsightsData {
       sleepStreakDays: (json["sleep_streak_days"] ?? 0).toDouble(),
       consistencyScore: (json["consistency_score"] ?? 0).toDouble(),
       consistencyTrend: (json["consistency_trend_pct"] ?? 0).toDouble(),
+      hasData: json["average_sleep_hours"] != null ||
+          json["sleep_quality_score"] != null ||
+          json["consistency_score"] != null,
     );
   }
 }

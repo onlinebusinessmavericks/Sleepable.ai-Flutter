@@ -71,6 +71,5 @@ Future<void> navigateAfterAuth({required bool showPaywall}) async {
 
 bool shouldShowStartTrialPaywall() {
   if (!Get.isRegistered<SubscriptionController>()) return true;
-  final sub = Get.find<SubscriptionController>();
-  return !(sub.isPremium.value || sub.isOnFreeTrial);
+  return Get.find<SubscriptionController>().shouldShowPaywall;
 }

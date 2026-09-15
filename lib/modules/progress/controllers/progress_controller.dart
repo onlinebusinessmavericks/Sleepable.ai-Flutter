@@ -4,9 +4,10 @@ import 'package:just_audio/just_audio.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:sleepable_ai/core/utils/library.dart';
 import '../../../data/services/api_sevices.dart';
+import '../../../data/services/network_utils.dart';
+import '../../../localization/lang_extension.dart';
 import '../../../widgets/ai_consent_dialog.dart';
 import '../../../widgets/SubscriptionController.dart';
-import '../../../widgets/showPremiumOfferSheet.dart';
 import '../model/AIInsightsResponse.dart';
 import '../model/SnoringIntensityResponse.dart';
 import '../model/achievement_badges_response.dart';
@@ -21,7 +22,7 @@ import '../views/progress_view.dart';
 class ProgressController extends GetxController with GetTickerProviderStateMixin {
   bool _isInitialLoad = true;
   // --- 1. Global & Tab States ---
-  var selectedTab = "Week".obs;
+  var selectedTab = "today".obs;
   var isLoading = false.obs; // Used for Snoring loading
 
   // --- 2. Module Loading States ---
@@ -49,6 +50,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   RxDouble consistencyScore = 0.0.obs;
   RxDouble avgSleepHours = 0.0.obs;
   RxDouble sleepQualityScore = 0.0.obs;
+  RxBool hasInsightsData = false.obs;
   RxInt sleepStreakDays = 0.obs;
 
   RxDouble sleepTrend = 0.0.obs;
@@ -62,6 +64,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   // ---  Sleep Quality ---
   RxList<SleepQualityPoint> sleepQualityData = <SleepQualityPoint>[].obs;
   RxBool isQualityLoading = false.obs;
+  RxBool hasQualityData = false.obs;
 // Today's Quality Variables
   RxDouble todaySleepScore = 0.0.obs;
   RxDouble todayDurationScore = 0.0.obs;
@@ -130,10 +133,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
 
     // Just set the value. Do NOT call loadAllData() here if
     // you are going to call changeTab right after.
-    selectedTab.value = "Today";
+    selectedTab.value = "today";
 
     // Call changeTab once. This will act as your initial data fetch.
-    changeTab("Today");
+    changeTab("today");
     fetchSleepCalendar();
   }
 
@@ -200,10 +203,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     String? dateToFetch;
 
     // Determine type and date based on current tab state
-    if (selectedTab.value == "Today") {
+    if (selectedTab.value == "today") {
       type = "today";
       dateToFetch = activeDate.value; // 🟢 Use the saved date!
-    } else if (selectedTab.value == "Week") {
+    } else if (selectedTab.value == "week") {
       type = "weekly";
       dateToFetch = null; // Weekly doesn't need a specific day
     } else {
@@ -215,8 +218,12 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
-    dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
+    final canUseDreams = sub?.showDreambot ?? false;
+    dateToFetch = _trialAwareDate(sub, paid, dateToFetch) ?? dateToFetch;
+    if (type != "today" && !(sub?.arePeriodReportsUnlocked ?? false)) {
+      type = "today";
+      selectedTab.value = "today";
+    }
     if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";
     }
@@ -232,7 +239,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       fetchAchievementBadges(type, date: dateToFetch),
       fetchSleepStages(type, date: dateToFetch),
     ];
-    if (paid) {
+    if (sub?.isRecorderUnlocked ?? false) {
       calls.add(fetchSleepAudio(type, date: dateToFetch));
     }
     if (canUseDreams) {
@@ -251,12 +258,12 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     if (sub != null && sub.isTrial.value && !sub.isPremium.value) {
       final first = sub.firstReportDate.value;
       if (first.isNotEmpty && formattedDate != first) {
-        showPremiumOfferSheet4(Get.context!);
+        toast(Get.context?.lang.unlockToCheck ?? "Available on your first trial night only.");
         return;
       }
     }
     // 1. Update UI state
-    selectedTab.value = "Today";
+    selectedTab.value = "today";
     activeDate.value = formattedDate; // 🟢 Save the date!
     dateLabel.value = DateFormat('MMM dd, yyyy').format(DateTime.parse(formattedDate));
 
@@ -264,12 +271,35 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     fetchSpecificNightData(formattedDate);
   }
 
+  String _tabId(String tab) {
+    final t = tab.toLowerCase();
+    if (t == 'today' || t == 'week' || t == 'month') return t;
+    final lang = Get.context?.lang;
+    if (lang != null) {
+      if (tab == lang.today) return 'today';
+      if (tab == lang.week) return 'week';
+      if (tab == lang.month) return 'month';
+    }
+    return 'today';
+  }
+
   void changeTab(String tab, {String? targetDate}) {
-    String normalizedTab = tab.toLowerCase();
-    selectedTab.value = tab;
+    final id = _tabId(tab);
+    if (id != "today") {
+      final sub = Get.isRegistered<SubscriptionController>()
+          ? Get.find<SubscriptionController>()
+          : null;
+      if (sub == null || !sub.arePeriodReportsUnlocked) {
+        toast(sub != null && sub.isOnFreeTrial
+            ? (Get.context?.lang.unlockToCheck ?? "Unlock to check")
+            : (Get.context?.lang.unlockToCheck ?? "Unlock to check"));
+        return;
+      }
+    }
+    selectedTab.value = id;
 
     String type;
-    if (normalizedTab == "today") {
+    if (id == "today") {
       type = "today";
       // 🟢 Update activeDate based on targetDate or fallback to actual today
       activeDate.value = targetDate ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -280,9 +310,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       } else {
         dateLabel.value = "Today";
       }
-    } else if (normalizedTab == "week") {
+    } else if (id == "week") {
       type = "weekly";
-    } else if (normalizedTab == "month") {
+    } else if (id == "month") {
       type = "monthly";
     } else {
       type = "today";
@@ -297,8 +327,12 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         ? Get.find<SubscriptionController>()
         : null;
     final paid = sub?.isPremium.value ?? false;
-    final canUseDreams = sub?.hasAccessTo(trialAllowed: true) ?? false;
-    dateToFetch = _trialAwareDate(sub, paid, dateToFetch);
+    final canUseDreams = sub?.showDreambot ?? false;
+    dateToFetch = _trialAwareDate(sub, paid, dateToFetch) ?? dateToFetch;
+    if (type != "today" && !(sub?.arePeriodReportsUnlocked ?? false)) {
+      type = "today";
+      selectedTab.value = "today";
+    }
     if (_lockTrialToFirstNight(sub, paid)) {
       type = "today";
     }
@@ -318,7 +352,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       fetchAchievementBadges(type, date: dateToFetch),
       fetchSleepStages(type, date: dateToFetch),
     ];
-    if (paid) {
+    if (sub?.isRecorderUnlocked ?? false) {
       calls.add(fetchSleepAudio(type, date: dateToFetch));
     }
     if (canUseDreams && _isInitialLoad) {
@@ -336,8 +370,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     isLoading.value = true; // snoring loading
 
     try {
-      final paid = Get.isRegistered<SubscriptionController>() &&
-          Get.find<SubscriptionController>().isPremium.value;
+      final sub = Get.isRegistered<SubscriptionController>()
+          ? Get.find<SubscriptionController>()
+          : null;
       // We use "today" as the dataType because we want the 24h view for a specific date
       final calls = <Future>[
         fetchSleepStages("today", date: date),
@@ -349,7 +384,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         fetchRecommendations("today", date: date),
         fetchAchievementBadges("today", date: date),
       ];
-      if (paid) {
+      if (sub?.isRecorderUnlocked ?? false) {
         calls.add(fetchSleepAudio("today", date: date));
       }
       await Future.wait(calls);
@@ -389,6 +424,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     } catch (e) {
       debugPrint("❌ AI Insights Error: $e");
       aiInsightsList.clear();
+      _toastReportError(e);
     } finally {
       isAIInsightsLoading.value = false;
     }
@@ -420,6 +456,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       chartLabels.value = response.data.breakdown.map((e) => e.label).toList();
     } catch (e) {
       debugPrint("❌ Sleep chart error: $e");
+      _toastReportError(e);
     } finally {
       isChartLoading.value = false;
     }
@@ -436,6 +473,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       sleepWindowVariance.value = response.data.sleepWindowVariance;
     } catch (e) {
       debugPrint("❌ Consistency error: $e");
+      _toastReportError(e);
     } finally {
       isConsistencyLoading.value = false;
     }
@@ -478,9 +516,12 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
 
       consistencyScore.value = response.data.consistencyScore;
       consistencyTrend.value = response.data.consistencyTrend;
+      hasInsightsData.value = response.data.hasData;
 
     } catch (e) {
       debugPrint("❌ Insights error: $e");
+      hasInsightsData.value = false;
+      _toastReportError(e);
     } finally {
       isInsightsLoading.value = false;
     }
@@ -511,6 +552,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
 
       if (response.success) {
         final wrapper = response.data;
+        hasQualityData.value = wrapper.hasData;
 
         // 1. Assign chart data (Ab ye automatically 'breakdown' ya 'hourly' utha lega)
         sleepQualityData.assignAll(wrapper.breakdown);
@@ -523,7 +565,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         durationHours.value = wrapper.durationHours;
 
         // 3. Time in Bed (Already handled in Model for history/today)
-        todayTimeInBed.value = wrapper.timeInBed;
+        todayTimeInBed.value = wrapper.hasData ? wrapper.timeInBed : "--";
 
         // 4. Time Asleep Formatting
         // Model mein humne 'timeAsleep' ko String mein rakha hai
@@ -535,12 +577,14 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
           totalMins = totalMins * 60;
         }
 
-        todayTimeAsleep.value = formatMinsToText(totalMins.toInt());
+        todayTimeAsleep.value = wrapper.hasData ? formatMinsToText(totalMins.toInt()) : "--";
 
         debugPrint("✅ Sleep Quality Updated: ${todaySleepScore.value}");
       }
     } catch (e) {
       debugPrint("❌ Sleep Quality Error: $e");
+      hasQualityData.value = false;
+      _toastReportError(e);
     } finally {
       isQualityLoading.value = false;
     }
@@ -580,6 +624,7 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       }
     } catch (e) {
       debugPrint("❌ Sleep Stages API Error: $e");
+      _toastReportError(e);
     } finally {
       isStagesLoading.value = false;
     }
@@ -729,6 +774,14 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
       default: return Colors.blueAccent;
     }
   }
+
+  void _toastReportError(Object e) {
+    final msg = lastForbiddenDetail?['message']?.toString();
+    if (msg != null && msg.isNotEmpty) {
+      toast(msg);
+    }
+  }
+
   String getStageStatus(String title, double percent) {
     if (percent == 0) return "None";
 

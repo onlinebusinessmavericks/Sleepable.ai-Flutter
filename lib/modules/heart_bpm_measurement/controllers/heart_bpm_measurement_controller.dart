@@ -3,16 +3,15 @@ import 'package:get/get.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sleepable_ai/localization/lang_extension.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/shared_prefences.dart';
 import '../../../data/services/api_sevices.dart';
 import '../../../routes/app_pages.dart';
 import '../../alarm/controllers/alarm_controller.dart';
-import '../../music/views/music_view.dart';
 import '../../sleep_sound/controllers/sleep_sound_controller.dart';
 import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.dart';
 import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../../../widgets/SubscriptionController.dart';
-import '../../../widgets/showPremiumOfferSheet.dart';
 import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class HeartBpmMeasurementController extends GetxController {
@@ -53,10 +52,12 @@ class HeartBpmMeasurementController extends GetxController {
     final sub = Get.isRegistered<SubscriptionController>()
         ? Get.find<SubscriptionController>()
         : null;
-    if (sub != null && sub.isTrial.value && !sub.isPremium.value && sub.trialNightsUsed.value >= 3) {
-      toast(Get.context?.lang.trialNightLimitToast ?? "Trial includes 3 nights of tracking. Buy Premium to continue.");
-      if (Get.context != null) showPremiumOfferSheet4(Get.context!);
-      return;
+    if (sub != null && sub.isTrial.value && !sub.isPremium.value) {
+      final limit = sub.trialNightsLimit.value > 0 ? sub.trialNightsLimit.value : 3;
+      if (sub.trialNightsUsed.value >= limit) {
+        toast(Get.context?.lang.trialNightLimitToast ?? "Trial includes 3 nights of tracking. Buy Premium to continue.");
+        return;
+      }
     }
 
     final AlarmController alarmController = Get.find<AlarmController>();

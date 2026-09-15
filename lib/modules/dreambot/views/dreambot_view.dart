@@ -211,7 +211,7 @@ class DreamBotScreen extends GetView<DreamBotController> {
               if (isLoading) return;
 
               if (isLimitReached) {
-                if (onTrial) {
+                if (onTrial || !subController.shouldShowPaywall) {
                   Get.toNamed(Routes.mySubscription);
                 } else {
                   showPremiumOfferSheet4(context);
