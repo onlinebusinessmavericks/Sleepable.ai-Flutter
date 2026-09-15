@@ -1451,6 +1451,12 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
       // Store-localized currency (Play Store country) - same approach as iOS
       String currencySymbol = subController.getCurrencySymbol(yearlyPackage.storeProduct.currencyCode);
+      // The Play option this purchase actually goes through. Discount copy is
+      // shown only when that option is the spin offer.
+      final SubscriptionOption? yearlyOption = subController.androidYearlyOption(discounted: showOffer);
+      final bool isSpinOffer = subController.isSpinOption(yearlyOption);
+      final int? discountPct = spinData?.discountPct;
+
       String yearlyDisplayPrice = subController.yearlyFirstYearPrice(discounted: showOffer);
       double storePrice = subController.yearlyFirstYearAmount(discounted: showOffer);
 
@@ -1458,27 +1464,16 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
       // fabricated 1.5x estimate.
       final String? strikePrice = subController.yearlyStrikePrice(discounted: showOffer);
 
-      double discountedYearlyRaw = storePrice;
-
-      double actualDaily = discountedYearlyRaw / 365;
-      String finalDailyPriceDisplay;
-
-      if (yearlyPackage.storeProduct.currencyCode.toUpperCase() == "INR") {
-        // ₹7.77 Lucky number formatting (India Play storefront only)
-        if (actualDaily >= 7.0 && actualDaily <= 8.5) {
-          finalDailyPriceDisplay = "7.77";
-        } else {
-          finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
-        }
-      } else {
-        finalDailyPriceDisplay = actualDaily.toStringAsFixed(2);
-      }
-
-      // Weekly Average for sub-card
-      String weeklyAvgFromYearly = (discountedYearlyRaw / 52).toStringAsFixed(2);
+      // Per-day and per-week figures come from what this option charges for
+      // the first year - no rounded "lucky" numbers.
+      String finalDailyPriceDisplay = (storePrice / 365).toStringAsFixed(2);
+      String weeklyAvgFromYearly = (storePrice / 52).toStringAsFixed(2);
 
       final bool isYearly = selectedPlanIndex == 1;
-      final String buttonText = isYearly ? (isFreeTrialEnabled ? "Start Free Trial" : "Continue with Yearly") : "Continue with Weekly";
+      final lang = context.lang;
+      final String buttonText = isYearly
+          ? (isFreeTrialEnabled ? lang.startFreeTrial : lang.continueYearly)
+          : lang.startJourney;
       final homeController = Get.isRegistered<HomeController>() ? Get.find<HomeController>() : Get.put(HomeController());
       return PopScope(
         canPop: false,
@@ -1510,8 +1505,10 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         ),
 
                         SizedBox(height: sh(24)),
-                        _buildDiscountCard(homeController, textTheme),
-                        SizedBox(height: sh(24)),
+                        if (isSpinOffer && discountPct != null) ...[
+                          _buildDiscountCard(homeController, textTheme, discountPct),
+                          SizedBox(height: sh(24)),
+                        ],
                         _buildFeatureRow("💤", context.lang.featureSleep, textTheme),
                         _buildFeatureRow("🎶", context.lang.featureSounds, textTheme),
                         _buildFeatureRow("📈", context.lang.featureAnalytics, textTheme),
@@ -1570,7 +1567,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                           title: context.lang.yearlyPremium,
                           price: "$currencySymbol$weeklyAvgFromYearly / ${context.lang.perWeek}",
                           subTitle: "12mo • $yearlyDisplayPrice",
-                          isPopular: true,
+                          // "SPECIAL DISCOUNT APPLIED" only for the spin offer.
+                          isPopular: isSpinOffer,
                           textTheme: textTheme,
                         ),
 
@@ -1591,7 +1589,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                             onPressed: () async {
                               final packageToBuy = isYearly ? yearlyPackage : weeklyPackage;
                               if (packageToBuy != null) {
-                                await subController.buyProduct(packageToBuy);
+                                await subController.buyProduct(packageToBuy, option: isYearly ? yearlyOption : null);
                                 // ✅ SUCCESS: Dashboard par bhejte waqt sab clear karein
                                 if (subController.isPremium.value) {
                                   Get.until((route) => Get.isOverlaysClosed);
@@ -1638,7 +1636,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
 
   // --- UI Helpers ---
 
-  Widget _buildDiscountCard(homeController, textTheme) {
+  Widget _buildDiscountCard(homeController, textTheme, int discountPct) {
     return AnimatedBuilder(
       animation: homeController.animationController,
       builder: (context, child) {
@@ -1658,12 +1656,8 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
           child: Column(
             children: [
               Text(
-                "50% ${context.lang.off}",
+                "$discountPct% ${context.lang.off}",
                 style: textTheme.displaySmall?.copyWith(fontSize: sp(48), fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              Text(
-                context.lang.offForever,
-                style: textTheme.headlineMedium?.copyWith(fontSize: sp(34), fontWeight: FontWeight.w900, color: Colors.white.withOpacity(0.6)),
               ),
             ],
           ),

@@ -607,6 +607,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     return sep >= 0 ? id.substring(sep + 1) : id;
   }
 
+  /// Whether [option] is the Play spin offer (yearly-spin-offer).
+  bool isSpinOption(SubscriptionOption? option) => _playOfferId(option) == _spinOfferId;
+
   /// What the user is actually charged for the first year on Android.
   ///
   /// The base plan price is the renewal price, so a discounted offer's real
