@@ -1871,4 +1871,6 @@ class LanguageDe extends BaseLanguage {
   String get purchaseOptionUnavailable => "Dieser Tarif ist für Ihr Konto gerade nicht verfügbar. Bitte versuchen Sie es erneut.";
   @override
   String get soundSceneUnavailable => "Diese Klangszene ist gerade nicht verfügbar.";
+  @override
+  String get dreamBotIntro => "Erzählen Sie mir von Ihrem Traum. Beschreiben Sie, woran Sie sich erinnern, und ich helfe Ihnen, ihn zu verstehen.";
 }

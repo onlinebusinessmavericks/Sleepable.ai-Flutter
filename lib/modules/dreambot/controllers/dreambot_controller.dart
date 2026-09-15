@@ -175,10 +175,29 @@ class DreamBotController extends GetxController {
     if (paramId != null && paramId > 0) {
       _loadOldDreamFromHistory(paramId);
     } else {
-      // 🚀 Step 1: Call the API immediately so the Bot message is ready
-      // when the user lands on the screen.
-      startNewDreamSession();
+      _showIntroOrCap();
     }
+  }
+
+  /// A new dream is created on the user's first message, not on screen open,
+  /// so visiting DreamBot never leaves an empty dream behind. When the backend
+  /// allows no further analysis, the cap message shows straight from
+  /// AccessState, with no start call.
+  void _showIntroOrCap() {
+    final access = _sub?.access.value;
+    if (access != null && !access.features.dreamBot.canAnalyze) {
+      sessionLimitReached.value = true;
+      limitIsTrial.value = access.isTrial;
+      welcomeMessage.value = access.isTrial
+          ? _trialDreamLimitMessage()
+          : (Get.context?.lang.freeUsersCanStartDreamSessionMonthUpgradePremiumUnlimitedAccess ??
+              "Free users can start 1 dream session per month. Upgrade to premium for unlimited access.");
+      return;
+    }
+    sessionLimitReached.value = false;
+    limitIsTrial.value = false;
+    welcomeMessage.value = Get.context?.lang.dreamBotIntro ??
+        "Tell me about your dream. Describe what you remember and I'll help you understand it.";
   }
   @override
   void onReady() {
@@ -199,7 +218,7 @@ class DreamBotController extends GetxController {
       return rawDate;
     }
   }
-  void startNewDreamSession() async {
+  Future<void> startNewDreamSession() async {
     if (_sessionStartInFlight || (_sessionStarted && currentDreamId > 0)) {
       debugPrint("⏭ Skipping duplicate DreamBot session start");
       return;
@@ -264,9 +283,9 @@ class DreamBotController extends GetxController {
     String msg = userInput.value.trim();
     if (msg.isEmpty) return;
 
-    // If the session failed to start earlier (e.g. internet issue), try again
+    // The session is created here, on the first message.
     if (currentDreamId == 0) {
-       startNewDreamSession();
+      await startNewDreamSession();
     }
 
     // If we have a successful session now, proceed to send the message
@@ -484,8 +503,9 @@ class DreamBotController extends GetxController {
 
     } catch (e) {
       debugPrint("Dream history error: $e");
-      // Fallback: Start new if old one fails
-      startNewDreamSession();
+      // Fall back to the new-dream screen; the session starts on the first message.
+      isFirstTime.value = true;
+      _showIntroOrCap();
     }
   }
   void scrollToBottom() {
@@ -525,7 +545,7 @@ class DreamBotController extends GetxController {
     currentDreamId = 0;
     _sessionStarted = false;
     _sessionStartInFlight = false;
-    startNewDreamSession();
+    _showIntroOrCap();
     focusNode.requestFocus();
   }
 }

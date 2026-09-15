@@ -1026,4 +1026,5 @@ abstract class BaseLanguage {
   // Purchases and sounds
   String get purchaseOptionUnavailable;
   String get soundSceneUnavailable;
+  String get dreamBotIntro;
 }

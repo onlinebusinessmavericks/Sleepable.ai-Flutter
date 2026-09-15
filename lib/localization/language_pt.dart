@@ -1872,4 +1872,6 @@ class LanguagePt extends BaseLanguage {
   String get purchaseOptionUnavailable => "Este plano não está disponível para sua conta agora. Tente novamente.";
   @override
   String get soundSceneUnavailable => "Esta cena sonora não está disponível agora.";
+  @override
+  String get dreamBotIntro => "Conte-me sobre o seu sonho. Descreva o que você lembra e eu ajudo você a entendê-lo.";
 }

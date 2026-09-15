@@ -2596,4 +2596,6 @@ class LanguageEn extends BaseLanguage {
   String get purchaseOptionUnavailable => "This plan isn't available for your account right now. Please try again.";
   @override
   String get soundSceneUnavailable => "This sound scene isn't available right now.";
+  @override
+  String get dreamBotIntro => "Tell me about your dream. Describe what you remember and I'll help you understand it.";
 }

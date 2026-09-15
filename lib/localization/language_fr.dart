@@ -1907,4 +1907,6 @@ class LanguageFr extends BaseLanguage {
   String get purchaseOptionUnavailable => "Cette offre n'est pas disponible pour votre compte pour le moment. Veuillez réessayer.";
   @override
   String get soundSceneUnavailable => "Cette ambiance sonore n'est pas disponible pour le moment.";
+  @override
+  String get dreamBotIntro => "Parlez-moi de votre rêve. Décrivez ce dont vous vous souvenez et je vous aiderai à le comprendre.";
 }
