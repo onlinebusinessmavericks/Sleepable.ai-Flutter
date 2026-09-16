@@ -1078,7 +1078,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                             ),
                           ),
                         Text(
-                          Platform.isIOS
+                          Platform.isIOS || !subController.yearlyHasFreeTrial
                               ? context.lang.unlockSleepableTitle
                               : "${context.lang.trySleepableFree}\n${context.lang.trySleepableFree1}",
                           textAlign: TextAlign.center,
@@ -2147,7 +2147,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                           title: context.lang.yearly,
                           price: yearlyPriceText,
                           originalPrice: yearlyOriginalPrice,
-                          badge: Platform.isIOS ? null : context.lang.threeDaysFreeBadge,
+                          badge: (!Platform.isIOS && subController.yearlyHasFreeTrial)
+                              ? context.lang.threeDaysFreeBadge
+                              : null,
                           textTheme: textTheme,
                         ),
                       ),
