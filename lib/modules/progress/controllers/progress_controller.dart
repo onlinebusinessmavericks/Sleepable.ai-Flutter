@@ -36,8 +36,8 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   // --- 1. Global & Tab States ---
   final Rx<ReportTab> selectedTab = ReportTab.today.obs;
 
-  /// Shown in place of the report sections: a trial Week/Month tab, or no
-  /// tracked night yet. Empty when the report can be shown.
+  /// Shown in place of the report sections when a load is blocked. Empty when
+  /// the report can be shown.
   final RxString reportNotice = ''.obs;
 
   /// A section failed to load: the backend's 403 message, or a generic error.
@@ -187,10 +187,6 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     super.onClose();
   }
 
-  AccessState get _access => Get.isRegistered<SubscriptionController>()
-      ? Get.find<SubscriptionController>().access.value
-      : AccessState.unknown();
-
   Future<void> loadAllData() =>
       _loadReport(selectedTab.value, date: activeDate.value, includeDreams: true);
 
@@ -199,13 +195,6 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   }
 
   void onDateSelected(String formattedDate) {
-    final access = _access;
-    // A trial opens only the first report night.
-    if (access.isTrial && formattedDate != access.firstReportDate) {
-      toast(Get.context?.lang.trialReportsLocked ??
-          "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.");
-      return;
-    }
     selectedTab.value = ReportTab.today;
     activeDate.value = formattedDate;
     dateLabel.value = DateFormat('MMM dd, yyyy').format(DateTime.parse(formattedDate));
@@ -224,51 +213,28 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     _isInitialLoad = false;
   }
 
-  /// Loads the report for [tab]. In a trial, Week and Month are locked up front
-  /// and Today is always the first report night (date = first_report_date,
-  /// tracker_id = first_report_tracker_id) - no calls are made for a locked tab
-  /// or before the first night is tracked.
+  /// Loads the report for [tab]. Today / Week / Month are open for free and
+  /// trial; only sleep-recorder *playback* stays on paid Premium.
   Future<void> _loadReport(ReportTab tab, {String? date, bool includeDreams = false}) async {
-    final access = _access;
     reportNotice.value = '';
     reportError.value = '';
 
     String? day = date;
     int? trackerId;
-    bool reportOpen = true;
-    if (access.isTrial) {
-      final first = access.firstReportDate;
-      if (tab != ReportTab.today) {
-        reportOpen = false;
-        reportNotice.value = Get.context?.lang.trialReportsLocked ??
-            "Your trial includes the report for your first tracked night. Weekly and monthly reports open when Premium starts.";
-      } else if (first == null) {
-        reportOpen = false;
-        reportNotice.value = Get.context?.lang.trackFirstNightForReport ?? "Track your first night to see your report.";
-      } else {
-        day = first;
-        trackerId = access.firstReportTrackerId;
-        activeDate.value = first;
-        final parsed = DateTime.tryParse(first);
-        if (parsed != null) dateLabel.value = DateFormat('MMM dd, yyyy').format(parsed);
-      }
-    }
 
     final type = tab.dataType;
     await Future.wait(<Future>[
-      if (reportOpen) ...[
-        fetchSleepChart(type),
-        fetchSleepConsistency(type, date: day),
-        getSnoringData(type, date: day),
-        fetchKeyInsights(type, date: day),
-        fetchSleepQuality(type, date: day),
-        fetchAIInsights(type, date: day, trackerId: trackerId),
-        fetchRecommendations(type, trackerId: trackerId),
-        fetchAchievementBadges(type, date: day),
-        fetchSleepStages(type, date: day),
-        if (access.features.sleepRecorder.unlocked) fetchSleepAudio(type, date: day),
-      ],
-      if (includeDreams && access.features.dreamBot.unlocked) fetchMyDreams(),
+      fetchSleepChart(type),
+      fetchSleepConsistency(type, date: day),
+      getSnoringData(type, date: day),
+      fetchKeyInsights(type, date: day),
+      fetchSleepQuality(type, date: day),
+      fetchAIInsights(type, date: day, trackerId: trackerId),
+      fetchRecommendations(type, trackerId: trackerId),
+      fetchAchievementBadges(type, date: day),
+      fetchSleepStages(type, date: day),
+      fetchSleepAudio(type, date: day),
+      if (includeDreams) fetchMyDreams(),
     ]);
   }
 
@@ -579,7 +545,11 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   // ---------------------------------------------------------------------------
 
   Future<void> handlePlayPause(String audioPath) async {
-    final fullUrl = "https://api.sleepable.ai$audioPath";
+    final sub = Get.isRegistered<SubscriptionController>()
+        ? Get.find<SubscriptionController>()
+        : null;
+    if (sub == null || !sub.isPremium.value || audioPath.isEmpty) return;
+    final fullUrl = audioPath.startsWith('http') ? audioPath : "https://api.sleepable.ai$audioPath";
     try {
       if (playingUrl.value == audioPath) {
         isPlaying.value ? await _player.pause() : await _player.play();
@@ -596,7 +566,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   /// Seek within the currently loaded sleep recording (0.0 – 1.0 of total).
   Future<void> seekAudio(String audioPath, double fraction) async {
     try {
-      if (audioPath.isEmpty) return;
+      final sub = Get.isRegistered<SubscriptionController>()
+          ? Get.find<SubscriptionController>()
+          : null;
+      if (sub == null || !sub.isPremium.value || audioPath.isEmpty) return;
 
       // Load this clip first if another (or none) is active
       if (playingUrl.value != audioPath) {

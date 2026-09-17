@@ -203,7 +203,7 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
         .replaceAll('\u2007', ' ')
         .trim();
     s = s.replaceFirstMapped(RegExp(r'^(\D+?)\s+(\d)'), (m) => '${m[1]}${m[2]}');
-    // Suffix currencies only ("9,99 €") — do not eat " / year" or similar copy.
+    // Suffix currencies only ("9,99 €") — do not eat "/year" or similar copy.
     s = s.replaceFirstMapped(RegExp(r'(\d)\s+([^\d\s/]+)$'), (m) => '${m[1]}${m[2]}');
     return s;
   }
@@ -212,15 +212,15 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   ///
   /// The App Store applies an introductory offer on its own, so the first year
   /// and the renewal are different amounts. The line has to say "for the first
-  /// year" rather than "/ year" whenever that is the case.
+  /// year" rather than "/year" whenever that is the case.
   String formatIosYearlyPriceLine({
     required String prefix,
     required String yearlyPrice,
     required String currencySymbol,
     required String weeklyAvg,
   }) {
-    final period = yearlyHasFirstYearDiscount ? 'for the first year' : '/ year';
-    return '$prefix ${compactPriceString(yearlyPrice)} $period ($currencySymbol$weeklyAvg / week)';
+    final period = yearlyHasFirstYearDiscount ? ' for the first year' : '/year';
+    return '$prefix ${compactPriceString(yearlyPrice)}$period ($currencySymbol$weeklyAvg/week)';
   }
 
   /// iOS paywall footer: what happens once the first year is up.
@@ -233,10 +233,10 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     required String weeklyAvg,
   }) {
     if (!yearlyHasFirstYearDiscount) {
-      return '${compactPriceString(yearlyPrice)} / year. Cancel anytime.';
+      return '${compactPriceString(yearlyPrice)}/year. Cancel anytime.';
     }
     final renewal = compactPriceString(_yearlyPackage?.storeProduct.priceString);
-    return '${compactPriceString(yearlyPrice)} for the first year, then $renewal / year. Cancel anytime.';
+    return '${compactPriceString(yearlyPrice)} for the first year, then $renewal/year. Cancel anytime.';
   }
 
   /// Yearly price to show, taken from what the first year actually costs.
@@ -370,6 +370,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// Play offer id of the spin discount. The coupon only belongs to a purchase
   /// made through this offer.
   static const String _spinOfferId = 'yearly-spin-offer';
+  static const String _otherAccountRestoreMsg =
+      "This purchase belongs to another Sleepable account. Log in with the original email to restore it.";
 
   /// Confirms RevenueCat is attached to the signed-in user before a purchase or
   /// restore, and returns that app user id.
@@ -803,6 +805,8 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
           // Already in the store trial for this plan, so it cannot be bought
           // again - the store rejects it. Say that plainly.
           toast("You are already subscribed to this plan. It starts automatically when your free trial ends.");
+        } else if (errorCode == PurchasesErrorCode.receiptAlreadyInUseError) {
+          toast(_otherAccountRestoreMsg);
         } else {
           toast("Purchase Error: ${e.message}");
         }
@@ -819,6 +823,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// Store restore alone is not enough: Premium is granted by our backend. After
   /// RevenueCat re-links the receipt we POST /users/restore-purchase/ so the
   /// subscription row and is_premium flag are rebuilt for this account.
+  ///
+  /// Same Sleepable account only. A second email on the same Play / Apple ID
+  /// must not receive this purchase.
   Future<void> restorePurchases() async {
     if (_restoreInFlight) return;
     final loggedIn = getStringAsync(AppSharedPreferenceKeys.apiToken).isNotEmpty;
@@ -854,6 +861,11 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
           }
         } on PlatformException catch (e) {
           log("Store restore failed: ${e.message}");
+          final errorCode = PurchasesErrorHelper.getErrorCode(e);
+          if (errorCode == PurchasesErrorCode.receiptAlreadyInUseError) {
+            toast(_otherAccountRestoreMsg);
+            return;
+          }
           if (!loggedIn) {
             toast("Restore failed: ${e.message}");
             return;
@@ -916,7 +928,10 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
         Get.until((route) => Get.isOverlaysClosed);
         Get.offAllNamed(Routes.dashboard);
       } else {
-        toast("No active subscription found to restore.");
+        final backendMsg = (response['message'] ?? '').toString().trim();
+        toast(backendMsg.isNotEmpty
+            ? backendMsg
+            : "No active subscription found to restore.");
       }
     } catch (e) {
       toast("Restore failed. Please try again.");

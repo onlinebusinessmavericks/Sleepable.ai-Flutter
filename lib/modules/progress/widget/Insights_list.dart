@@ -1,9 +1,6 @@
 import '../../../core/utils/library.dart';
-import '../../../data/services/api_sevices.dart';
 import '../../../localization/lang_extension.dart';
-import '../../../widgets/SubscriptionController.dart';
 import '../controllers/progress_controller.dart';
-import '../model/AIInsightsResponse.dart';
 
 class InsightsList extends StatelessWidget {
   const InsightsList({super.key});
@@ -21,7 +18,6 @@ class InsightsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ProgressController>();
-    final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
     return Obx(() {
       if (controller.isAIInsightsLoading.value) {
@@ -30,13 +26,11 @@ class InsightsList extends StatelessWidget {
 
       if (controller.aiInsightsList.isEmpty) {
         final tab = controller.selectedTab.value;
-        final emptyMsg = !subController.access.value.hasAccess
-            ? context.lang.proInsightsPrompt
-            : (tab == ReportTab.week)
-                ? context.lang.noInsightsWeek
-                : (tab == ReportTab.month)
-                    ? context.lang.noInsightsMonth
-                    : context.lang.noInsightsToday;
+        final emptyMsg = (tab == ReportTab.week)
+            ? context.lang.noInsightsWeek
+            : (tab == ReportTab.month)
+                ? context.lang.noInsightsMonth
+                : context.lang.noInsightsToday;
         return Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),

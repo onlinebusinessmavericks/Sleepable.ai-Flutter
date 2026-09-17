@@ -343,73 +343,29 @@ class ProgressScreen extends GetView<ProgressController> {
                   return SizedBox(
                     height: 300,
                     child: Center(
-                      child: Obx(() {
-                        final controller = Get.find<HomeController>();
-                        final bool showProUpsell = subController.access.value.showPaywall;
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // 1. Icon ya PRO Button Logic
-                            if (showProUpsell)
-                              GestureDetector(
-                                onTap: () {
-                                  controller.onProTapped(context);
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [AppColors.proLight, AppColors.proDark],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.proDark.withOpacity(0.3),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      )
-                                    ],
-                                  ),
-                                  child: Text(
-                                    context.lang.proButton,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else
-                              const Icon(
-                                Icons.bedtime_outlined,
-                                color: Colors.white10,
-                                size: 40,
-                              ),
-
-                            const SizedBox(height: 12),
-
-                            // 2. Text Logic
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 40),
-                              child: Text(
-                                showProUpsell
-                        ? context.lang.proPrompt
-                            : "${context.lang.noDataToday}\n${context.lang.noDataToday1}",
-                                    // ? "No sleep data yet. Unlock deep analytics and AI insights with Sleepable Premium ✨"
-                                    // : "No sleep data for today yet.\nStart your sleep tracker tonight!",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white30,
-                                  fontSize: 13,
-                                  height: 1.5,
-                                ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.bedtime_outlined,
+                            color: Colors.white10,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Text(
+                              "${context.lang.noDataToday}\n${context.lang.noDataToday1}",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white30,
+                                fontSize: 13,
+                                height: 1.5,
                               ),
                             ),
-                          ],
-                        );
-                      }),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -634,6 +590,7 @@ class ProgressScreen extends GetView<ProgressController> {
                         child: Text(
                           // Agar user premium nahi hai toh analytics wala text dikhao
                           lockedSectionText(subController,
+                              unlocked: true,
                               upgrade: context.lang.noSnoringDataAvailableUpgradePremium,
                               empty: context.lang.noSnoringDataAvailableToday),
                           textAlign: TextAlign.center,
@@ -922,6 +879,7 @@ class ProgressScreen extends GetView<ProgressController> {
                           child: Text(
                             // Free user mate premium prompt ane premium user mate default empty text
                             lockedSectionText(subController,
+                                unlocked: true,
                                 upgrade: context.lang.noRecommendationsYetUpgradePremiumPersonalizedSleepImprovementTips,
                                 empty: context.lang.noRecommendationsAvailableToday),
                                 // ? "No recommendations yet. Upgrade to Premium for personalized sleep improvement tips ✨"
@@ -978,7 +936,7 @@ class ProgressScreen extends GetView<ProgressController> {
                   children: [
                     Text(context.lang.myDreams, style: textStyle),
                     SizedBox(height: 10 * SizeConfigs.paddingScale),
-                    subController.access.value.features.dreamBot.unlocked ? _buildMyDream(context) : _lockedDreamsCard(context),
+                    _buildMyDream(context),
                   ],
                 );
               }),
@@ -1213,7 +1171,7 @@ class ProgressScreen extends GetView<ProgressController> {
             child: Text(
               // Check if user is NOT premium
               lockedSectionText(subController,
-                  unlocked: subController.access.value.features.sleepRecorder.unlocked,
+                  unlocked: true,
                   upgrade: context.lang.unlockRecordingsPrompt,
                   empty: context.lang.noRecordingsToday),
                   // ? "No recordings found. Unlock your sleep recordings and AI analysis with Sleepable Premium ✨"
@@ -1299,17 +1257,20 @@ class ProgressScreen extends GetView<ProgressController> {
 
                 // unlock button
                 Obx(
-                  () => subController.access.value.features.sleepRecorder.unlocked
+                  () => subController.isPremium.value
                       ? const SizedBox.shrink()
                       : Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Container(
-                            height: 48,
-                            decoration: BoxDecoration(color: const Color(0xFF1E90FF), borderRadius: BorderRadius.circular(24)),
-                            child: Center(
-                              child: Text(
-                                context.lang.unlockToCheck,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
+                          child: GestureDetector(
+                            onTap: () => _openSleepRecorderPaywall(context),
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(color: const Color(0xFF1E90FF), borderRadius: BorderRadius.circular(24)),
+                              child: Center(
+                                child: Text(
+                                  context.lang.unlockToCheck,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
+                                ),
                               ),
                             ),
                           ),
@@ -1365,26 +1326,15 @@ class ProgressScreen extends GetView<ProgressController> {
               GestureDetector(
                 // onTap: () => audioUrl.isNotEmpty ? controller.handlePlayPause(audioUrl) : null,
                 onTap: () {
-                  // 🔥 Logic: Play only if Premium, otherwise show sheet
-                  if (subController.access.value.features.sleepRecorder.unlocked) {
+                  if (subController.isPremium.value) {
                     if (audioUrl.isNotEmpty) controller.handlePlayPause(audioUrl);
                   } else {
-                    // Check karein ki spin ho chuka hai ya nahi
-                    final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                    if (hasAlreadySpun && !GetPlatform.isIOS) {
-                      // ✅ Spin ho chuka hai -> Discounted Sheet
-                      // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) -> Sheet 4.
-                      showPremiumOfferSheet6(Get.context!);
-                    } else {
-                      // ❌ Spin nahi hua -> Normal Paywall
-                      showPremiumOfferSheet4(Get.context!);
-                    }
+                    _openSleepRecorderPaywall(context);
                   }
                 },
                 child: Obx(() {
                   bool isCurrentPlaying = controller.playingUrl.value == audioUrl && controller.isPlaying.value;
-                  if (!subController.access.value.features.sleepRecorder.unlocked) {
+                  if (!subController.isPremium.value) {
                     return const Icon(Icons.lock_rounded, color: Colors.white38, size: 34);
                   }
                   return Icon(isCurrentPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded, color: isCurrentPlaying ? const Color(0xFF1E90FF) : Colors.white, size: 34);
@@ -1406,13 +1356,13 @@ class ProgressScreen extends GetView<ProgressController> {
                         ),
                         // Obx ke andar logic change karein
                         Obx(() {
-                          return (subController.access.value.features.sleepRecorder.unlocked)
-                              ? const SizedBox.shrink() // ✅ Premium hone par kuch nahi dikhega
+                          return subController.isPremium.value
+                              ? const SizedBox.shrink()
                               : const Icon(
                             Icons.lock_outline_rounded,
                             color: Colors.white38,
                             size: 16,
-                          ); // ✅ Free user ko lock dikhega
+                          );
                         }),
                       ],
                     ),
@@ -1421,7 +1371,7 @@ class ProgressScreen extends GetView<ProgressController> {
                     // Seekable progress bar
                     Obx(() {
                       final bool isActive = controller.playingUrl.value == audioUrl;
-                      final bool canSeek = subController.access.value.features.sleepRecorder.unlocked && audioUrl.isNotEmpty;
+                      final bool canSeek = subController.isPremium.value && audioUrl.isNotEmpty;
                       double progress = 0.0;
                       if (isActive && controller.totalDuration.value.inMilliseconds > 0) {
                         progress = (controller.currentPosition.value.inMilliseconds /
@@ -2371,6 +2321,10 @@ String lockedSectionText(
   bool? unlocked,
 }) {
   return (unlocked ?? sub.access.value.hasAccess) ? empty : upgrade;
+}
+
+void _openSleepRecorderPaywall(BuildContext context) {
+  Get.put(HomeController()).onProTapped(context);
 }
 
 String _reportTabLabel(BuildContext context, ReportTab tab) => switch (tab) {

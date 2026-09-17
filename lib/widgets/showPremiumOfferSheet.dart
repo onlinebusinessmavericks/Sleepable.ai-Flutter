@@ -252,7 +252,7 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                         style: TextStyle(color: AppColors.starFillColor, fontSize: sp(28), fontWeight: FontWeight.bold),
                                       ),
                                       TextSpan(
-                                        text: " / ${context.lang.perWeek}",
+                                        text: "/${context.lang.perWeek}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(18)),
                                       ),
                                     ],
@@ -260,12 +260,12 @@ class _PremiumOfferSheetFullScreenState extends State<PremiumOfferSheetFullScree
                                 ),
                                 10.height,
                                 Text(
-                                  "${context.lang.total} $pricePerYear / ${context.lang.year}",
+                                  "${context.lang.total} $pricePerYear/${context.lang.year}",
                                   style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: sp(16)),
                                 ),
                                 if (strikePrice != null)
                                   Text(
-                                    "($strikePrice / ${context.lang.year})",
+                                    "($strikePrice/${context.lang.year})",
                                     style: TextStyle(color: Colors.white54, fontSize: sp(14), decoration: TextDecoration.lineThrough),
                                   ),
                               ],
@@ -470,7 +470,7 @@ class _PremiumOfferSheetFullScreen2State extends State<PremiumOfferSheetFullScre
                                       style: TextStyle(color: AppColors.starFillColor, fontSize: sp(22), fontWeight: FontWeight.w600),
                                     ),
                                     TextSpan(
-                                      text: " / WEEK",
+                                      text: "/WEEK",
                                       style: TextStyle(color: Colors.white, fontSize: sp(18), fontWeight: FontWeight.w200),
                                     ),
                                   ],
@@ -759,7 +759,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                         style: TextStyle(color: AppColors.starFillColor, fontSize: sp(24), fontWeight: FontWeight.bold),
                                       ),
                                       TextSpan(
-                                        text: " / ${context.lang.perWeek}",
+                                        text: "/${context.lang.perWeek}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(18), fontWeight: FontWeight.w200),
                                       ),
                                     ],
@@ -770,7 +770,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                   TextSpan(
                                     children: [
                                       TextSpan(
-                                        text: "${context.lang.total} $yearlyPrice / ${context.lang.year}",
+                                        text: "${context.lang.total} $yearlyPrice/${context.lang.year}",
                                         style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                       ),
                                       if (strikePrice != null) ...[
@@ -779,7 +779,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
                                           style: TextStyle(color: Colors.white, fontSize: sp(16), fontWeight: FontWeight.w500),
                                         ),
                                         TextSpan(
-                                          text: "$strikePrice / ${context.lang.year}",
+                                          text: "$strikePrice/${context.lang.year}",
                                           style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: sp(16),
@@ -838,7 +838,7 @@ class _PremiumOfferSheetFullScreen3State extends State<PremiumOfferSheetFullScre
 
                           SizedBox(height: sh(12)),
                           Text(
-                            "${context.lang.termsApply} ${context.lang.googleIdCharge} $yearlyPrice / ${context.lang.perYear} ${context.lang.cancelStore}",
+                            "${context.lang.termsApply} ${context.lang.googleIdCharge} $yearlyPrice/${context.lang.perYear} ${context.lang.cancelStore}",
                             //"Terms of service apply. Your Google ID will be charged $yearlyPrice per year. Cancel anytime via Play Store.",
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Colors.white70, fontSize: sp(10), height: 1.4),
@@ -1138,7 +1138,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                                         weeklyAvg: weeklyAvg,
                                       )
                                     : ((showOffer || !subController.yearlyHasFreeTrial)
-                                        ? "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})"
+                                        ? "${context.lang.just} $yearlyPrice/${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})"
                                         : context.lang.noPaymentDue),
                                 style: textTheme.titleMedium?.copyWith(color: Colors.white, fontSize: 16 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
                               ),
@@ -1187,7 +1187,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           // Apple Guideline 3.1.2(c): billed amount is the most
                           // conspicuous pricing element; the trial is subordinate.
                           Text(
-                            "$yearlyPrice / ${context.lang.year}",
+                            "$yearlyPrice/${context.lang.year}",
                             textAlign: TextAlign.center,
                             style: textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
@@ -1203,7 +1203,7 @@ class _PremiumOfferSheetFullScreen4State extends State<PremiumOfferSheetFullScre
                           ),
                         ] else
                           Text(
-                            "${context.lang.just} $yearlyPrice / ${context.lang.perYear} ($currencySymbol$weeklyAvg / ${context.lang.perWeek})",
+                            "${context.lang.just} $yearlyPrice/${context.lang.perYear} ($currencySymbol$weeklyAvg/${context.lang.perWeek})",
                             style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 13 * SizeConfigs.textScale),
                           ),
                         buildIosSubscriptionLegalLinks(context),
@@ -1585,7 +1585,7 @@ class _OneTimeOfferSheetState extends State<OneTimeOfferSheet> {
                         _buildPlanCard(
                           index: 1,
                           title: context.lang.yearlyPremium,
-                          price: "$currencySymbol$weeklyAvgFromYearly / ${context.lang.perWeek}",
+                          price: "$currencySymbol$weeklyAvgFromYearly/${context.lang.perWeek}",
                           subTitle: "12mo • $yearlyDisplayPrice",
                           // "SPECIAL DISCOUNT APPLIED" only for the spin offer.
                           isPopular: isSpinOffer,
@@ -1915,8 +1915,8 @@ class FreeTrialReminderScreen extends StatelessWidget {
                   // 6. PRICING SUBTEXT (Dynamic)
                   Text(
                     // "Just $yearlyPrice per year ($currencySymbol$weeklyPrice/Week)",
-                    "${context.lang.just} $yearlyPrice / ${context.lang.perYear} "
-                    "($currencySymbol$weeklyPrice / ${context.lang.perWeek})",
+                    "${context.lang.just} $yearlyPrice/${context.lang.perYear} "
+                    "($currencySymbol$weeklyPrice/${context.lang.perWeek})",
                     style: textTheme.bodyMedium?.copyWith(color: Colors.white60, fontSize: 14 * SizeConfigs.textScale),
                   ),
 
@@ -2072,9 +2072,9 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   weeklyAvg: weeklyAvgFromYearly,
                 )
               : (subController.yearlyHasFreeTrial
-                  ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})"
-                  : "$yearlyPriceText / ${lang.perYear} ($currencySymbol$weeklyAvgFromYearly / ${lang.perWeek})"))
-          : "${lang.just} $weeklyPriceText / ${lang.perWeek}";
+                  ? "${lang.threeDaysFreeThen} $yearlyPriceText ($currencySymbol$weeklyAvgFromYearly/${lang.perWeek})"
+                  : "$yearlyPriceText/${lang.perYear} ($currencySymbol$weeklyAvgFromYearly/${lang.perWeek})"))
+          : "${lang.just} $weeklyPriceText/${lang.perWeek}";
       return PopScope(
         canPop: Platform.isIOS,
         onPopInvokedWithResult: (didPop, result) async {
@@ -2124,7 +2124,15 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                   Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
                   // CENTER CONTENT (Timeline vs Features)
-                  AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: (isYearly && !Platform.isIOS) ? _buildTimeline(textTheme) : _buildFeaturesList(textTheme)),
+                  // The 3-day timeline is a trial promise. After Play has already
+                  // granted it, keep the paid feature list so we do not offer
+                  // another trial the store will refuse.
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: (isYearly && !Platform.isIOS && subController.yearlyHasFreeTrial)
+                        ? _buildTimeline(textTheme)
+                        : _buildFeaturesList(textTheme),
+                  ),
 
                   Platform.isIOS ? SizedBox(height: sh(28)) : const Spacer(flex: 1),
 
@@ -2237,7 +2245,7 @@ class _UnifiedPremiumSheetState extends State<UnifiedPremiumSheet> {
                     // conspicuous element - the introductory price on iOS, with the
                     // renewal price stated plainly just below.
                     Text(
-                      isYearly ? "${iosYearlyBilledNow(yearlyPackage)} / ${lang.year}" : "$weeklyPriceText / ${lang.perWeek}",
+                      isYearly ? "${iosYearlyBilledNow(yearlyPackage)}/${lang.year}" : "$weeklyPriceText/${lang.perWeek}",
                       textAlign: TextAlign.center,
                       style: textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
@@ -2542,9 +2550,9 @@ String iosYearlyPriceCopy(Package? yearly, {required String yearWord}) {
   if (yearly == null) return "";
   final product = yearly.storeProduct;
   final intro = product.introductoryPrice;
-  if (intro == null) return "${SubscriptionController.compactPriceString(product.priceString)} / $yearWord";
+  if (intro == null) return "${SubscriptionController.compactPriceString(product.priceString)}/$yearWord";
   return "${SubscriptionController.compactPriceString(intro.priceString)} for the first $yearWord, "
-      "then ${SubscriptionController.compactPriceString(product.priceString)} / $yearWord. Cancel anytime.";
+      "then ${SubscriptionController.compactPriceString(product.priceString)}/$yearWord. Cancel anytime.";
 }
 
 /// Amount actually billed today for the iOS yearly plan - the introductory
