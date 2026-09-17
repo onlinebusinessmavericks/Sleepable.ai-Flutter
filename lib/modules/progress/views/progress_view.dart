@@ -1250,7 +1250,7 @@ class ProgressScreen extends GetView<ProgressController> {
 
                 // 🔥 Updated to only map recordings that have time
                 ...validRecordings.map((item) {
-                  return recordingTile(item);
+                  return recordingTile(context, item);
                 }).toList(),
 
                 const SizedBox(height: 10),
@@ -1286,7 +1286,7 @@ class ProgressScreen extends GetView<ProgressController> {
     );
   }
 
-  Widget recordingTile(AudioItem item) {
+  Widget recordingTile(BuildContext context, AudioItem item) {
     final String audioUrl = item.audioFile ?? "";
     final controller = Get.find<ProgressController>();
     final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
