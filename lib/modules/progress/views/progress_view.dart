@@ -1200,7 +1200,6 @@ class ProgressScreen extends GetView<ProgressController> {
   Widget sleepRecorderTile(BuildContext context, RecordingCategory category, VoidCallback onTapHeader) {
     // 🔥 Define the list of recordings that actually have time
     final validRecordings = category.recordings.where((item) => (item.durationSeconds ?? 0) > 0).toList();
-    final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1254,29 +1253,6 @@ class ProgressScreen extends GetView<ProgressController> {
                 }).toList(),
 
                 const SizedBox(height: 10),
-
-                // unlock button
-                Obx(
-                  () => subController.isPremium.value
-                      ? const SizedBox.shrink()
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: GestureDetector(
-                            onTap: () => _openSleepRecorderPaywall(context),
-                            child: Container(
-                              height: 48,
-                              decoration: BoxDecoration(color: const Color(0xFF1E90FF), borderRadius: BorderRadius.circular(24)),
-                              child: Center(
-                                child: Text(
-                                  context.lang.unlockToCheck,
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 15 * SizeConfigs.textScale, fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 14),
               ],
             ),
             secondChild: const SizedBox(),
@@ -1354,16 +1330,6 @@ class ProgressScreen extends GetView<ProgressController> {
                           controller.formatDuration(item.durationSeconds ?? 0),
                           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                         ),
-                        // Obx ke andar logic change karein
-                        Obx(() {
-                          return subController.isPremium.value
-                              ? const SizedBox.shrink()
-                              : const Icon(
-                            Icons.lock_outline_rounded,
-                            color: Colors.white38,
-                            size: 16,
-                          );
-                        }),
                       ],
                     ),
                     const SizedBox(height: 6),
