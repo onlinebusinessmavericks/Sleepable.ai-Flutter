@@ -12,6 +12,7 @@ import '../../sleep_tracker_screen/controllers/sleep_tracker_screen_controller.d
 import '../../sleep_tracker_screen/controllers/tracker_exit_guard.dart';
 import '../../../widgets/SubscriptionController.dart';
 import '../../../widgets/showPremiumOfferSheet.dart';
+import '../../../widgets/ai_consent_dialog.dart';
 import 'package:sleepable_ai/widgets/app_snackbar.dart';
 
 class HeartBpmMeasurementController extends GetxController {
@@ -60,6 +61,11 @@ class HeartBpmMeasurementController extends GetxController {
       toast(Get.context?.lang.trialNightLimitToast ?? "Trial includes 3 nights of tracking. Buy Premium to continue.");
       if (Get.context != null) showPremiumOfferSheet4(Get.context!);
       return;
+    }
+
+    final ctx = Get.context;
+    if (ctx != null && !hasAiConsent() && !hasAiConsentBeenAsked()) {
+      await maybeShowAiConsentOnAppOpen(ctx);
     }
 
     final AlarmController alarmController = Get.find<AlarmController>();

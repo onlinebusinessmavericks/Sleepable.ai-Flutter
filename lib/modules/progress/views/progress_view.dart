@@ -134,16 +134,12 @@ class ProgressScreen extends GetView<ProgressController> {
               SizedBox(height: 20 * SizeConfigs.paddingScale),
 
 
-              // Report sections. A trial Week/Month tab, or no tracked night yet,
-              // gets a message instead of empty scores; a failed load an inline error.
               Obx(() {
                 final notice = controller.reportNotice.value;
                 if (notice.isNotEmpty) return _reportMessage(notice);
-                final error = controller.reportError.value;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (error.isNotEmpty) _reportMessage(error, isError: true),
               Obx(() {
                 final isToday = controller.selectedTab.value == ReportTab.today;
 
@@ -929,17 +925,15 @@ class ProgressScreen extends GetView<ProgressController> {
               SizedBox(height: 20 * SizeConfigs.paddingScale),
               sleepRecorderSection(context),
               SizedBox(height: 20 * SizeConfigs.paddingScale),
-              Obx(() {
-                // My Dreams stays visible for free/trial users - shown locked, not hidden.
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(context.lang.myDreams, style: textStyle),
-                    SizedBox(height: 10 * SizeConfigs.paddingScale),
-                    _buildMyDream(context),
-                  ],
-                );
-              }),
+              // My Dreams stays visible for free/trial users - shown locked, not hidden.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.lang.myDreams, style: textStyle),
+                  SizedBox(height: 10 * SizeConfigs.paddingScale),
+                  _buildMyDream(context),
+                ],
+              ),
               // SizedBox(height: 15 * SizeConfigs.paddingScale),
 
               // -------------------- Export & Share --------------------

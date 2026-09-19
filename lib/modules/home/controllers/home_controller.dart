@@ -19,7 +19,6 @@ import '../../../widgets/rating_dialog.dart';
 import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../../widgets/timezone.dart';
 import '../../login/model/google_social_login_model.dart';
-import '../../profile/model/UserSettings.dart';
 import '../../sleep_info/model/sleeppedia_item.dart';
 import '../../sleep_info/widget/sleeppedia_data.dart';
 import '../../sleep_sound/model/sound_sub_category_model.dart';
@@ -695,73 +694,31 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> updateReminderApi(bool newValue) async {
-    // 🔥 1. Instant UI Update (Optimistic UI)
-    // Isse user ko bina wait kiye turant feedback milega
     isEnabled.value = newValue;
 
     try {
-      // Note: Humne isSavingSettings ko skip kar diya hai taaki loader na dikhe
+      // Only the reminder flag — a full settings rewrite sent melody_id: 0
+      // for new users and the backend rejected the PUT as an invalid Sound PK.
+      final deviceTimezone = await getCurrentTimezone();
+      final updateResponse = await SettingsApis.updateUserSettingsPayload({
+        "sleep_reminders": newValue,
+        "timezone": deviceTimezone,
+      });
 
-      // 2. Fetch current settings for latest payload info
-      final response = await SettingsApis.fetchUserSettings();
-
-      if (response.success && response.data != null) {
-        final current = response.data!;
-        String deviceTimezone = await getCurrentTimezone();
-
-        UserSettings requestBody = UserSettings(
-          alarmEnabled: current.alarmEnabled,
-          alarmTime: _ensureApiFormat(current.alarmTime),
-          meridiem: current.meridiem,
-          repeatType: current.repeatType,
-          repeatDays: current.repeatDays,
-          melodyId: current.melodyId,
-          snoozeMinutes: current.snoozeMinutes,
-          fadeIn: current.fadeIn,
-          batteryWarning: current.batteryWorning,
-          heartRateTracking: current.heartRateTracking,
-          notifications: current.notifications,
-          timezone: deviceTimezone,
-
-          // Hum wahi value bhej rahe hain jo user ne toggle ki hai
-          sleepReminders: newValue,
-
-          // Existing values maintain rakhein taaki home screen ka time jump na kare
-          bedtime: _ensureApiFormat(current.bedtime),
-          remindAt: _ensureApiFormat(current.remindAt),
-          wakeUpTime: _ensureApiFormat(current.wakeUpTime),
+      if (updateResponse.success) {
+        fetchHomePageData();
+      } else {
+        isEnabled.value = !newValue;
+        debugPrint("❌ Reminder sync failed: ${updateResponse.message}");
+        appSnackbar(
+          Get.context?.lang.error ?? "Error",
+          Get.context?.lang.syncFailedTryAgain ?? "Sync failed, please try again.",
         );
-
-        // 3. PUT call in background
-        final updateResponse = await SettingsApis.updateUserSettings(requestBody);
-
-        if (updateResponse.success) {
-          // Chupchap refresh karein taaki cache updated rahe
-          // false pass karein agar fetchHomePageData mein koi bada loader ho
-          fetchHomePageData();
-        } else {
-          // Agar API fail ho gayi toh wapas purani state pe le jao (Rollback)
-          isEnabled.value = !newValue;
-          // appSnackbar("Error", "Sync failed, please try again.");
-          appSnackbar(
-              Get.context?.lang.error ?? "Error",
-              Get.context?.lang.syncFailedTryAgain ?? "Sync failed, please try again."
-          );
-        }
       }
     } catch (e) {
       debugPrint("❌ Silent update error: $e");
-      // Network error pe wapas purani state
       isEnabled.value = !newValue;
     }
-  }
-// Helper utility to avoid "Time has wrong format" errors
-  String _ensureApiFormat(String? timeStr, {String fallback = "00:00:00"}) {
-    if (timeStr == null || timeStr.isEmpty || !timeStr.contains(':')) return fallback;
-    List<String> parts = timeStr.split(':');
-    String h = parts[0].padLeft(2, '0');
-    String m = parts.length > 1 ? parts[1].padLeft(2, '0') : "00";
-    return "$h:$m:00";
   }
 
 // Helper function to format TimeOfDay for API
@@ -806,12 +763,12 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
 
   void changeIndex(int index) => selectedIndex.value = index;
 
-  /// Profile / Progress PRO. Trial users already started the plan, so send
-  /// them to My Subscription instead of the "start free trial" paywall.
+  /// Profile / Progress PRO. Same destinations as a locked catalog tap:
+  /// paywall only when the backend allows it; otherwise My Subscription.
   void onProTapped(BuildContext context) {
     final sub = Get.find<SubscriptionController>();
     if (!sub.access.value.showPaywall) {
-      if (sub.access.value.isTrial) Get.toNamed(Routes.mySubscription);
+      Get.toNamed(Routes.mySubscription);
       return;
     }
     final bool hasAlreadySpun = sub.spinInfo.value?.alreadySpun ?? false;
@@ -825,7 +782,7 @@ class HomeController extends GetxController with GetTickerProviderStateMixin {
   void showRotatingPremiumSheet(BuildContext context) {
     final subController = Get.find<SubscriptionController>();
     if (!subController.access.value.showPaywall) {
-      if (subController.access.value.isTrial) Get.toNamed(Routes.mySubscription);
+      Get.toNamed(Routes.mySubscription);
       return;
     }
 

@@ -34,8 +34,11 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
   void initState() {
     super.initState();
     // Both sides can be stale by the time someone opens this screen.
+    // Store products must be loaded too: Price is the localized store string,
+    // not the backend's USD list price.
     sub.refreshEntitlementDetails();
     sub.getBackendSubscriptionStatus();
+    sub.fetchStoreProducts();
   }
 
   @override
@@ -76,11 +79,17 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
         final ent = sub.activeEntitlement.value;
         final isTrial = sub.isTrial.value;
         final isPremium = sub.isPremium.value;
+        // Price is store-localized; rebuild when offerings or plan key arrive.
+        sub.packages.length;
+        sub.spinYearlyPackage.value;
+        sub.spinWeeklyPackage.value;
+        sub.backendPlan.value;
 
         return RefreshIndicator(
           onRefresh: () async {
             await sub.refreshEntitlementDetails();
             await sub.getBackendSubscriptionStatus();
+            await sub.fetchStoreProducts();
           },
           child: ListView(
             padding: EdgeInsets.symmetric(horizontal: 20 * SizeConfigs.paddingScale, vertical: 16),
@@ -190,10 +199,10 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
 
     if (ent == null) {
       // No store purchase to read - Premium granted outside the store, or a
-      // record that has not synced yet. The backend describes the plan, so show
-      // that rather than an empty screen with one apologetic note.
+      // record that has not synced yet. The backend describes the plan name
+      // and dates; the amount still comes from the store, same as the paywall.
       final name = sub.backendPlanName.value;
-      final price = sub.backendPlanPrice.value;
+      final price = sub.storeDisplayPrice();
       final started = _date(sub.backendStartsAt.value);
       final ends = _date(sub.backendExpiresAt.value);
 
@@ -210,8 +219,10 @@ class _MySubscriptionViewState extends State<MySubscriptionView> {
     final started = _date(ent.latestPurchaseDate);
     final ends = _date(ent.expirationDate);
     final cancelled = ent.unsubscribeDetectedAt != null;
+    final price = sub.storeDisplayPrice(entitlement: ent);
 
     rows.add(_row(_copy("plan"), _planName(ent)));
+    if (price.isNotEmpty) rows.add(_row(_copy("price"), price));
     if (started != null) rows.add(_row(_copy("started"), started));
     if (ends != null) {
       final bool trialCancelled = isTrial && (cancelled || !ent.willRenew);

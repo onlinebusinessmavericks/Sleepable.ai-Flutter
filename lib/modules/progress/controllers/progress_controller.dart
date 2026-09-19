@@ -223,17 +223,20 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     int? trackerId;
 
     final type = tab.dataType;
+    // Date belongs on Today (one night). Sending it on Week/Month makes the
+    // snoring and recorder APIs return that single night instead of the range.
+    final nightDate = tab == ReportTab.today ? day : null;
     await Future.wait(<Future>[
       fetchSleepChart(type),
       fetchSleepConsistency(type, date: day),
-      getSnoringData(type, date: day),
+      getSnoringData(type, date: nightDate),
       fetchKeyInsights(type, date: day),
       fetchSleepQuality(type, date: day),
       fetchAIInsights(type, date: day, trackerId: trackerId),
       fetchRecommendations(type, trackerId: trackerId),
       fetchAchievementBadges(type, date: day),
       fetchSleepStages(type, date: day),
-      fetchSleepAudio(type, date: day),
+      fetchSleepAudio(type, date: nightDate),
       if (includeDreams) fetchMyDreams(),
     ]);
   }
@@ -332,17 +335,21 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
     try {
       isLoading.value = true;
       final response = await ProgressApis.getSnoringIntensity(dataType: type, date: date);
+      final points = <SnorePoint>[];
       if (response.success == true && response.data?.breakdown != null) {
-        snoreChartData.value = response.data!.breakdown!.map((item) {
+        points.addAll(response.data!.breakdown!.map((item) {
           return SnorePoint(
             time: item.label ?? "--",
             intensity: (item.avgIntensityPct ?? 0).round(),
             duration: item.totalSeconds ?? 0,
             frequency: 0,
           );
-        }).toList();
+        }));
       }
+      final hasSignal = points.any((p) => p.intensity > 0 || p.duration > 0);
+      snoreChartData.value = hasSignal ? points : <SnorePoint>[];
     } catch (e) {
+      snoreChartData.clear();
       _reportFailure("Snoring", e);
     } finally {
       isLoading.value = false;
@@ -532,8 +539,11 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
         for (var cat in categories) {
           debugPrint("Cat: ${cat.title} | recordings: ${cat.recordings.length}");
         }
+      } else {
+        categories.clear();
       }
     } catch (e) {
+      categories.clear();
       _reportFailure("Sleep recordings", e);
     } finally {
       isLoadingAudio.value = false;
@@ -615,8 +625,10 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   String _getEmojiForType(String type) {
     switch (type.toLowerCase()) {
       case 'snoring': return "😴";
-      case 'animal sounds': return "🐶";
+      case 'animal sounds':
+      case 'animal_sounds': return "🐶";
       case 'bruxism': return "🦷";
+      case 'other': return "🔊";
       default: return "🎶";
     }
   }
@@ -624,7 +636,9 @@ class ProgressController extends GetxController with GetTickerProviderStateMixin
   Color _getColorForType(String type) {
     switch (type.toLowerCase()) {
       case 'snoring': return Colors.purpleAccent;
-      case 'animal sounds': return Colors.orangeAccent;
+      case 'animal sounds':
+      case 'animal_sounds': return Colors.orangeAccent;
+      case 'other': return Colors.white54;
       default: return Colors.blueAccent;
     }
   }

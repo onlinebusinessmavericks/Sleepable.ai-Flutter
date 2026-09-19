@@ -43,7 +43,7 @@ android {
         applicationId = "com.sleepableai.sleepableai"
         minSdk = 24
         targetSdk = 36
-        versionCode = 29
+        versionCode = 30
         versionName = "1.0.1"
         multiDexEnabled = true
 
@@ -72,7 +72,7 @@ android {
             isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
@@ -117,8 +117,8 @@ configurations.all {
     resolutionStrategy {
         eachDependency {
             if (requested.group == "org.jetbrains.kotlin") {
-                useVersion("2.3.10")
-                because("App module must read Firebase Auth / audio_session Kotlin 2.3 metadata")
+                useVersion("2.4.0")
+                because("App module must read Firebase Auth / audio_session Kotlin metadata")
             }
         }
         force("androidx.browser:browser:1.5.0")

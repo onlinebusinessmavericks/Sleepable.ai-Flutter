@@ -20,9 +20,11 @@ class SnoringWrapper {
 
   SnoringWrapper.fromJson(Map<String, dynamic> json) {
     dataType = json['data_type'];
-    if (json['breakdown'] != null) {
+    // Today sends `hourly_breakdown`; Week/Month send `breakdown`.
+    final raw = json['breakdown'] ?? json['hourly_breakdown'];
+    if (raw != null) {
       breakdown = <SnoringBreakdown>[];
-      json['breakdown'].forEach((v) {
+      raw.forEach((v) {
         breakdown!.add(SnoringBreakdown.fromJson(v));
       });
     }
@@ -44,6 +46,10 @@ class SnoringBreakdown {
       label = json['month'].toString().substring(0, 3);
     } else if (json.containsKey('year') && json['year'] != null) {
       label = json['year'].toString();
+    } else if (json['interval'] != null) {
+      // "11:00 PM - 12:00 AM" → "11 PM" so hourly labels fit the chart.
+      final start = json['interval'].toString().split(' - ').first.trim();
+      label = start.replaceFirst(':00', '');
     }
 
     // 🔥 These match the names used in the Controller above

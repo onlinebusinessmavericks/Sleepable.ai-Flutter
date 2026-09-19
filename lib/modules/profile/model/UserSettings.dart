@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class UserSettings {
   bool? alarmEnabled;
   String? alarmTime;
@@ -38,13 +36,12 @@ class UserSettings {
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
       "alarm_enabled": alarmEnabled,
       "alarm_time": alarmTime,
       "meridiem": meridiem,
       "repeat_type": repeatType,
       "repeat_days": repeatDays,
-      "melody_id": melodyId,
       "snooze_minutes": snoozeMinutes,
       "fade_in": fadeIn,
       "bedtime": bedtime,
@@ -56,5 +53,11 @@ class UserSettings {
       "notifications": notifications,
       'timezone': timezone,
     };
+    // GET maps a null melody to 0. 0 is not a valid Sound PK, so omit it
+    // instead of sending melody_id: 0 (backend returns Invalid pk).
+    if (melodyId != null && melodyId! > 0) {
+      map["melody_id"] = melodyId;
+    }
+    return map;
   }
 }

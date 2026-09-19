@@ -13,18 +13,22 @@ allprojects {
     }
 }
 
-rootProject.buildDir = file("../build")
+// Resolve the project `build/` symlink (used for iOS codesign on Desktop)
+// so Gradle 8.14+ can hash task outputs such as R.jar.
+val flutterBuildDir = file("../build")
+rootProject.buildDir =
+    if (flutterBuildDir.exists()) file(flutterBuildDir.canonicalPath) else flutterBuildDir
 
 subprojects {
     buildDir = file("${rootProject.buildDir}/${name}")
-    extra["kotlin_version"] = "2.3.10"
+    extra["kotlin_version"] = "2.4.0"
 
     buildscript {
-        extra["kotlin_version"] = "2.3.10"
+        extra["kotlin_version"] = "2.4.0"
         configurations.classpath {
             resolutionStrategy.eachDependency {
                 if (requested.group == "org.jetbrains.kotlin") {
-                    useVersion("2.3.10")
+                    useVersion("2.4.0")
                     because("Align Kotlin Gradle plugin across Flutter plugins")
                 }
             }
@@ -49,6 +53,7 @@ subprojects {
         android?.apply {
             // NDK 28 is very new. Agar build fail ho toh 27.0.12077973 use karein.
             ndkVersion = "28.2.13676358"
+            compileSdkVersion(36)
 
             defaultConfig {
                 // Ensure minSdk is consistent

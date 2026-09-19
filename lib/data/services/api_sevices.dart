@@ -399,19 +399,21 @@ class SettingsApis {
   //   }
   // }
   static Future<CommonResponse> updateUserSettings(UserSettings settings) async {
+    return updateUserSettingsPayload(settings.toJson());
+  }
+
+  /// Partial PUT — backend SettingsView already uses `partial=True`.
+  static Future<CommonResponse> updateUserSettingsPayload(Map<String, dynamic> payload) async {
     final uri = Uri.parse(BASE_URL + APIEndPoints.userSettings);
     final token = getStringAsync(AppSharedPreferenceKeys.apiToken);
 
-    // 1. Prepare the request body
-    final requestBody = jsonEncode(settings.toJson());
+    final requestBody = jsonEncode(payload);
 
-    // 2. Print Request Data for debugging
     print("🚀 ========== SENDING API REQUEST ==========");
     print("URL: $uri");
     print("Method: PUT");
-    // Show only the last 5 characters of the token safely
     print("Headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ...${token.length > 5 ? token.substring(token.length - 5) : token}'}");
-    print("Payload: $requestBody"); // <--- This shows the exact JSON going to the server
+    print("Payload: $requestBody");
     print("============================================");
 
     try {
@@ -424,14 +426,25 @@ class SettingsApis {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return CommonResponse.fromJson(jsonDecode(response.body));
-      } else {
-        print("❌ API ERROR SETTINGS: ${response.body}");
-        return CommonResponse(success: false, message: "Server error: ${response.statusCode}");
       }
+
+      print("❌ API ERROR SETTINGS: ${response.body}");
+      return CommonResponse(success: false, message: _settingsErrorMessage(response.body, response.statusCode));
     } catch (e) {
       print("❌ NETWORK/PARSING ERROR: $e");
       return CommonResponse(success: false, message: e.toString());
     }
+  }
+
+  static String _settingsErrorMessage(String body, int statusCode) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['message'] != null) {
+        final message = decoded['message'].toString().trim();
+        if (message.isNotEmpty) return message;
+      }
+    } catch (_) {}
+    return "Server error: $statusCode";
   }
   static Future<bool> updateUserLanguage(String languageCode) async {
     try {

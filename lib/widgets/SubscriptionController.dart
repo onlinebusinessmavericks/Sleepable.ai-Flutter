@@ -39,7 +39,10 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
   /// Plan description from the backend, used when the store has no record of
   /// the purchase - Premium granted by support, for instance.
   RxString backendPlanName = ''.obs;
-  RxString backendPlanPrice = ''.obs;
+  /// Backend plan key: weekly / yearly / yearly_discounted / admin_granted.
+  /// Amounts are never taken from the backend - those strings are USD list
+  /// prices and would show $ on an Indian store account.
+  RxString backendPlan = ''.obs;
   RxString backendStartsAt = ''.obs;
   RxString backendExpiresAt = ''.obs;
 
@@ -407,7 +410,7 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     await removeKey(ACCESS_CACHE_KEY);
     spinInfo.value = null;
     backendPlanName.value = '';
-    backendPlanPrice.value = '';
+    backendPlan.value = '';
     backendStartsAt.value = '';
     backendExpiresAt.value = '';
     isInitialSyncDone.value = true;
@@ -500,6 +503,54 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     }
     return spinYearlyPackage.value ??
         packages.firstWhereOrNull((p) => p.packageType == PackageType.annual);
+  }
+
+  Package? get _weeklyPackage =>
+      spinWeeklyPackage.value ??
+      packages.firstWhereOrNull((p) => p.packageType == PackageType.weekly);
+
+  /// Localized store price for the plan this user holds — same source as the
+  /// paywall. Empty when products have not loaded, or when there is no store
+  /// plan (admin-granted Premium). Never the backend USD list price.
+  String storeDisplayPrice({EntitlementInfo? entitlement}) {
+    switch (_heldPlanKey(entitlement)) {
+      case 'weekly':
+        return compactPriceString(_weeklyPackage?.storeProduct.priceString);
+      case 'yearly_discounted':
+        return yearlyFirstYearPrice(discounted: true);
+      case 'yearly':
+        return yearlyFirstYearPrice(discounted: false);
+      default:
+        return '';
+    }
+  }
+
+  /// Which store plan the Price row should read. Backend `plan` first, then
+  /// the entitlement product id, then the backend display name.
+  String _heldPlanKey(EntitlementInfo? entitlement) {
+    final fromBackend = backendPlan.value.trim().toLowerCase();
+    if (fromBackend == 'weekly' ||
+        fromBackend == 'yearly' ||
+        fromBackend == 'yearly_discounted') {
+      return fromBackend;
+    }
+
+    if (entitlement != null) {
+      final id =
+          '${entitlement.productIdentifier} ${entitlement.productPlanIdentifier ?? ''}'
+              .toLowerCase();
+      if (id.contains('week')) return 'weekly';
+      if (id.contains('spin') || id.contains('discount')) return 'yearly_discounted';
+      if (id.contains('year') || id.contains('annual')) return 'yearly';
+    }
+
+    final name = backendPlanName.value.toLowerCase();
+    if (name.contains('week')) return 'weekly';
+    if (name.contains('special') || name.contains('discount')) {
+      return 'yearly_discounted';
+    }
+    if (name.contains('year') || name.contains('annual')) return 'yearly';
+    return '';
   }
 
   Future<void> refreshTrialEligibility() async {
@@ -1144,8 +1195,9 @@ class SubscriptionController extends GetxController with WidgetsBindingObserver 
     if (data.containsKey('plan_name')) {
       backendPlanName.value = (data['plan_name'] ?? '').toString();
     }
-    if (data.containsKey('price')) {
-      backendPlanPrice.value = compactPriceString((data['price'] ?? '').toString());
+    if (data.containsKey('plan')) {
+      final plan = data['plan'];
+      backendPlan.value = plan == null ? '' : plan.toString();
     }
     if (data.containsKey('starts_at')) {
       backendStartsAt.value = (data['starts_at'] ?? '').toString();

@@ -38,6 +38,8 @@ class _SleepSoundViewState extends State<SleepSoundView> {
   Worker? _categoryWorker;
   Worker? _subCategoryWorker;
   Worker? _musicNavWorker;
+  Worker? _tabJumpWorker;
+  int _jumpRetryToken = 0;
 
   @override
   void initState() {
@@ -60,28 +62,31 @@ class _SleepSoundViewState extends State<SleepSoundView> {
     _subCategoryWorker = ever(controller.selectedSubCategorySlug, (_) {
       if (mounted) _centerActiveChip();
     });
-    // Jump to Music when "Add Music" is pressed from the mix sheet
-    _musicNavWorker = ever(controller.musicNavRequest, (_) async {
+    _tabJumpWorker = ever(controller.tabJumpRequest, (_) {
       if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        await controller.fetchSubCategories("music");
-        final filters = controller.getCurrentFilters("music");
-        final firstFilterSlug = filters.isNotEmpty ? filters.first.slug : SleepSoundController.allSubSlug;
-        if (firstFilterSlug != SleepSoundController.allSubSlug) {
-          controller.selectedSubCategorySlug.value = firstFilterSlug;
-        }
-        jumpToTab("music", filter: firstFilterSlug);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _jumpToSelectedTab();
       });
     });
-    // ever(controller.selectedCategorySlug, (_) => _centerActiveTab());
+    // Jump to Music when "Add Music" is pressed from the mix sheet
+    _musicNavWorker = ever(controller.musicNavRequest, (_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _jumpToSelectedTab();
+      });
+    });
     final args = Get.arguments as Map<String, dynamic>?;
 
     isFromMixBar = widget.fromMixBar; // ✅ ALWAYS reliable
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (args?["jumpTab"] != null) {
-        _waitAndJump(args!["jumpTab"], args["jumpFilter"]);
+        controller.setJumpArguments(
+          jumpTab: args!["jumpTab"],
+          jumpFilter: args["jumpFilter"] ?? SleepSoundController.allSubSlug,
+        );
+      } else {
+        _jumpToSelectedTab();
       }
     });
   }
@@ -91,6 +96,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
     _categoryWorker?.dispose();
     _subCategoryWorker?.dispose();
     _musicNavWorker?.dispose();
+    _tabJumpWorker?.dispose();
     pageController.dispose();
     chipScrollController.dispose();
     tabScrollController.dispose();
@@ -106,29 +112,59 @@ class _SleepSoundViewState extends State<SleepSoundView> {
       return matchesTab && page["subCategorySlug"] == filter;
     });
 
-    // if (index != -1) {
-    //   pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-    // }
     if (index != -1 && pageController.hasClients) {
-      pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      pageController.jumpToPage(index);
+      controller.currentPageIndex.value = index;
     }
   }
 
-  void _waitAndJump(String tab, String? filter) {
-    if (!mounted) return;
-    if (controller.combinedPages.isEmpty || !pageController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) _waitAndJump(tab, filter);
-      });
+  void _jumpToSelectedTab() {
+    _jumpRetryToken++;
+    _jumpToSelectedTabAttempt(_jumpRetryToken, 0);
+  }
 
+  void _jumpToSelectedTabAttempt(int token, int attempt) {
+    if (!mounted || token != _jumpRetryToken) return;
+
+    final tab = controller.selectedCategorySlug.value;
+    var filter = controller.selectedSubCategorySlug.value;
+    if (tab.isEmpty) return;
+
+    if (controller.combinedPages.isEmpty || !pageController.hasClients) {
+      if (attempt >= 40) return;
+      Future.delayed(const Duration(milliseconds: 50), () {
+        _jumpToSelectedTabAttempt(token, attempt + 1);
+      });
       return;
     }
 
-    jumpToTab(tab, filter: filter); // ✅ FIXED
+    if (filter.isEmpty) {
+      final filters = controller.getCurrentFilters(tab);
+      if (filters.isEmpty) {
+        if (attempt >= 40) return;
+        Future.delayed(const Duration(milliseconds: 50), () {
+          _jumpToSelectedTabAttempt(token, attempt + 1);
+        });
+        return;
+      }
+      filter = filters.first.slug;
+      controller.selectedSubCategorySlug.value = filter;
+    }
+
+    final index = controller.globalIndexFor(tab, filter);
+    if (index < 0) {
+      if (attempt >= 40) return;
+      Future.delayed(const Duration(milliseconds: 50), () {
+        _jumpToSelectedTabAttempt(token, attempt + 1);
+      });
+      return;
+    }
+
+    final current = pageController.page?.round() ?? controller.currentPageIndex.value;
+    if (current != index) {
+      pageController.jumpToPage(index);
+    }
+    controller.currentPageIndex.value = index;
   }
 
   void _centerActiveTab() {
@@ -301,14 +337,13 @@ class _SleepSoundViewState extends State<SleepSoundView> {
           controller.selectedSubCategorySlug.value
       );
 
-      // Check if THIS specific tab is loading
-      final isTabLoading = controller.loadingKeys.contains(currentKey);
       // Check if we have data to show
       final hasData = controller.soundsBySubCategory[currentKey]?.isNotEmpty ?? false;
       final isScreenLoading =
           controller.isLoadingCategories.value ||
           controller.isLoadingSubCategories.value ||
           controller.isMixesLoading.value ||
+          controller.loadingKeys.contains(currentKey) ||
           controller.loadingKeys.contains(controller.soundKey(currentCategory, currentSub));
        print("isFromMixBar ------$isFromMixBar");
       return Stack(
@@ -344,31 +379,10 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                             final isSelected = selected == tab.slug;
 
                             return GestureDetector(
-                              onTap: () async {
-                                final tabSlug = tab.slug;
-
-                                if (controller.selectedCategorySlug.value == tabSlug) return;
-
-                                await controller.fetchSubCategories(tabSlug);
-                                controller.rebuildSoundPages();
-
-                                final filters = controller.getCurrentFilters(tabSlug);
-                                if (filters.isEmpty) return;
-
-                                final firstFilterSlug = filters.first.slug;
-                                final page = controller.globalIndexFor(tabSlug, firstFilterSlug);
-                                if (page < 0 || !pageController.hasClients) return;
-
-                                // Set header + page together so Story chips never
-                                // sit over a White Noise grid.
-                                controller.selectedCategorySlug.value = tabSlug;
-                                controller.selectedSubCategorySlug.value = firstFilterSlug;
-                                pageController.jumpToPage(page);
-                                await controller.fetchSounds(tabSlug, firstFilterSlug);
-                              },
+                              onTap: () => controller.selectTopCategory(tab.slug),
 
                               child: Container(
-                                key: tabKeys[tab.id],
+                                key: tabKeys.putIfAbsent(tab.slug, () => GlobalKey()),
                                 margin: const EdgeInsets.only(right: 18),
                                 child: Column(
                                   children: [
@@ -431,11 +445,8 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                   //   pageController.animateToPage(page, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
                                   // }
                                   if (page >= 0 && pageController.hasClients) {
-                                    pageController.animateToPage(
-                                      page,
-                                      duration: const Duration(milliseconds: 200),
-                                      curve: Curves.easeInOut,
-                                    );
+                                    pageController.jumpToPage(page);
+                                    controller.currentPageIndex.value = page;
                                   }
 
                                   // ✅ Also fetch sounds immediately
@@ -628,10 +639,17 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                             final subController = Get.isRegistered<SubscriptionController>() ? Get.find<SubscriptionController>() : Get.put(SubscriptionController());
 
                             final sounds = controller.soundsFor(categorySlug, subCategorySlug);
-                            if (sounds.isEmpty && !isScreenLoading)
+                            if (sounds.isEmpty) {
+                              final waitingForSounds = isScreenLoading ||
+                                  controller.loadingKeys.contains(key) ||
+                                  !hasRequested;
+                              if (waitingForSounds) {
+                                return const SizedBox.shrink();
+                              }
                               return Center(
                                 child: Text(context.lang.noSoundsFound, style: TextStyle(color: Colors.white54)),
                               );
+                            }
                             // // ✅ Check if current tab is Music
                             final isMusicTab = categorySlug.toLowerCase() == "music";
                             final isStoryTab = categorySlug.toLowerCase() == "story";
@@ -657,15 +675,8 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                     return GestureDetector(
 
                                       onTap: () {
-                                        final controller1 = Get.find<HomeController>();
                                         if (controller.isTrackLockedForUser(s)) {
-                                          final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-                                          if (hasAlreadySpun) {
-                                            // showPremiumOfferSheet6(context);
-                                            controller1.showRotatingPremiumSheet(context);
-                                          } else {
-                                            showPremiumOfferSheet4(context);
-                                          }
+                                          controller.presentPremiumPaywall();
                                           return;
                                         }
 
@@ -833,6 +844,10 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                     final isActuallyPlaying = isMusicPlaying && !controller.isPaused.value;
                                     return GestureDetector(
                                       onTap: () async {
+                                        if (controller.isTrackLockedForUser(s)) {
+                                          controller.presentPremiumPaywall();
+                                          return;
+                                        }
                                         final isMusic = s.categoryName.toLowerCase() == "music";
                                         final isAlreadyPlaying = controller.playingMusic.any((m) => m.id == s.id);
 
@@ -966,17 +981,7 @@ class _SleepSoundViewState extends State<SleepSoundView> {
                                         // print("isPremium----$isPremium");
                                         print("subController.isPremium.value----${subController.isPremium.value}");
                                         if (controller.isTrackLockedForUser(s)) {
-                                          // 1. Check karein ki user ne spin kar liya hai ya nahi
-                                          final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                          if (hasAlreadySpun && !GetPlatform.isIOS) {
-                                            // ✅ Agar spin ho gaya hai, toh direct discount wali sheet (Sheet 6)
-                                            // iOS pe Sheet 6 ("50% OFF FOREVER") nahi (Apple 3.1.2(c)) - Sheet 4 hi.
-                                            showPremiumOfferSheet6(context);
-                                          } else {
-                                            // ❌ Agar spin nahi hua, toh normal paywall (Sheet 4)
-                                            showPremiumOfferSheet4(context);
-                                          }
+                                          controller.presentPremiumPaywall();
                                           return;
                                         }
                                         // Check if it's a long-form track (Music or from Favorites Tab)
@@ -1141,18 +1146,8 @@ class _SleepSoundViewState extends State<SleepSoundView> {
 
                                     return GestureDetector(
                                       onTap: () {
-                                        final controller1 = Get.find<HomeController>();
-                                        // 🛡️ Logic: If it's locked, show premium sheet instead of playing
                                         if (controller.isTrackLockedForUser(s)) {
-                                          // 1. Check karein ki user ne spin kar liya hai ya nahi
-                                          final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                          if (hasAlreadySpun) {
-                                           // showPremiumOfferSheet6(context);
-                                            controller1.showRotatingPremiumSheet(context);
-                                          } else {
-                                           showPremiumOfferSheet4(context);
-                                          }
+                                          controller.presentPremiumPaywall();
                                           return;
                                         }
                                         controller.toggleSound(s);
@@ -1261,9 +1256,11 @@ class _SleepSoundViewState extends State<SleepSoundView> {
             ),
           ),
 
-          /// 🔥 GLOBAL LOADER OVERLAY
-          /// 🌍 ONE GLOBAL LOADER
-          if (isScreenLoading && !hasData)
+          /// Hide leftover grids when the header already switched tabs
+          /// but the PageView has not jumped yet.
+          if ((isScreenLoading && !hasData) ||
+              currentCategory != controller.selectedCategorySlug.value ||
+              currentSub != controller.selectedSubCategorySlug.value)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.4),

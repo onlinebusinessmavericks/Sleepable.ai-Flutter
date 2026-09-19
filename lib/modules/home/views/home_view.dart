@@ -9,7 +9,6 @@ import 'package:nb_utils/nb_utils.dart';
 import '../../../data/services/config.dart';
 import '../../../localization/lang_extension.dart';
 import '../../../widgets/SubscriptionController.dart';
-import '../../../widgets/showPremiumOfferSheet.dart';
 import '../../sleep_info/controllers/sleep_info_controller.dart';
 import '../../sleep_info/views/sleeppedia_detail_view.dart';
 import '../../sleep_info/widget/sleep_quiz_detail_view.dart';
@@ -1168,17 +1167,7 @@ class HomeScreen extends GetView<HomeController> {
                           onTap: () {
                             // 3. Premium Paywall Check
                             if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium)) {
-                              // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
-                              final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                              if (hasAlreadySpun) {
-                                // ✅ Agar spin ho gaya hai -> Seedha discounted offer dikhao
-                                // showPremiumOfferSheet6(context);
-                                controller.showRotatingPremiumSheet(context);
-                              } else {
-                                // ❌ Agar spin nahi hua -> Default premium sheet dikhao
-                                showPremiumOfferSheet4(context);
-                              }
+                              sleepController.presentPremiumPaywall();
                               return;
                             }
 
@@ -1389,17 +1378,7 @@ class HomeScreen extends GetView<HomeController> {
                           GestureDetector(
                             onTap: () {
                               if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium)) {
-                                // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
-                                final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                if (hasAlreadySpun) {
-                                  // ✅ Agar spin ho gaya hai -> Seedha discounted offer dikhao
-                                  // showPremiumOfferSheet6(context);
-                                  controller.showRotatingPremiumSheet(context);
-                                } else {
-                                  // ❌ Agar spin nahi hua -> Default premium sheet dikhao
-                                  showPremiumOfferSheet4(context);
-                                }
+                                sleepController.presentPremiumPaywall();
                                 return;
                               }
                               // 5. Map HomeSoundItem to SoundItem for the player
@@ -1701,17 +1680,7 @@ class HomeScreen extends GetView<HomeController> {
                               onTap: () {
                                 // 3. Premium Paywall Check
                                 if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium)) {
-                                  // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
-                                  final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                  if (hasAlreadySpun) {
-                                    // ✅ Agar spin ho gaya hai -> Seedha discounted offer dikhao
-                                    // showPremiumOfferSheet6(context);
-                                    controller.showRotatingPremiumSheet(context);
-                                  } else {
-                                    // ❌ Agar spin nahi hua -> Default premium sheet dikhao
-                                    showPremiumOfferSheet4(context);
-                                  }
+                                  sleepController.presentPremiumPaywall();
                                   return;
                                 }
 
@@ -1911,17 +1880,7 @@ class HomeScreen extends GetView<HomeController> {
                               onTap: () {
                                 // 3. Premium Paywall Check — Sleep Story section
                                 if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium)) {
-                                  // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
-                                  final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                  if (hasAlreadySpun) {
-                                    // ✅ Agar spin ho gaya hai -> Seedha discounted offer dikhao
-                                    // showPremiumOfferSheet6(context);
-                                    controller.showRotatingPremiumSheet(context);
-                                  } else {
-                                    // ❌ Agar spin nahi hua -> Default premium sheet dikhao
-                                    showPremiumOfferSheet4(context);
-                                  }
+                                  sleepController.presentPremiumPaywall();
                                   return;
                                 }
 
@@ -2119,17 +2078,7 @@ class HomeScreen extends GetView<HomeController> {
 
                                 // 3. Premium Paywall Check
                                 if (subController.isPremiumItemLocked(itemIsPremium: item.isPremium)) {
-                                  // 1. Check karein ki user ne pehle hi spin wheel use kiya hai ya nahi
-                                  final bool hasAlreadySpun = subController.spinInfo.value?.alreadySpun ?? false;
-
-                                  if (hasAlreadySpun) {
-                                    // ✅ Agar spin ho gaya hai -> Seedha discounted offer dikhao
-                                    // showPremiumOfferSheet6(context);
-                                    controller.showRotatingPremiumSheet(context);
-                                  } else {
-                                    // ❌ Agar spin nahi hua -> Default premium sheet dikhao
-                                    showPremiumOfferSheet4(context);
-                                  }
+                                  sleepController.presentPremiumPaywall();
                                   return;
                                 }
                                 // 4. Map HomeSoundItem to SoundItem for the player

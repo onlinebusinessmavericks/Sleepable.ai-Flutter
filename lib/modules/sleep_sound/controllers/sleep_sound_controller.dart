@@ -666,6 +666,11 @@ class SleepSoundController extends GetxController {
     if (_pagesEqual(combinedPages, result)) return;
 
     combinedPages.assignAll(result);
+    final previousIndex = currentPageIndex.value;
+    _syncCurrentIndexToSelection();
+    if (currentPageIndex.value != previousIndex) {
+      tabJumpRequest.value++;
+    }
     debugPrint("✅ combinedPages rebuilt: ${combinedPages.length}");
   }
 
@@ -809,6 +814,8 @@ class SleepSoundController extends GetxController {
   List<SoundItem> get freePlaylist =>
       activePlaylist.where((s) => !isTrackLockedForUser(s)).toList();
 
+  /// Locked catalog tap: paywall if the user owns nothing, My Subscription
+  /// during trial (never a dead tap), play only after paid Premium.
   void presentPremiumPaywall() {
     final context = Get.context;
     if (context == null) return;
@@ -1181,20 +1188,55 @@ class SleepSoundController extends GetxController {
   /// Bumped when UI should jump to Music (e.g. "Add Music" from mix sheet).
   final RxInt musicNavRequest = 0.obs;
 
+  /// Bumped whenever the Sounds PageView must snap to [selectedCategorySlug]
+  /// immediately (Home shortcuts, See All, top-tab tap). Using a counter means
+  /// the view can jump even if the widget was already built on another tab.
+  final RxInt tabJumpRequest = 0.obs;
+
+  int _indexForSelection() {
+    final tab = selectedCategorySlug.value;
+    final sub = selectedSubCategorySlug.value.isEmpty ? allSubSlug : selectedSubCategorySlug.value;
+    if (tab.isEmpty) return -1;
+    return globalIndexFor(tab, sub);
+  }
+
+  void _syncCurrentIndexToSelection() {
+    final index = _indexForSelection();
+    if (index >= 0) currentPageIndex.value = index;
+  }
+
+  void _requestTabJump() {
+    _syncCurrentIndexToSelection();
+    tabJumpRequest.value++;
+  }
+
   void setJumpArguments({required String jumpTab, required String jumpFilter}) {
-    // 1. Update Category
     selectedCategorySlug.value = jumpTab;
-
-    // 2. Map "__all__" to an empty string so onSoundTabVisible()
-    // can pick the first available subcategory automatically.
-    if (jumpFilter == "__all__") {
-      selectedSubCategorySlug.value = "";
-    } else {
-      selectedSubCategorySlug.value = jumpFilter;
-    }
-
-    // 3. Refresh Data
+    selectedSubCategorySlug.value = jumpFilter.isEmpty ? allSubSlug : jumpFilter;
+    _requestTabJump();
     onSoundTabVisible();
+  }
+
+  /// Switch the top category without leaving the previous grid on screen.
+  Future<void> selectTopCategory(String tabSlug) async {
+    if (selectedCategorySlug.value == tabSlug) return;
+
+    selectedCategorySlug.value = tabSlug;
+
+    final knownFilters = getCurrentFilters(tabSlug);
+    selectedSubCategorySlug.value =
+        knownFilters.isNotEmpty ? knownFilters.first.slug : allSubSlug;
+    _requestTabJump();
+
+    await fetchSubCategories(tabSlug);
+    if (selectedCategorySlug.value != tabSlug) return;
+
+    final filters = getCurrentFilters(tabSlug);
+    if (filters.isEmpty) return;
+
+    selectedSubCategorySlug.value = filters.first.slug;
+    _requestTabJump();
+    await fetchSounds(tabSlug, filters.first.slug);
   }
 
   /// Close mix sheet → Sounds tab → Music category (keeps playing sounds).
@@ -1535,35 +1577,41 @@ class SleepSoundController extends GetxController {
 
   Future<void> _initializeData() async {
     await fetchSoundCategories();
-    if (tabOrder.isNotEmpty) {
-      for (var cat in tabOrder.take(3)) {
-        final filters = getCurrentFilters(cat.slug);
-        if (filters.isNotEmpty) {
-          _hydrateFromCache(soundKey(cat.slug, filters.first.slug));
-        }
-      }
-    }
+    if (tabOrder.isEmpty) return;
+
+    // Honour a Home/See All jump that arrived while categories were loading.
+    // Never reset the user back to the first tab after they already picked one.
+    final targetCat = selectedCategorySlug.value.isNotEmpty
+        ? selectedCategorySlug.value
+        : tabOrder.first.slug;
+    final targetSub = selectedSubCategorySlug.value.isNotEmpty
+        ? selectedSubCategorySlug.value
+        : allSubSlug;
+
+    selectedCategorySlug.value = targetCat;
+    selectedSubCategorySlug.value = targetSub;
+
+    await _hydrateFromCache(soundKey(targetCat, targetSub));
+    await fetchSubCategories(targetCat);
+    _syncCurrentIndexToSelection();
+    tabJumpRequest.value++;
+    await fetchSounds(targetCat, targetSub);
+
     for (final category in tabOrder) {
-      await fetchSubCategories(category.slug);
-    }
-
-    if (tabOrder.isNotEmpty) {
-      final firstCategorySlug = tabOrder.first.slug;
-
-      selectedCategorySlug.value = firstCategorySlug;
-      selectedSubCategorySlug.value = allSubSlug;
-
-      await fetchSounds(firstCategorySlug, allSubSlug);
+      if (category.slug == targetCat) continue;
+      fetchSubCategories(category.slug);
     }
   }
 
   Future<void> onSoundTabVisible() async {
-    final category = selectedCategorySlug.value.isEmpty ? 'white-noise' : selectedCategorySlug.value;
+    final requestedCategory = selectedCategorySlug.value;
+    final category = requestedCategory.isEmpty ? 'white-noise' : requestedCategory;
 
-    // Await subcategory fetch
     await fetchSubCategories(category);
+    if (requestedCategory.isNotEmpty && selectedCategorySlug.value != requestedCategory) {
+      return;
+    }
 
-    // Select first subcategory if nothing is selected
     if (selectedSubCategorySlug.value.isEmpty) {
       final filters = getCurrentFilters(category);
       if (filters.isNotEmpty) {
@@ -1571,7 +1619,8 @@ class SleepSoundController extends GetxController {
       }
     }
 
-    // Now fetch sounds safely
+    _requestTabJump();
+
     if (selectedSubCategorySlug.value.isNotEmpty) {
       await fetchSounds(category, selectedSubCategorySlug.value);
     }
